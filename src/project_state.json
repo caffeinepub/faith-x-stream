@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability, and add separate admin upload sections by content type.",
+  "architectural_notes": [
+    "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
+    "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic."
+  ],
+  "known_issues": [
+    "Autoplay is freezing and not playing.",
+    "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
+    "Updating videos fails with 'Failed to update'."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-fix-the-videoplayer-autoplay-ad-playback-logic-so-autoplay-no-longer-freezes-and-playback-reliably-starts-scope-ensure-autoplay-can-start-muted-to-comply-with-browser-policies-and-does-not-get-stuck-in-a-paused-frozen-state-fix-ad-switching-so-that-when-an-ad-ends-the-player-returns-to-the-correct-main-content-timestamp-store-and-restore-a-dedicated-contenttimebeforead-instead-of-using-the-ad-s-currenttime-ensure-duration-currenttime-state-used-for-midroll-scheduling-is-based-on-the-main-content-not-overwritten-by-ad-playback-ensure-live-tv-playback-islivetv-true-does-not-trigger-preroll-midroll-ad-behavior-that-breaks-playback",
+      "title": "Fix the VideoPlayer autoplay/ad playback logic so autoplay no longer freezes and playback reliably starts.\n\nScope:\n- Ensure autoplay can start muted (to comply with browser policies) and does not get stuck in a paused/frozen state.\n- Fix ad switching so that when an ad ends, the player returns to the correct main-content timestamp (store and restore a dedicated “contentTimeBeforeAd” instead of using the ad’s currentTime).\n- Ensure duration/currentTime state used for midroll scheduling is based on the main content, not overwritten by ad playback.\n- Ensure Live TV playback (isLiveTV=true) does not trigger preroll/midroll ad behavior that breaks playback.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-preview-playback-behavior-for-featured-autoplay-use-cases-when-a-trailer-exists-use-it-for-preview-otherwise-use-the-first-30-60-seconds-of-the-main-video-as-a-preview-without-breaking-subsequent-playback-scope-when-trailerurl-is-available-for-a-video-preview-autoplay-uses-trailerurl-when-trailerurl-is-not-available-preview-autoplay-uses-the-main-videourl-but-stops-preview-after-30-60-seconds-and-triggers-the-existing-onautoplaycomplete-callback-if-provided-to-allow-the-ui-to-transition-cleanly-ensure-preview-playback-does-not-interfere-with-later-full-playback-of-the-same-content-i-e-state-resets-cleanly",
+      "title": "Implement preview playback behavior for featured/autoplay use cases: when a trailer exists, use it for preview; otherwise use the first 30–60 seconds of the main video as a preview without breaking subsequent playback.\n\nScope:\n- When trailerUrl is available for a video, preview/autoplay uses trailerUrl.\n- When trailerUrl is not available, preview/autoplay uses the main videoUrl but stops preview after 30–60 seconds and triggers the existing onAutoplayComplete callback (if provided) to allow the UI to transition cleanly.\n- Ensure preview playback does not interfere with later full playback of the same content (i.e., state resets cleanly).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-content-type-classification-that-can-distinguish-movies-films-vs-podcasts-and-expose-it-consistently-across-admin-upload-edit-flows-scope-backend-extend-contenttype-to-include-podcast-and-movie-while-retaining-existing-film-frontend-update-all-contenttype-selectors-upload-edit-to-include-movie-film-and-podcast-options-in-addition-to-existing-options-ensure-videocard-content-labels-and-filters-that-rely-on-contenttype-continue-to-work-with-the-expanded-enum-add-conditional-migration-logic-if-required-due-to-enum-changes-in-persisted-data",
+      "title": "Add content-type classification that can distinguish Movies/Films vs Podcasts and expose it consistently across admin upload/edit flows.\n\nScope:\n- Backend: extend ContentType to include Podcast and Movie (while retaining existing Film).\n- Frontend: update all ContentType selectors (upload + edit) to include Movie, Film, and Podcast options in addition to existing options.\n- Ensure VideoCard/content labels and filters that rely on ContentType continue to work with the expanded enum.\n- Add conditional migration logic if required due to enum changes in persisted data.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restructure-the-admin-panel-to-include-separate-upload-management-sections-for-movies-tv-shows-podcasts-clips-and-live-tv-while-keeping-existing-brands-channels-ads-sections-scope-adminpage-tabs-must-include-distinct-entries-for-movies-upload-management-tv-shows-upload-management-use-existing-seriesmanagement-podcasts-upload-management-clips-upload-management-existing-clipsmanagement-live-tv-upload-management-existing-liveschedulemanagement-and-or-existing-live-channel-management-as-appropriate-brands-channels-ads-analytics-stripe-keep-existing-implement-movies-and-podcasts-management-uis-as-separate-panels-new-components-that-reuse-existing-video-upload-edit-functionality-but-default-contenttype-appropriately-movie-podcast-filter-the-manage-list-to-only-show-items-of-that-category-ensure-edit-update-preserves-category-and-allows-changing-it-when-needed",
+      "title": "Restructure the Admin Panel to include separate upload/management sections for Movies, TV Shows, Podcasts, Clips, and Live TV, while keeping existing Brands/Channels/Ads sections.\n\nScope:\n- AdminPage tabs must include distinct entries for:\n  - Movies upload/management\n  - TV Shows upload/management (use existing SeriesManagement)\n  - Podcasts upload/management\n  - Clips upload/management (existing ClipsManagement)\n  - Live TV upload/management (existing LiveScheduleManagement and/or existing live channel management as appropriate)\n  - Brands, Channels, Ads, Analytics, Stripe (keep existing)\n- Implement Movies and Podcasts management UIs as separate panels (new components) that reuse existing video upload/edit functionality but:\n  - Default contentType appropriately (Movie/Podcast)\n  - Filter the “Manage” list to only show items of that category\n  - Ensure edit/update preserves category and allows changing it when needed",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix autoplay freezing/not playing (ensure trailer or first 30–60 seconds playback works reliably)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Fix bugged UI pages/sections: Live, Originals, Profile/MyProfile, and Admin Panel Dashboard",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Fix video update/edit flow failing with 'Failed to update' (improve payload validation and error handling)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add content type classification for videos (determine movie vs podcast vs etc., including Movie/Film/Podcast types)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Add separate upload sections in Admin Dashboard/Panel: Movies, TV Shows, Podcasts, Clips, Live TV (plus existing Brands/Channels/Ads)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Fix the video update/edit flow so it no longer fails with a generic “Failed to update”, and provide actionable error details.\n\nScope:\n- Ensure the edit dialog’s form state is correctly populated from the selected video and remains consistent through update submission.\n- Ensure update payloads sent to updateVideo conform to the backend VideoContent type (including optional fields).\n- Improve mutation error handling to surface the actual error message (when available) in the UI toast instead of only “Failed to update”.\n- Confirm update invalidates and refreshes the correct React Query caches so the admin list reflects changes immediately.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Stabilize and fix UI issues on the following pages/sections so they render reliably and do not appear “bugged”: Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.\n\nScope:\n- Ensure these pages do not break when actor/auth state is still initializing (avoid rendering incorrect states due to undefined query results).\n- Ensure each page has a clear loading/empty/error state and does not incorrectly show “Access Denied” or redirect loops due to queries being disabled during initialization.\n- Specifically validate LivePage, OriginalsPage, ProfilePage, and AdminPage flows with anonymous, authenticated non-admin, and authenticated admin sessions.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Fix autoplay freezing, stabilize key pages, add content-type aware admin uploads (Movies/Podcasts), and repair video update flow",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

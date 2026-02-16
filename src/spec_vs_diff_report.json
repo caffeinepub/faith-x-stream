@@ -1,0 +1,83 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-16T12:03:53.620Z",
+  "summary": "Diff implements backend ContentType expansion with migration scaffolding and adds new Movies/Podcasts admin management components plus frontend ContentType utility helpers. VideoPlayer and HeroSection were modified for autoplay/preview behavior, but several requested admin restructuring, update-flow error handling, and page-stability requirements are not evidenced in the provided diff summary.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Ensure Live TV playback (isLiveTV=true) does not trigger preroll/midroll ad behavior that breaks playback; ensure midroll scheduling duration/currentTime is based on main content and not overwritten by ad playback; ensure ad-to-content resume uses dedicated contentTimeBeforeAd.",
+      "reason": "VideoPlayer.tsx shows new state variables (e.g., contentTimeBeforeAd) and autoplay/preview logic, but the diff summary is truncated before showing the ad switching logic, midroll scheduling logic, and any explicit Live TV ad-disabling behavior. The acceptance-criteria behaviors cannot be confirmed from the visible excerpt alone.",
+      "evidence": [
+        "frontend/src/components/VideoPlayer.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Frontend: update all ContentType selectors (upload + edit) to include Movie, Film, and Podcast options; ensure VideoCard/content labels and filters relying on ContentType continue to work with expanded enum.",
+      "reason": "The diff adds ContentType label/helpers and introduces MoviesManagement/PodcastsManagement, but there is no visible evidence that existing upload/edit selectors elsewhere (e.g., existing VideoManagement/edit dialogs) were updated, nor that VideoCard/category filters were updated to handle the new variants.",
+      "evidence": [
+        "frontend/src/utils/contentType.ts",
+        "frontend/src/components/admin/MoviesManagement.tsx (truncated)",
+        "frontend/src/components/admin/PodcastsManagement.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Admin Panel tabs must include distinct entries for Movies and Podcasts (separate upload/management sections) while keeping existing sections; Movies/Podcasts sections must filter lists by category and allow upload/edit/delete.",
+      "reason": "MoviesManagement.tsx and PodcastsManagement.tsx were added and they filter by category, but there is no evidence that AdminPage tabs/routes were restructured to include new Movies/Podcasts entries. The provided frontend-file-summaries.txt description of AdminPage still lists tabs (Videos, Clips, Series, Channels, Live TV, Brands, Ads, Analytics, Stripe) and does not mention Movies/Podcasts.",
+      "evidence": [
+        "frontend/src/components/admin/MoviesManagement.tsx (truncated)",
+        "frontend/src/components/admin/PodcastsManagement.tsx (truncated)",
+        "frontend-file-summaries.txt (AdminPage description)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Fix video update/edit flow to avoid generic 'Failed to update' and show actionable error details; ensure payload conforms to backend type incl. optional fields; ensure React Query caches are invalidated/refreshed after updates.",
+      "reason": "The diff summary does not show changes to the existing edit dialog/update mutation error handling, payload shaping, or query invalidation logic. MoviesManagement/PodcastsManagement include basic toast usage but the update handling is truncated and does not demonstrate improved error surfacing or cache invalidation for the broader admin edit flow.",
+      "evidence": [
+        "frontend/src/components/admin/MoviesManagement.tsx (truncated)",
+        "frontend/src/components/admin/PodcastsManagement.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Stabilize Live, Originals, Profile/MyProfile, and Admin Dashboard rendering during auth/actor initialization with clear loading/empty/error states and without incorrect Access Denied/redirect loops.",
+      "reason": "No page components (LivePage, OriginalsPage, ProfilePage, AdminPage) are shown as modified in the explicit diff list; the only directly shown modified frontend files are HeroSection.tsx, VideoPlayer.tsx, and useInternetIdentity.ts. The diff summary therefore does not provide reliable evidence that these stabilization behaviors were implemented.",
+      "evidence": [
+        "MODIFIED FILES list (does not include page files)",
+        "frontend/src/hooks/useInternetIdentity.ts (truncated)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Modified an immutable hook file (useInternetIdentity.ts) despite constraints stating it must not be edited.",
+      "reason": "BuildRequest explicitly lists frontend/src/hooks/useInternetIdentity.ts/tsx as immutable, but the diff shows it as a modified file.",
+      "evidence": [
+        "frontend/src/hooks/useInternetIdentity.ts (truncated)"
+      ]
+    },
+    {
+      "description": "Added/updated project_state.json tracking feature requests/status, which is not part of any stated requirement.",
+      "reason": "BuildRequest does not request changes to project_state.json or adding internal project tracking metadata.",
+      "evidence": [
+        "project_state.json (truncated)"
+      ]
+    }
+  ],
+  "confidence": 0.62,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/HeroSection.tsx",
+    "frontend/src/components/VideoPlayer.tsx",
+    "frontend/src/components/admin/MoviesManagement.tsx",
+    "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/hooks/useInternetIdentity.ts",
+    "frontend/src/utils/contentType.ts",
+    "project_state.json"
+  ]
+}

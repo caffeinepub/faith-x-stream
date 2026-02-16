@@ -1,0 +1,95 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-videoplayer-autoplay-ad-playback-logic-so-autoplay-no-longer-freezes-and-playback-reliably-starts-scope-ensure-autoplay-can-start-muted-to-comply-with-browser-policies-and-does-not-get-stuck-in-a-paused-frozen-state-fix-ad-switching-so-that-when-an-ad-ends-the-player-returns-to-the-correct-main-content-timestamp-store-and-restore-a-dedicated-contenttimebeforead-instead-of-using-the-ad-s-currenttime-ensure-duration-currenttime-state-used-for-midroll-scheduling-is-based-on-the-main-content-not-overwritten-by-ad-playback-ensure-live-tv-playback-islivetv-true-does-not-trigger-preroll-midroll-ad-behavior-that-breaks-playback",
+      "featureTitle": "Fix the VideoPlayer autoplay/ad playback logic so autoplay no longer freezes and playback reliably starts.\n\nScope:\n- Ensure autoplay can start muted (to comply with browser policies) and does not get stuck in a paused/frozen state.\n- Fix ad switching so that when an ad ends, the player returns to the correct main-content timestamp (store and restore a dedicated “contentTimeBeforeAd” instead of using the ad’s currentTime).\n- Ensure duration/currentTime state used for midroll scheduling is based on the main content, not overwritten by ad playback.\n- Ensure Live TV playback (isLiveTV=true) does not trigger preroll/midroll ad behavior that breaks playback.",
+      "files": [
+        "frontend/src/components/VideoPlayer.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-preview-playback-behavior-for-featured-autoplay-use-cases-when-a-trailer-exists-use-it-for-preview-otherwise-use-the-first-30-60-seconds-of-the-main-video-as-a-preview-without-breaking-subsequent-playback-scope-when-trailerurl-is-available-for-a-video-preview-autoplay-uses-trailerurl-when-trailerurl-is-not-available-preview-autoplay-uses-the-main-videourl-but-stops-preview-after-30-60-seconds-and-triggers-the-existing-onautoplaycomplete-callback-if-provided-to-allow-the-ui-to-transition-cleanly-ensure-preview-playback-does-not-interfere-with-later-full-playback-of-the-same-content-i-e-state-resets-cleanly",
+      "featureTitle": "Implement preview playback behavior for featured/autoplay use cases: when a trailer exists, use it for preview; otherwise use the first 30–60 seconds of the main video as a preview without breaking subsequent playback.\n\nScope:\n- When trailerUrl is available for a video, preview/autoplay uses trailerUrl.\n- When trailerUrl is not available, preview/autoplay uses the main videoUrl but stops preview after 30–60 seconds and triggers the existing onAutoplayComplete callback (if provided) to allow the UI to transition cleanly.\n- Ensure preview playback does not interfere with later full playback of the same content (i.e., state resets cleanly).",
+      "files": [
+        "frontend/src/components/HeroSection.tsx",
+        "frontend/src/components/VideoPlayer.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-content-type-classification-that-can-distinguish-movies-films-vs-podcasts-and-expose-it-consistently-across-admin-upload-edit-flows-scope-backend-extend-contenttype-to-include-podcast-and-movie-while-retaining-existing-film-frontend-update-all-contenttype-selectors-upload-edit-to-include-movie-film-and-podcast-options-in-addition-to-existing-options-ensure-videocard-content-labels-and-filters-that-rely-on-contenttype-continue-to-work-with-the-expanded-enum-add-conditional-migration-logic-if-required-due-to-enum-changes-in-persisted-data",
+      "featureTitle": "Add content-type classification that can distinguish Movies/Films vs Podcasts and expose it consistently across admin upload/edit flows.\n\nScope:\n- Backend: extend ContentType to include Podcast and Movie (while retaining existing Film).\n- Frontend: update all ContentType selectors (upload + edit) to include Movie, Film, and Podcast options in addition to existing options.\n- Ensure VideoCard/content labels and filters that rely on ContentType continue to work with the expanded enum.\n- Add conditional migration logic if required due to enum changes in persisted data.",
+      "files": [
+        "frontend/src/utils/contentType.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restructure-the-admin-panel-to-include-separate-upload-management-sections-for-movies-tv-shows-podcasts-clips-and-live-tv-while-keeping-existing-brands-channels-ads-sections-scope-adminpage-tabs-must-include-distinct-entries-for-movies-upload-management-tv-shows-upload-management-use-existing-seriesmanagement-podcasts-upload-management-clips-upload-management-existing-clipsmanagement-live-tv-upload-management-existing-liveschedulemanagement-and-or-existing-live-channel-management-as-appropriate-brands-channels-ads-analytics-stripe-keep-existing-implement-movies-and-podcasts-management-uis-as-separate-panels-new-components-that-reuse-existing-video-upload-edit-functionality-but-default-contenttype-appropriately-movie-podcast-filter-the-manage-list-to-only-show-items-of-that-category-ensure-edit-update-preserves-category-and-allows-changing-it-when-needed",
+      "featureTitle": "Restructure the Admin Panel to include separate upload/management sections for Movies, TV Shows, Podcasts, Clips, and Live TV, while keeping existing Brands/Channels/Ads sections.\n\nScope:\n- AdminPage tabs must include distinct entries for:\n  - Movies upload/management\n  - TV Shows upload/management (use existing SeriesManagement)\n  - Podcasts upload/management\n  - Clips upload/management (existing ClipsManagement)\n  - Live TV upload/management (existing LiveScheduleManagement and/or existing live channel management as appropriate)\n  - Brands, Channels, Ads, Analytics, Stripe (keep existing)\n- Implement Movies and Podcasts management UIs as separate panels (new components) that reuse existing video upload/edit functionality but:\n  - Default contentType appropriately (Movie/Podcast)\n  - Filter the “Manage” list to only show items of that category\n  - Ensure edit/update preserves category and allows changing it when needed",
+      "files": [
+        "frontend/src/components/admin/MoviesManagement.tsx",
+        "frontend/src/components/admin/PodcastsManagement.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
