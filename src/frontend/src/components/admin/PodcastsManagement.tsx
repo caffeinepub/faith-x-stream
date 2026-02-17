@@ -7,20 +7,16 @@ import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Switch } from '../ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Edit, Mic } from 'lucide-react';
+import { Trash2, Upload, Star, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
-import { isPodcast } from '../../utils/contentType';
 
 export default function PodcastsManagement() {
-  const { data: allVideos, isLoading } = useGetAllVideos();
+  const { data: videos, isLoading } = useGetAllVideos();
   const addVideo = useAddVideo();
   const updateVideo = useUpdateVideo();
   const deleteVideo = useDeleteVideo();
-
-  // Filter only podcasts
-  const podcasts = allVideos?.filter((v) => !v.isClip && isPodcast(v.contentType)) || [];
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,8 +26,11 @@ export default function PodcastsManagement() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const [editingPodcast, setEditingPodcast] = useState<VideoContent | null>(null);
+  // Edit state
+  const [editingVideo, setEditingVideo] = useState<VideoContent | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const podcastVideos = videos?.filter(v => !v.isClip && v.contentType === ContentType.podcast) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,46 +58,44 @@ export default function PodcastsManagement() {
         isClip: false,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
+        eligibleForLive: false,
       };
 
       await addVideo.mutateAsync(podcast);
       toast.success('Podcast uploaded successfully!');
       
-      resetForm();
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setIsPremium(false);
+      setIsOriginal(false);
+      setVideoFile(null);
+      setThumbnailFile(null);
+      setUploadProgress(0);
     } catch (error) {
       toast.error('Failed to upload podcast');
       console.error(error);
     }
   };
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setIsPremium(false);
-    setIsOriginal(false);
+  const openEditDialog = (video: VideoContent) => {
+    setTitle(video.title);
+    setDescription(video.description);
+    setIsPremium(video.isPremium);
+    setIsOriginal(video.isOriginal);
     setVideoFile(null);
     setThumbnailFile(null);
-    setUploadProgress(0);
-  };
-
-  const openEditDialog = (podcast: VideoContent) => {
-    setTitle(podcast.title);
-    setDescription(podcast.description);
-    setIsPremium(podcast.isPremium);
-    setIsOriginal(podcast.isOriginal);
-    setVideoFile(null);
-    setThumbnailFile(null);
-    setEditingPodcast(podcast);
+    setEditingVideo(video);
     setEditDialogOpen(true);
   };
 
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingPodcast) return;
+    if (!editingVideo) return;
 
     try {
-      let videoBlob = editingPodcast.videoUrl;
-      let thumbnailBlob = editingPodcast.thumbnailUrl;
+      let videoBlob = editingVideo.videoUrl;
+      let thumbnailBlob = editingVideo.thumbnailUrl;
 
       if (videoFile) {
         const videoBytes = new Uint8Array(await videoFile.arrayBuffer());
@@ -113,7 +110,7 @@ export default function PodcastsManagement() {
       }
 
       const updatedPodcast: VideoContent = {
-        id: editingPodcast.id,
+        ...editingVideo,
         title,
         description,
         contentType: ContentType.podcast,
@@ -122,26 +119,32 @@ export default function PodcastsManagement() {
         isClip: false,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
+        eligibleForLive: editingVideo.eligibleForLive,
       };
 
-      await updateVideo.mutateAsync({ videoId: editingPodcast.id, video: updatedPodcast });
+      await updateVideo.mutateAsync({ videoId: editingVideo.id, video: updatedPodcast });
       toast.success('Podcast updated successfully!');
       
       setEditDialogOpen(false);
-      setEditingPodcast(null);
-      resetForm();
-    } catch (error: any) {
-      const errorMessage = error?.message || String(error) || 'Failed to update podcast';
-      toast.error(errorMessage);
-      console.error('Update error:', error);
+      setEditingVideo(null);
+      setTitle('');
+      setDescription('');
+      setIsPremium(false);
+      setIsOriginal(false);
+      setVideoFile(null);
+      setThumbnailFile(null);
+      setUploadProgress(0);
+    } catch (error) {
+      toast.error('Failed to update podcast');
+      console.error(error);
     }
   };
 
-  const handleDelete = async (podcastId: string) => {
+  const handleDelete = async (videoId: string) => {
     if (!confirm('Are you sure you want to delete this podcast?')) return;
     
     try {
-      await deleteVideo.mutateAsync(podcastId);
+      await deleteVideo.mutateAsync(videoId);
       toast.success('Podcast deleted successfully');
     } catch (error) {
       toast.error('Failed to delete podcast');
@@ -158,7 +161,7 @@ export default function PodcastsManagement() {
       <Card className="gradient-card border-2 border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mic className="h-5 w-5" />
+            <Upload className="h-5 w-5" />
             Upload New Podcast
           </CardTitle>
         </CardHeader>
@@ -189,11 +192,11 @@ export default function PodcastsManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="video">Audio/Video File</Label>
+                <Label htmlFor="video">Video File</Label>
                 <Input
                   id="video"
                   type="file"
-                  accept="video/*,audio/*"
+                  accept="video/*"
                   onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                   required
                   className="bg-black/60 border-primary/40"
@@ -264,29 +267,29 @@ export default function PodcastsManagement() {
 
       <Card className="gradient-card border-2 border-primary/30">
         <CardHeader>
-          <CardTitle>Manage Podcasts ({podcasts.length})</CardTitle>
+          <CardTitle>Manage Podcasts ({podcastVideos.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {podcasts.map((podcast) => (
+            {podcastVideos.map((video) => (
               <div
-                key={podcast.id}
+                key={video.id}
                 className="flex items-center justify-between p-4 rounded-lg bg-black/60 border border-primary/20"
               >
                 <div className="flex items-center gap-4">
                   <img
-                    src={podcast.thumbnailUrl.getDirectURL()}
-                    alt={podcast.title}
+                    src={video.thumbnailUrl.getDirectURL()}
+                    alt={video.title}
                     className="w-24 h-16 object-cover rounded"
                   />
                   <div>
                     <h3 className="font-semibold flex items-center gap-2">
-                      {podcast.title}
-                      {podcast.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      {video.title}
+                      {video.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
                     </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-1">{podcast.description}</p>
+                    <p className="text-sm text-muted-foreground">{video.description}</p>
                     <div className="flex gap-2 mt-1">
-                      {podcast.isPremium && (
+                      {video.isPremium && (
                         <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">Premium</span>
                       )}
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
@@ -299,7 +302,7 @@ export default function PodcastsManagement() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => openEditDialog(podcast)}
+                    onClick={() => openEditDialog(video)}
                     disabled={updateVideo.isPending}
                   >
                     <Edit className="h-4 w-4" />
@@ -307,7 +310,7 @@ export default function PodcastsManagement() {
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => handleDelete(podcast.id)}
+                    onClick={() => handleDelete(video.id)}
                     disabled={deleteVideo.isPending}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -315,7 +318,7 @@ export default function PodcastsManagement() {
                 </div>
               </div>
             ))}
-            {podcasts.length === 0 && (
+            {podcastVideos.length === 0 && (
               <p className="text-center text-muted-foreground py-8">No podcasts uploaded yet</p>
             )}
           </div>
@@ -352,11 +355,11 @@ export default function PodcastsManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-video">Audio/Video File (leave empty to keep current)</Label>
+                <Label htmlFor="edit-video">Video File (leave empty to keep current)</Label>
                 <Input
                   id="edit-video"
                   type="file"
-                  accept="video/*,audio/*"
+                  accept="video/*"
                   onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
                 />
               </div>

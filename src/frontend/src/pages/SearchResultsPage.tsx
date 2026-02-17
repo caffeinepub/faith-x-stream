@@ -1,68 +1,56 @@
-import { useSearch } from '@tanstack/react-router';
-import { useSearch as useSearchQuery } from '../hooks/useQueries';
 import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useSearch as useTanStackSearch } from '@tanstack/react-router';
+import { useSearch } from '../hooks/useQueries';
+import { Search, Film, Tv, Video, Building2 } from 'lucide-react';
 import VideoCard from '../components/VideoCard';
 import SeriesCard from '../components/SeriesCard';
+import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
-import { Search, Film, Tv, Video, Building2 } from 'lucide-react';
-import type { SearchResult } from '../backend';
+import { useNavigate } from '@tanstack/react-router';
 
 export default function SearchResultsPage() {
-  const searchParams = useSearch({ from: '/search' });
-  const query = (searchParams as { q?: string }).q || '';
+  const searchParams = useTanStackSearch({ from: '/search' });
+  const query = (searchParams as any)?.q || '';
+  const searchMutation = useSearch();
   const navigate = useNavigate();
-  const searchMutation = useSearchQuery();
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const performSearch = async () => {
-      if (!query.trim()) {
-        setResults([]);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const searchResults = await searchMutation.mutateAsync(query);
-        setResults(searchResults);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    performSearch();
+    if (query) {
+      searchMutation.mutate(query);
+    }
   }, [query]);
 
-  const films = results.filter(r => r.resultType === 'video');
-  const seriesResults = results.filter(r => r.resultType === 'series');
+  const results = searchMutation.data || [];
+
+  const films = results.filter(r => r.resultType === 'video' && !r.isPremium);
+  const series = results.filter(r => r.resultType === 'series');
   const clips = results.filter(r => r.resultType === 'clip');
   const brands = results.filter(r => r.resultType === 'brand');
 
-  if (isLoading) {
+  if (!query) {
     return (
-      <div className="container px-4 md:px-8 py-12">
-        <Skeleton className="h-10 w-64 mb-8 bg-[#1a0000]" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[2/3] rounded-lg bg-[#1a0000]" />
-          ))}
+      <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
+        <div className="container mx-auto">
+          <div className="text-center py-16">
+            <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">No Search Query</h2>
+            <p className="text-muted-foreground">Please enter a search term</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!query.trim()) {
+  if (searchMutation.isPending) {
     return (
-      <div className="container px-4 md:px-8 py-12">
-        <div className="text-center py-20">
-          <Search className="h-16 w-16 text-[#660000] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Search FAITH X-Stream</h2>
-          <p className="text-white/70">Enter a search term to find content</p>
+      <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
+        <div className="container mx-auto">
+          <Skeleton className="h-12 w-64 mb-8" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="aspect-[2/3] rounded-lg" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -70,136 +58,135 @@ export default function SearchResultsPage() {
 
   if (results.length === 0) {
     return (
-      <div className="container px-4 md:px-8 py-12">
-        <h1 className="text-3xl font-bold mb-8">
-          Search Results for "{query}"
-        </h1>
-        <div className="text-center py-20">
-          <Search className="h-16 w-16 text-[#660000] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">No Results Found</h2>
-          <p className="text-white/70">Try searching with different keywords</p>
+      <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
+        <div className="container mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Search Results for "{query}"</h1>
+          <div className="text-center py-16">
+            <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">No Results Found</h2>
+            <p className="text-muted-foreground">Try searching with different keywords</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container px-4 md:px-8 py-12 space-y-12">
-      <h1 className="text-3xl font-bold">
-        Search Results for "{query}"
-      </h1>
+    <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
+      <div className="container mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Search Results for "{query}"</h1>
 
-      {films.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Film className="h-6 w-6 text-[#cc0000]" />
-            Films ({films.length})
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {films.map((result) => (
-              <VideoCard
-                key={result.id}
-                video={{
-                  id: result.id,
-                  title: result.title,
-                  description: result.description,
-                  thumbnailUrl: result.thumbnailUrl!,
-                  isPremium: result.isPremium,
-                  isOriginal: result.isOriginal,
-                  isClip: false,
-                  videoUrl: null as any,
-                  contentType: 'faithBased' as any,
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {films.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Film className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Films</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {films.map((result) => (
+                <VideoCard
+                  key={result.id}
+                  video={{
+                    id: result.id,
+                    title: result.title,
+                    description: result.description,
+                    thumbnailUrl: result.thumbnailUrl!,
+                    isPremium: result.isPremium,
+                    isOriginal: result.isOriginal,
+                    isClip: false,
+                    videoUrl: (result as any).videoUrl,
+                    contentType: (result as any).contentType,
+                    eligibleForLive: false,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {seriesResults.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Tv className="h-6 w-6 text-[#cc0000]" />
-            Series ({seriesResults.length})
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {seriesResults.map((result) => (
-              <SeriesCard
-                key={result.id}
-                series={{
-                  id: result.id,
-                  title: result.title,
-                  description: result.description,
-                  thumbnailUrl: result.thumbnailUrl!,
-                  isOriginal: result.isOriginal,
-                  seasons: [],
-                  contentType: 'tvSeries' as any,
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {series.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Tv className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Series</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {series.map((result) => (
+                <SeriesCard
+                  key={result.id}
+                  series={{
+                    id: result.id,
+                    title: result.title,
+                    description: result.description,
+                    thumbnailUrl: result.thumbnailUrl!,
+                    isOriginal: result.isOriginal,
+                    seasons: [],
+                    contentType: (result as any).contentType,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {clips.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Video className="h-6 w-6 text-[#cc0000]" />
-            Clips ({clips.length})
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {clips.map((result) => (
-              <VideoCard
-                key={result.id}
-                video={{
-                  id: result.id,
-                  title: result.title,
-                  description: result.description,
-                  thumbnailUrl: result.thumbnailUrl!,
-                  isPremium: result.isPremium,
-                  isOriginal: result.isOriginal,
-                  isClip: true,
-                  videoUrl: null as any,
-                  contentType: 'faithBased' as any,
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {clips.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Video className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Clips</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {clips.map((result) => (
+                <VideoCard
+                  key={result.id}
+                  video={{
+                    id: result.id,
+                    title: result.title,
+                    description: result.description,
+                    thumbnailUrl: result.thumbnailUrl!,
+                    isPremium: result.isPremium,
+                    isOriginal: result.isOriginal,
+                    isClip: true,
+                    videoUrl: (result as any).videoUrl,
+                    contentType: (result as any).contentType,
+                    eligibleForLive: false,
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {brands.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-[#cc0000]" />
-            Networks & Brands ({brands.length})
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
-            {brands.map((result) => (
-              <div
-                key={result.id}
-                onClick={() => navigate({ to: '/networks/$brandId', params: { brandId: result.id } })}
-                className="group cursor-pointer rounded-lg overflow-hidden bg-[#1a0000] border-2 border-[#660000] hover:border-[#cc0000] transition-all duration-300"
-              >
-                <div className="aspect-square relative bg-gradient-to-br from-[#330000] to-[#1a0000] flex items-center justify-center p-4">
-                  {result.thumbnailUrl ? (
-                    <img
-                      src={result.thumbnailUrl.getDirectURL()}
-                      alt={result.title}
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <Building2 className="h-16 w-16 text-[#660000]" />
-                  )}
-                </div>
-                <div className="p-3 bg-[#1a0000]">
-                  <h3 className="font-semibold text-sm text-white text-center truncate">{result.title}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        {brands.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Building2 className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold">Networks & Brands</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {brands.map((result) => (
+                <Card
+                  key={result.id}
+                  className="gradient-card border-2 border-primary/30 cursor-pointer hover:border-primary/60 transition-all"
+                  onClick={() => navigate({ to: '/networks/$brandId', params: { brandId: result.id } })}
+                >
+                  <CardContent className="p-6">
+                    {result.thumbnailUrl && (
+                      <img
+                        src={result.thumbnailUrl.getDirectURL()}
+                        alt={result.title}
+                        className="w-full h-32 object-contain mb-4"
+                      />
+                    )}
+                    <h3 className="font-bold text-lg mb-2">{result.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{result.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

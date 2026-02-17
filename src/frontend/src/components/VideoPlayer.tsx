@@ -2,7 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, RotateCw, Maximize, Volume2, VolumeX, Settings } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
-import type { AdMedia } from '../backend';
+import type { AdMedia, AdLocation } from '../backend';
+import { ExternalBlob } from '../backend';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -17,6 +18,7 @@ interface VideoPlayerProps {
   previewSeconds?: number;
   liveSeekSeconds?: number;
   liveSeekToken?: number;
+  liveAdLocations?: AdLocation[];
 }
 
 export default function VideoPlayer({ 
@@ -32,6 +34,7 @@ export default function VideoPlayer({
   previewSeconds = 45,
   liveSeekSeconds = 0,
   liveSeekToken = 0,
+  liveAdLocations = [],
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +55,8 @@ export default function VideoPlayer({
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const lastSeekTokenRef = useRef<number>(-1);
   const hasPerformedInitialSeekRef = useRef(false);
+  const liveStartTimeRef = useRef<number>(0);
+  const playedLiveAdMarkersRef = useRef<Set<number>>(new Set());
   
   // State for tracking main content time separately from ad time
   const [contentTimeBeforeAd, setContentTimeBeforeAd] = useState(0);
@@ -155,6 +160,8 @@ export default function VideoPlayer({
           const seekPosition = Math.min(liveSeekSeconds, video.duration - 0.5);
           video.currentTime = seekPosition;
           hasPerformedInitialSeekRef.current = true;
+          // Record the live start time for computing live edge
+          liveStartTimeRef.current = Date.now() / 1000;
         }
         lastSeekTokenRef.current = liveSeekToken;
       };
@@ -175,6 +182,8 @@ export default function VideoPlayer({
   // Reset seek tracking when video source changes
   useEffect(() => {
     hasPerformedInitialSeekRef.current = false;
+    liveStartTimeRef.current = 0;
+    playedLiveAdMarkersRef.current.clear();
   }, [videoUrl]);
 
   const prerollAds = ads.filter(ad => {
@@ -192,6 +201,16 @@ export default function VideoPlayer({
     return adAssignment.position === 100;
   });
 
+  // Compute current live edge for Live TV
+  const getLiveEdge = (): number => {
+    const video = videoRef.current;
+    if (!video || !isLiveTV || liveStartTimeRef.current === 0) return video?.duration || 0;
+    
+    const elapsedWallTime = (Date.now() / 1000) - liveStartTimeRef.current;
+    const liveEdge = liveSeekSeconds + elapsedWallTime;
+    return Math.min(liveEdge, video.duration);
+  };
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -199,6 +218,25 @@ export default function VideoPlayer({
     const handleTimeUpdate = () => {
       if (!isPlayingAd) {
         setCurrentTime(video.currentTime);
+        
+        // Check for Live TV scheduled ad breaks (non-premium only)
+        if (isLiveTV && liveAdLocations.length > 0 && !isPremiumUser) {
+          liveAdLocations.forEach((adLoc) => {
+            const triggerTime = Number(adLoc.position);
+            const marker = Math.floor(triggerTime);
+            
+            if (
+              video.currentTime >= triggerTime &&
+              video.currentTime < triggerTime + 1 &&
+              !playedLiveAdMarkersRef.current.has(marker) &&
+              adLoc.adUrls.length > 0
+            ) {
+              setContentTimeBeforeAd(video.currentTime);
+              playedLiveAdMarkersRef.current.add(marker);
+              playLiveAd(adLoc.adUrls);
+            }
+          });
+        }
         
         // Check for midroll ads (disabled for Live TV)
         if (!isLiveTV && midrollAds.length > 0 && !isPremiumUser) {
@@ -250,7 +288,7 @@ export default function VideoPlayer({
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('ended', handleEnded);
     };
-  }, [isPlayingAd, ads, isPremiumUser, playedMidrollMarkers, onAutoplayComplete, isLiveTV, midrollAds, postrollAds]);
+  }, [isPlayingAd, ads, isPremiumUser, playedMidrollMarkers, onAutoplayComplete, isLiveTV, midrollAds, postrollAds, liveAdLocations]);
 
   // Play preroll ads
   useEffect(() => {
@@ -271,6 +309,16 @@ export default function VideoPlayer({
     setIsPlayingAd(true);
     setCurrentAdIndex(0);
     video.src = ad.adFile.getDirectURL();
+    video.play();
+  };
+
+  const playLiveAd = (adUrls: ExternalBlob[]) => {
+    const video = videoRef.current;
+    if (!video || adUrls.length === 0) return;
+
+    setIsPlayingAd(true);
+    setCurrentAdIndex(0);
+    video.src = adUrls[0].getDirectURL();
     video.play();
   };
 
@@ -304,8 +352,19 @@ export default function VideoPlayer({
     if (!video || isPlayingAd) return;
 
     setUserInteracted(true);
-    video.currentTime = value[0];
-    setCurrentTime(value[0]);
+    
+    let targetTime = value[0];
+    
+    // For Live TV, clamp forward seeking to live edge
+    if (isLiveTV) {
+      const liveEdge = getLiveEdge();
+      if (targetTime > video.currentTime) {
+        targetTime = Math.min(targetTime, liveEdge);
+      }
+    }
+    
+    video.currentTime = targetTime;
+    setCurrentTime(targetTime);
   };
 
   const handleVolumeChange = (value: number[]) => {
@@ -339,7 +398,18 @@ export default function VideoPlayer({
     if (!video || isPlayingAd) return;
 
     setUserInteracted(true);
-    video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+    
+    let targetTime = video.currentTime + seconds;
+    
+    // For Live TV, prevent forward skip beyond live edge
+    if (isLiveTV && seconds > 0) {
+      const liveEdge = getLiveEdge();
+      targetTime = Math.min(targetTime, liveEdge);
+    } else {
+      targetTime = Math.max(0, Math.min(video.duration, targetTime));
+    }
+    
+    video.currentTime = targetTime;
   };
 
   const toggleFullscreen = () => {
@@ -430,14 +500,16 @@ export default function VideoPlayer({
                   <RotateCcw className="h-5 w-5" />
                 </Button>
 
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => skip(10)}
-                  className="text-white hover:bg-white/20"
-                >
-                  <RotateCw className="h-5 w-5" />
-                </Button>
+                {!isLiveTV && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => skip(10)}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <RotateCw className="h-5 w-5" />
+                  </Button>
+                )}
               </>
             )}
 

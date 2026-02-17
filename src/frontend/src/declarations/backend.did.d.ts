@@ -196,6 +196,7 @@ export interface VideoContent {
   'isClip' : boolean,
   'trailerUrl' : [] | [ExternalBlob],
   'genre' : [] | [string],
+  'eligibleForLive' : boolean,
   'videoUrl' : ExternalBlob,
   'roles' : [] | [string],
   'releaseYear' : [] | [bigint],
@@ -254,6 +255,7 @@ export interface _SERVICE {
   'deleteSeries' : ActorMethod<[string], undefined>,
   'deleteVideo' : ActorMethod<[string], undefined>,
   'getAdAssignments' : ActorMethod<[], Array<AdAssignment>>,
+  'getAdAssignmentsForLive' : ActorMethod<[string], Array<AdAssignment>>,
   'getAdMedia' : ActorMethod<[], Array<AdMedia>>,
   'getAllBrands' : ActorMethod<[], Array<Brand>>,
   'getAllClips' : ActorMethod<[], Array<VideoContent>>,
@@ -276,6 +278,7 @@ export interface _SERVICE {
       'liveChannels' : Array<string>,
     }
   >,
+  'getEligibleVideosForLive' : ActorMethod<[], Array<VideoContent>>,
   'getLiveChannels' : ActorMethod<[], Array<LiveChannel>>,
   'getLiveChannelsByBrand' : ActorMethod<[string], Array<LiveChannel>>,
   'getSeriesById' : ActorMethod<[string], [] | [TVSeries]>,

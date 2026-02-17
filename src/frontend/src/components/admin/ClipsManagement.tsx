@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Edit } from 'lucide-react';
+import { Trash2, Upload, Star, Edit, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
@@ -24,6 +24,7 @@ export default function ClipsManagement() {
   const [contentType, setContentType] = useState<ContentType>(ContentType.faithBased);
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
+  const [eligibleForLive, setEligibleForLive] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -58,6 +59,7 @@ export default function ClipsManagement() {
         isClip: true,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
+        eligibleForLive,
       };
 
       await addClip.mutateAsync(clip);
@@ -69,6 +71,7 @@ export default function ClipsManagement() {
       setContentType(ContentType.faithBased);
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(false);
       setVideoFile(null);
       setThumbnailFile(null);
       setUploadProgress(0);
@@ -84,6 +87,7 @@ export default function ClipsManagement() {
     setContentType(clip.contentType);
     setIsPremium(clip.isPremium);
     setIsOriginal(clip.isOriginal);
+    setEligibleForLive(clip.eligibleForLive);
     setVideoFile(null);
     setThumbnailFile(null);
     setEditingClip(clip);
@@ -117,6 +121,7 @@ export default function ClipsManagement() {
         contentType,
         isPremium,
         isOriginal,
+        eligibleForLive,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
       };
@@ -131,6 +136,7 @@ export default function ClipsManagement() {
       setContentType(ContentType.faithBased);
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(false);
       setVideoFile(null);
       setThumbnailFile(null);
       setUploadProgress(0);
@@ -234,7 +240,7 @@ export default function ClipsManagement() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="isPremium"
@@ -253,6 +259,18 @@ export default function ClipsManagement() {
                 <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>
@@ -304,6 +322,11 @@ export default function ClipsManagement() {
                     <h3 className="font-semibold flex items-center gap-2">
                       {clip.title}
                       {clip.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      {clip.eligibleForLive && (
+                        <span title="Eligible for Live TV">
+                          <Radio className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground">{clip.description}</p>
                     <div className="flex gap-2 mt-1">
@@ -313,6 +336,9 @@ export default function ClipsManagement() {
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                         {clip.contentType}
                       </span>
+                      {clip.eligibleForLive && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -411,7 +437,7 @@ export default function ClipsManagement() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isPremium"
@@ -430,6 +456,18 @@ export default function ClipsManagement() {
                 <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="edit-eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="edit-eligibleForLive" className="flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>

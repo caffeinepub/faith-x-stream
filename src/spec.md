@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Restore reliable login/registration for email/password while keeping Internet Identity admin login working, eliminating traps, stuck loading states, and redirect loops.
+**Goal:** Improve Live TV playback controls and scheduling so Live streams cannot be fast-forwarded, scheduled ad breaks play unskippably for non-premium viewers, and admins can manage Live-eligibility and ad break configuration via the UI.
 
 **Planned changes:**
-- Fix backend register/login and access control initialization so anonymous callers can authenticate without trapping and can subsequently call user-only methods (e.g., getCallerUserProfile).
-- Standardize backend error responses for common auth failures (invalid credentials, email already registered) so the frontend can display clear messages.
-- Fix frontend auth/session state handling so actor initialization and session restoration do not block email/password login or leave the UI stuck in an initializing/loading state.
-- Fix /login redirect/navigation behavior to avoid navigation during render and prevent redirect loops/blank screens, while maintaining correct behavior for authenticated vs unauthenticated users.
-- Ensure “Login with Internet Identity” still completes end-to-end and establishes the correct authenticated/admin state, with logout fully clearing the II session.
+- Update Live TV playback behavior so when the player is in Live TV mode, users cannot seek or skip forward beyond the current live position, while keeping existing seeking behavior for VOD.
+- Add scheduled, auto-inserted Live TV ad breaks for non-premium viewers that trigger at configured timestamps and are unskippable; return to the correct Live program position after ads finish.
+- Add an admin-controlled “Live-eligible vs VOD-only” flag to video upload/edit, persist it in backend video content, and enforce it in Live scheduling so only eligible videos can be scheduled (or ineligible items are blocked/clearly labeled).
+- Add admin UI in Live scheduling to configure ad break timestamps (and select associated ad media) per scheduled program, saving into existing schedule entry fields used by playback.
 
-**User-visible outcome:** Users can sign up and log in with email/password from /login and get redirected to / on success, see clear error messages on failures, reliably stay logged in across reloads when a session exists, and admins can still log in via Internet Identity and log out cleanly.
+**User-visible outcome:** Viewers watching Live TV cannot fast-forward and will see unskippable scheduled ad breaks (free/non-premium only), while admins can mark videos as Live-eligible and configure per-program ad break timestamps and ad media directly in the Live scheduling UI.

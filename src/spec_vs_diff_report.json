@@ -1,70 +1,90 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T20:20:15.550Z",
-  "summary": "The diff includes substantial frontend auth/UI changes (useAuth state machine tweaks, /login redirect handled via useEffect, clearer toast errors) but provides no visible backend changes for email/password authentication or access control. The diff also adds/mentions multiple unrelated streaming/admin features and a data migration unrelated to fixing login.",
+  "generatedAt": "2026-02-17T21:00:22.264Z",
+  "summary": "Diff implements Live-eligible upload flag with persisted backend field plus a migration default, adds admin UI toggles, and adds LiveScheduleManagement plumbing for selecting only eligible videos and editing ad break structures. However, the diff summary does not provide clear evidence that Live TV forward-seek blocking and scheduled unskippable ad-break playback are fully implemented in the player, and backend support for the new eligibility query/mutations is not shown.",
   "missing_requirements": [
     {
-      "id": "REQ-13",
-      "requirement": "Fix backend authentication and access control so that calling register/login from an unauthenticated (anonymous) frontend session does not trap and can correctly establish a user session for subsequent user-only actions (e.g., getCallerUserProfile).",
-      "reason": "No backend login/register/access-control logic changes are shown in the backend diff snippet; backend/main.mo changes shown are type definitions and upgrade migration wiring, not authentication/access control behavior.",
+      "id": "REQ-17",
+      "requirement": "Prevent users from seeking forward during Live TV playback only (disable forward seek UI/control/keyboard interactions when isLiveTV=true; preserve normal VOD seeking).",
+      "reason": "VideoPlayer changes shown add schedule-aligned seeking props (liveSeekSeconds/liveSeekToken) but the diff summary does not show logic disabling forward seeking UI (scrubber/skip-forward/keyboard) only for Live TV, nor enforcement against jumping beyond the computed live position.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/components/VideoPlayer.tsx",
+        "frontend-file-summaries.txt (VideoPlayer description mentions schedule-aligned seeking, not seek-blocking)"
       ]
     },
     {
-      "id": "REQ-12",
-      "requirement": "Restore working email/password authentication so users can register and log in successfully from the Login page, without requiring Internet Identity.",
-      "reason": "Frontend adds login/register flows and messaging, but the diff provides no evidence that the backend email/password register/login endpoints were fixed to succeed (especially from anonymous callers) or to return consistent, displayable errors.",
+      "id": "REQ-18",
+      "requirement": "Implement scheduled Live TV ad breaks that auto-insert at scheduled timestamps and are unskippable for non-premium viewers; premium users should not see them; resume main content at correct live position after ad.",
+      "reason": "LivePage passes ad locations to VideoPlayer and VideoPlayer has props/state suggesting ad playback, but the diff summary does not show (a) automatic switching at scheduled timestamps during Live playback, (b) unskippable enforcement during ads (seek/scrub/skip-forward blocked), (c) premium-user bypass for these scheduled Live ads, or (d) correct return to live program position after ad completion.",
       "evidence": [
-        "frontend/src/hooks/useAuth.tsx",
-        "frontend/src/pages/LoginPage.tsx",
-        "backend/main.mo"
+        "frontend/src/pages/LivePage.tsx (passes schedule.adLocations to VideoPlayer)",
+        "frontend/src/components/VideoPlayer.tsx (has liveAdLocations prop and ad-related state, but scheduled switching/unskippable/premium-bypass not evidenced)"
       ]
     },
     {
-      "id": "REQ-16",
-      "requirement": "Ensure Internet Identity admin login still works end-to-end (button on Login page), including correct actor creation and access control initialization after II login.",
-      "reason": "While the Login page calls an II login function, there is no diff evidence that backend/admin access control initialization was fixed or that actor creation/authorization after II login was adjusted to ensure admin checks (e.g., isCallerAdmin) work reliably.",
+      "id": "REQ-19",
+      "requirement": "Enforce Live TV eligibility in backend and scheduling UI, including persisted field, preserving it on add/update, and providing a backend method to fetch eligible videos.",
+      "reason": "Eligibility field and migration are shown, and the scheduling UI uses a hook that calls actor.getEligibleVideosForLive(), but the diff summary does not show the backend implementation of getEligibleVideosForLive nor updated add/update logic ensuring eligibleForLive is persisted/returned for all relevant operations.",
       "evidence": [
-        "frontend/src/pages/LoginPage.tsx",
-        "frontend/src/hooks/useAuth.tsx",
-        "backend/main.mo"
+        "backend/main.mo (type VideoContent includes eligibleForLive but methods are truncated/not shown)",
+        "frontend/src/hooks/useQueries.ts (calls actor.getEligibleVideosForLive())",
+        "frontend/src/components/admin/LiveScheduleManagement.tsx (uses useGetEligibleVideosForLive())"
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "requirement": "Admin UI for configuring scheduled ad break timestamps and selecting ad media per break, persisted into LiveChannel.schedule entries (ScheduledContent.adLocations) and used by LivePage/VideoPlayer.",
+      "reason": "LiveScheduleManagement shows ad break editing state (AdLocation with position/adUrls) and loads ad media, but the diff summary is truncated before showing the UI for timestamp entry + ad media selection and before showing persistence back into ScheduledContent.adLocations on save.",
+      "evidence": [
+        "frontend/src/components/admin/LiveScheduleManagement.tsx (adBreaks state and handlers shown, but save/UI details truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/introduced a backend upgrade migration module and wired migration execution on upgrade, focused on content/video/series/live-channel/brand storage types.",
-      "reason": "The BuildRequest constraints allow adding backend/migration.mo only if persisted state changes require it for the login fix; the added migration concerns content platform data types and is not evidenced as necessary for authentication repairs.",
+      "description": "Addition of a new /login route and wrapping app with an AuthProvider / unified auth management.",
+      "reason": "Not requested by the BuildRequest (which focuses on Live TV seeking, ad breaks, and Live-eligible flag).",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend-file-summaries.txt (frontend/src/App.tsx summary mentions new /login route and AuthProvider)"
       ]
     },
     {
-      "description": "Implemented or significantly modified video streaming features (VideoPlayer live TV schedule-aligned seeking, autoplay previews/ads, Live page polling logic to prevent restarts, and multiple content browsing page enhancements).",
-      "reason": "Not requested; the BuildRequest is specifically about fixing broken login (email/password + Internet Identity) and avoiding broader UI redesign beyond necessary messaging/reliability fixes.",
+      "description": "Major UI theming changes (Footer deep red background; red/black branding across multiple pages/components).",
+      "reason": "Not requested by the BuildRequest.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (frontend/src/components/Footer.tsx, Header.tsx, ProfileSetupModal.tsx summaries)"
       ]
     },
     {
-      "description": "Expanded/implemented a large admin panel and numerous admin/content management sections (nine admin tabs; video management; ads/analytics/stripe sections).",
-      "reason": "Not requested as part of login repair; also conflicts with the stated non-goal of redesigning overall UI beyond what is necessary to fix login reliability and messaging.",
+      "description": "HomePage changes: featured slideshow carousel that autoplays video ads/content previews and image ads behavior updates.",
+      "reason": "Not requested by the BuildRequest.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (frontend/src/pages/HomePage.tsx summary)"
+      ]
+    },
+    {
+      "description": "Search results page modifications and/or result shaping unrelated to Live TV requirements.",
+      "reason": "Not requested by the BuildRequest.",
+      "evidence": [
+        "frontend/src/pages/SearchResultsPage.tsx"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.63,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/hooks/useAuth.tsx",
-    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/components/VideoPlayer.tsx",
+    "frontend/src/components/admin/ClipsManagement.tsx",
+    "frontend/src/components/admin/LiveScheduleManagement.tsx",
+    "frontend/src/components/admin/MoviesManagement.tsx",
+    "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/components/admin/VideoManagement.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/LivePage.tsx",
+    "frontend/src/pages/SearchResultsPage.tsx",
     "project_state.json"
   ]
 }

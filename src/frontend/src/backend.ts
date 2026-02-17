@@ -112,6 +112,7 @@ export interface VideoContent {
     isClip: boolean;
     trailerUrl?: ExternalBlob;
     genre?: string;
+    eligibleForLive: boolean;
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
@@ -350,6 +351,7 @@ export interface backendInterface {
     deleteSeries(seriesId: string): Promise<void>;
     deleteVideo(videoId: string): Promise<void>;
     getAdAssignments(): Promise<Array<AdAssignment>>;
+    getAdAssignmentsForLive(_liveChannelId: string): Promise<Array<AdAssignment>>;
     getAdMedia(): Promise<Array<AdMedia>>;
     getAllBrands(): Promise<Array<Brand>>;
     getAllClips(): Promise<Array<VideoContent>>;
@@ -369,6 +371,7 @@ export interface backendInterface {
         series: Array<string>;
         liveChannels: Array<string>;
     }>;
+    getEligibleVideosForLive(): Promise<Array<VideoContent>>;
     getLiveChannels(): Promise<Array<LiveChannel>>;
     getLiveChannelsByBrand(_brandId: string): Promise<Array<LiveChannel>>;
     getSeriesById(seriesId: string): Promise<TVSeries | null>;
@@ -734,6 +737,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n41(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getAdAssignmentsForLive(arg0: string): Promise<Array<AdAssignment>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdAssignmentsForLive(arg0);
+                return from_candid_vec_n41(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdAssignmentsForLive(arg0);
+            return from_candid_vec_n41(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getAdMedia(): Promise<Array<AdMedia>> {
         if (this.processError) {
             try {
@@ -907,6 +924,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getChannelsByBrand(arg0);
             return from_candid_record_n82(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getEligibleVideosForLive(): Promise<Array<VideoContent>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getEligibleVideosForLive();
+                return from_candid_vec_n57(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getEligibleVideosForLive();
+            return from_candid_vec_n57(this._uploadFile, this._downloadFile, result);
         }
     }
     async getLiveChannels(): Promise<Array<LiveChannel>> {
@@ -1518,6 +1549,7 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     isClip: boolean;
     trailerUrl: [] | [_ExternalBlob];
     genre: [] | [string];
+    eligibleForLive: boolean;
     videoUrl: _ExternalBlob;
     roles: [] | [string];
     releaseYear: [] | [bigint];
@@ -1533,6 +1565,7 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     isClip: boolean;
     trailerUrl?: ExternalBlob;
     genre?: string;
+    eligibleForLive: boolean;
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
@@ -1549,6 +1582,7 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
         isClip: value.isClip,
         trailerUrl: record_opt_to_undefined(await from_candid_opt_n53(_uploadFile, _downloadFile, value.trailerUrl)),
         genre: record_opt_to_undefined(from_candid_opt_n44(_uploadFile, _downloadFile, value.genre)),
+        eligibleForLive: value.eligibleForLive,
         videoUrl: await from_candid_ExternalBlob_n49(_uploadFile, _downloadFile, value.videoUrl),
         roles: record_opt_to_undefined(from_candid_opt_n44(_uploadFile, _downloadFile, value.roles)),
         releaseYear: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.releaseYear))
@@ -2229,6 +2263,7 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     isClip: boolean;
     trailerUrl?: ExternalBlob;
     genre?: string;
+    eligibleForLive: boolean;
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
@@ -2244,6 +2279,7 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     isClip: boolean;
     trailerUrl: [] | [_ExternalBlob];
     genre: [] | [string];
+    eligibleForLive: boolean;
     videoUrl: _ExternalBlob;
     roles: [] | [string];
     releaseYear: [] | [bigint];
@@ -2260,6 +2296,7 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
         isClip: value.isClip,
         trailerUrl: value.trailerUrl ? candid_some(await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.trailerUrl)) : candid_none(),
         genre: value.genre ? candid_some(value.genre) : candid_none(),
+        eligibleForLive: value.eligibleForLive,
         videoUrl: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.videoUrl),
         roles: value.roles ? candid_some(value.roles) : candid_none(),
         releaseYear: value.releaseYear ? candid_some(value.releaseYear) : candid_none()

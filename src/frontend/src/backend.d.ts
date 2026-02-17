@@ -37,6 +37,7 @@ export interface VideoContent {
     isClip: boolean;
     trailerUrl?: ExternalBlob;
     genre?: string;
+    eligibleForLive: boolean;
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
@@ -258,6 +259,7 @@ export interface backendInterface {
     deleteSeries(seriesId: string): Promise<void>;
     deleteVideo(videoId: string): Promise<void>;
     getAdAssignments(): Promise<Array<AdAssignment>>;
+    getAdAssignmentsForLive(_liveChannelId: string): Promise<Array<AdAssignment>>;
     getAdMedia(): Promise<Array<AdMedia>>;
     getAllBrands(): Promise<Array<Brand>>;
     getAllClips(): Promise<Array<VideoContent>>;
@@ -277,6 +279,7 @@ export interface backendInterface {
         series: Array<string>;
         liveChannels: Array<string>;
     }>;
+    getEligibleVideosForLive(): Promise<Array<VideoContent>>;
     getLiveChannels(): Promise<Array<LiveChannel>>;
     getLiveChannelsByBrand(_brandId: string): Promise<Array<LiveChannel>>;
     getSeriesById(seriesId: string): Promise<TVSeries | null>;

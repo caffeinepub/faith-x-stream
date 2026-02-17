@@ -1,12 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 9,
-  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability, add separate admin upload sections by content type, and evolve the UX to be more like Pluto TV (FAST/live channels + guide-style browsing).",
+  "projectStateVersion": 11,
+  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; add admin upload option to mark content as Live-eligible vs standalone VOD.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
     "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic.",
     "Explore Pluto TV-like FAST model: channel entities + scheduled programming (EPG) and guide-based navigation layered on top of existing VOD content.",
-    "Live TV VOD scheduling relies on program duration derived from VOD asset length; playback must not reset to 0 on program transitions or scheduler ticks."
+    "Live TV VOD scheduling relies on program duration derived from VOD asset length; playback must not reset to 0 on program transitions or scheduler ticks.",
+    "Live TV playback should disable forward seeking/scrubbing while preserving linear schedule-based playback behavior.",
+    "Ad system should support server/client-defined scheduled insertion points and enforce unskippable playback during ads for guest and authenticated users.",
+    "Video/content entities should include a flag/field indicating Live-eligible vs VOD-only to control scheduling into channels and admin upload behavior."
   ],
   "known_issues": [
     "Autoplay is freezing and not playing.",
@@ -15,7 +18,7 @@
     "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule.",
     "Users are unable to log in at all (login/authentication appears broken)."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-fix-the-videoplayer-autoplay-ad-playback-logic-so-autoplay-no-longer-freezes-and-playback-reliably-starts-scope-ensure-autoplay-can-start-muted-to-comply-with-browser-policies-and-does-not-get-stuck-in-a-paused-frozen-state-fix-ad-switching-so-that-when-an-ad-ends-the-player-returns-to-the-correct-main-content-timestamp-store-and-restore-a-dedicated-contenttimebeforead-instead-of-using-the-ad-s-currenttime-ensure-duration-currenttime-state-used-for-midroll-scheduling-is-based-on-the-main-content-not-overwritten-by-ad-playback-ensure-live-tv-playback-islivetv-true-does-not-trigger-preroll-midroll-ad-behavior-that-breaks-playback",
@@ -120,6 +123,38 @@
         "REQ-16"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-prevent-users-from-seeking-forward-during-live-tv-playback-only-regular-and-guest-users-while-keeping-normal-seeking-behavior-for-non-live-vod-playback",
+      "title": "Prevent users from seeking forward during Live TV playback only (regular and guest users), while keeping normal seeking behavior for non-Live (VOD) playback.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-live-tv-ad-breaks-that-auto-insert-at-scheduled-timestamps-during-the-currently-airing-program-and-make-those-ads-unskippable-no-seeking-scrubbing-skip-forward-for-regular-and-guest-users",
+      "title": "Implement Live TV ad breaks that auto-insert at scheduled timestamps during the currently airing program, and make those ads unskippable (no seeking/scrubbing/skip-forward) for regular and guest users.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-selectable-flag-on-uploaded-edited-videos-to-mark-whether-the-content-is-eligible-to-be-scheduled-into-live-tv-channels-versus-being-standalone-vod-only-and-enforce-that-eligibility-in-live-scheduling-ui",
+      "title": "Add an admin-selectable flag on uploaded/edited videos to mark whether the content is eligible to be scheduled into Live TV channels versus being standalone VOD-only, and enforce that eligibility in Live scheduling UI.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-allow-admins-to-configure-scheduled-ad-break-timestamps-for-live-tv-programs-in-the-live-schedule-so-that-scheduled-timestamps-can-be-managed-without-code-changes",
+      "title": "Allow admins to configure scheduled ad break timestamps for Live TV programs in the Live schedule so that scheduled timestamps can be managed without code changes.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -193,6 +228,24 @@
       "reqIds": [
         "REQ-13"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Disable seeking forward on Live TV channel playback (restrict scrubbing/forward seeking for Live streams/programs)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Support scheduled ad insertion that auto-plays at configured timestamps and is unskippable for regular and guest users",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Admin upload: allow selecting whether content is Live-eligible (can be scheduled into channels) vs standalone VOD-only content",
+      "reqIds": [],
       "status": "pending"
     }
   ],

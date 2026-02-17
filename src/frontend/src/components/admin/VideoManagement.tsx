@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Trash2, Upload, Star, Film, Edit } from 'lucide-react';
+import { Trash2, Upload, Star, Film, Edit, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
@@ -24,6 +24,7 @@ export default function VideoManagement() {
   const [contentType, setContentType] = useState<ContentType>(ContentType.faithBased);
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
+  const [eligibleForLive, setEligibleForLive] = useState(false);
   const [roles, setRoles] = useState('');
   const [genre, setGenre] = useState('');
   const [releaseYear, setReleaseYear] = useState('');
@@ -74,6 +75,7 @@ export default function VideoManagement() {
         roles: roles || undefined,
         genre: genre || undefined,
         releaseYear: releaseYear ? BigInt(releaseYear) : undefined,
+        eligibleForLive,
       };
 
       await addVideo.mutateAsync(video);
@@ -85,6 +87,7 @@ export default function VideoManagement() {
       setContentType(ContentType.faithBased);
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(false);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -137,6 +140,7 @@ export default function VideoManagement() {
         contentType,
         isPremium,
         isOriginal,
+        eligibleForLive,
         videoUrl: videoBlob,
         trailerUrl: trailerBlob,
         thumbnailUrl: thumbnailBlob,
@@ -156,6 +160,7 @@ export default function VideoManagement() {
       setContentType(ContentType.faithBased);
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(false);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -175,6 +180,7 @@ export default function VideoManagement() {
     setContentType(video.contentType);
     setIsPremium(video.isPremium);
     setIsOriginal(video.isOriginal);
+    setEligibleForLive(video.eligibleForLive);
     setRoles(video.roles || '');
     setGenre(video.genre || '');
     setReleaseYear(video.releaseYear ? String(video.releaseYear) : '');
@@ -331,7 +337,7 @@ export default function VideoManagement() {
               </p>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="isPremium"
@@ -350,6 +356,18 @@ export default function VideoManagement() {
                 <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>
@@ -406,6 +424,11 @@ export default function VideoManagement() {
                           <Film className="h-4 w-4 text-primary" />
                         </span>
                       )}
+                      {video.eligibleForLive && (
+                        <span title="Eligible for Live TV">
+                          <Radio className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground">{video.description}</p>
                     <div className="flex gap-2 mt-1">
@@ -415,6 +438,9 @@ export default function VideoManagement() {
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                         {video.contentType}
                       </span>
+                      {video.eligibleForLive && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -498,7 +524,6 @@ export default function VideoManagement() {
                   id="edit-roles"
                   value={roles}
                   onChange={(e) => setRoles(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
 
@@ -508,7 +533,6 @@ export default function VideoManagement() {
                   id="edit-genre"
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
 
@@ -519,7 +543,6 @@ export default function VideoManagement() {
                   type="number"
                   value={releaseYear}
                   onChange={(e) => setReleaseYear(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
             </div>
@@ -556,7 +579,7 @@ export default function VideoManagement() {
               />
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isPremium"
@@ -575,6 +598,18 @@ export default function VideoManagement() {
                 <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="edit-eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="edit-eligibleForLive" className="flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>

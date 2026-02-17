@@ -8,36 +8,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Edit, Film } from 'lucide-react';
+import { Trash2, Upload, Star, Film, Edit, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
-import { isMovieOrFilm } from '../../utils/contentType';
+import { getContentTypeLabel } from '../../utils/contentType';
 
 export default function MoviesManagement() {
-  const { data: allVideos, isLoading } = useGetAllVideos();
+  const { data: videos, isLoading } = useGetAllVideos();
   const addVideo = useAddVideo();
   const updateVideo = useUpdateVideo();
   const deleteVideo = useDeleteVideo();
-
-  // Filter only movies/films
-  const movies = allVideos?.filter((v) => !v.isClip && isMovieOrFilm(v.contentType)) || [];
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState<ContentType>(ContentType.movie);
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [trailerFile, setTrailerFile] = useState<File | null>(null);
+  const [eligibleForLive, setEligibleForLive] = useState(false);
   const [roles, setRoles] = useState('');
   const [genre, setGenre] = useState('');
   const [releaseYear, setReleaseYear] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [trailerFile, setTrailerFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Edit state
   const [editingVideo, setEditingVideo] = useState<VideoContent | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const movieVideos = videos?.filter(v => 
+    !v.isClip && (v.contentType === ContentType.movie || v.contentType === ContentType.film)
+  ) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +58,7 @@ export default function MoviesManagement() {
       });
       const thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes);
 
-      let trailerBlob: ExternalBlob | undefined;
+      let trailerBlob: ExternalBlob | undefined = undefined;
       if (trailerFile) {
         const trailerBytes = new Uint8Array(await trailerFile.arrayBuffer());
         trailerBlob = ExternalBlob.fromBytes(trailerBytes);
@@ -70,36 +73,35 @@ export default function MoviesManagement() {
         isOriginal,
         isClip: false,
         videoUrl: videoBlob,
-        thumbnailUrl: thumbnailBlob,
         trailerUrl: trailerBlob,
+        thumbnailUrl: thumbnailBlob,
         roles: roles || undefined,
         genre: genre || undefined,
         releaseYear: releaseYear ? BigInt(releaseYear) : undefined,
+        eligibleForLive,
       };
 
       await addVideo.mutateAsync(video);
       toast.success('Movie uploaded successfully!');
       
-      resetForm();
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setContentType(ContentType.movie);
+      setIsPremium(false);
+      setIsOriginal(false);
+      setEligibleForLive(false);
+      setRoles('');
+      setGenre('');
+      setReleaseYear('');
+      setVideoFile(null);
+      setTrailerFile(null);
+      setThumbnailFile(null);
+      setUploadProgress(0);
     } catch (error) {
       toast.error('Failed to upload movie');
       console.error(error);
     }
-  };
-
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setContentType(ContentType.movie);
-    setIsPremium(false);
-    setIsOriginal(false);
-    setVideoFile(null);
-    setThumbnailFile(null);
-    setTrailerFile(null);
-    setRoles('');
-    setGenre('');
-    setReleaseYear('');
-    setUploadProgress(0);
   };
 
   const openEditDialog = (video: VideoContent) => {
@@ -108,12 +110,13 @@ export default function MoviesManagement() {
     setContentType(video.contentType);
     setIsPremium(video.isPremium);
     setIsOriginal(video.isOriginal);
+    setEligibleForLive(video.eligibleForLive);
     setRoles(video.roles || '');
     setGenre(video.genre || '');
-    setReleaseYear(video.releaseYear ? video.releaseYear.toString() : '');
+    setReleaseYear(video.releaseYear ? String(video.releaseYear) : '');
     setVideoFile(null);
-    setThumbnailFile(null);
     setTrailerFile(null);
+    setThumbnailFile(null);
     setEditingVideo(video);
     setEditDialogOpen(true);
   };
@@ -145,16 +148,16 @@ export default function MoviesManagement() {
       }
 
       const updatedVideo: VideoContent = {
-        id: editingVideo.id,
+        ...editingVideo,
         title,
         description,
         contentType,
         isPremium,
         isOriginal,
-        isClip: false,
+        eligibleForLive,
         videoUrl: videoBlob,
-        thumbnailUrl: thumbnailBlob,
         trailerUrl: trailerBlob,
+        thumbnailUrl: thumbnailBlob,
         roles: roles || undefined,
         genre: genre || undefined,
         releaseYear: releaseYear ? BigInt(releaseYear) : undefined,
@@ -165,11 +168,22 @@ export default function MoviesManagement() {
       
       setEditDialogOpen(false);
       setEditingVideo(null);
-      resetForm();
-    } catch (error: any) {
-      const errorMessage = error?.message || String(error) || 'Failed to update movie';
-      toast.error(errorMessage);
-      console.error('Update error:', error);
+      setTitle('');
+      setDescription('');
+      setContentType(ContentType.movie);
+      setIsPremium(false);
+      setIsOriginal(false);
+      setEligibleForLive(false);
+      setRoles('');
+      setGenre('');
+      setReleaseYear('');
+      setVideoFile(null);
+      setTrailerFile(null);
+      setThumbnailFile(null);
+      setUploadProgress(0);
+    } catch (error) {
+      toast.error('Failed to update movie');
+      console.error(error);
     }
   };
 
@@ -194,7 +208,7 @@ export default function MoviesManagement() {
       <Card className="gradient-card border-2 border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Film className="h-5 w-5" />
+            <Upload className="h-5 w-5" />
             Upload New Movie
           </CardTitle>
         </CardHeader>
@@ -240,43 +254,43 @@ export default function MoviesManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="roles">Cast/Roles</Label>
+                <Label htmlFor="roles">Cast/Roles (Optional)</Label>
                 <Input
                   id="roles"
                   value={roles}
                   onChange={(e) => setRoles(e.target.value)}
-                  placeholder="Optional"
+                  placeholder="e.g., John Doe, Jane Smith"
                   className="bg-black/60 border-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="genre">Genre</Label>
+                <Label htmlFor="genre">Genre (Optional)</Label>
                 <Input
                   id="genre"
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
-                  placeholder="Optional"
+                  placeholder="e.g., Drama, Action"
                   className="bg-black/60 border-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="releaseYear">Release Year</Label>
+                <Label htmlFor="releaseYear">Release Year (Optional)</Label>
                 <Input
                   id="releaseYear"
                   type="number"
                   value={releaseYear}
                   onChange={(e) => setReleaseYear(e.target.value)}
-                  placeholder="Optional"
+                  placeholder="e.g., 2024"
                   className="bg-black/60 border-primary/40"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="video">Video File</Label>
+                <Label htmlFor="video">Video File *</Label>
                 <Input
                   id="video"
                   type="file"
@@ -288,7 +302,7 @@ export default function MoviesManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                <Label htmlFor="thumbnail">Thumbnail Image *</Label>
                 <Input
                   id="thumbnail"
                   type="file"
@@ -298,20 +312,23 @@ export default function MoviesManagement() {
                   className="bg-black/60 border-primary/40"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="trailer">Trailer (Optional)</Label>
-                <Input
-                  id="trailer"
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setTrailerFile(e.target.files?.[0] || null)}
-                  className="bg-black/60 border-primary/40"
-                />
-              </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="trailer" className="flex items-center gap-2">
+                <Film className="h-4 w-4" />
+                Trailer Video (Optional)
+              </Label>
+              <Input
+                id="trailer"
+                type="file"
+                accept="video/*"
+                onChange={(e) => setTrailerFile(e.target.files?.[0] || null)}
+                className="bg-black/60 border-primary/40"
+              />
+            </div>
+
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="isPremium"
@@ -330,6 +347,18 @@ export default function MoviesManagement() {
                 <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>
@@ -362,34 +391,47 @@ export default function MoviesManagement() {
 
       <Card className="gradient-card border-2 border-primary/30">
         <CardHeader>
-          <CardTitle>Manage Movies ({movies.length})</CardTitle>
+          <CardTitle>Manage Movies ({movieVideos.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {movies.map((movie) => (
+            {movieVideos.map((video) => (
               <div
-                key={movie.id}
+                key={video.id}
                 className="flex items-center justify-between p-4 rounded-lg bg-black/60 border border-primary/20"
               >
                 <div className="flex items-center gap-4">
                   <img
-                    src={movie.thumbnailUrl.getDirectURL()}
-                    alt={movie.title}
+                    src={video.thumbnailUrl.getDirectURL()}
+                    alt={video.title}
                     className="w-24 h-16 object-cover rounded"
                   />
                   <div>
                     <h3 className="font-semibold flex items-center gap-2">
-                      {movie.title}
-                      {movie.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      {video.title}
+                      {video.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      {video.trailerUrl && (
+                        <span title="Has trailer">
+                          <Film className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
+                      {video.eligibleForLive && (
+                        <span title="Eligible for Live TV">
+                          <Radio className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
                     </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-1">{movie.description}</p>
+                    <p className="text-sm text-muted-foreground">{video.description}</p>
                     <div className="flex gap-2 mt-1">
-                      {movie.isPremium && (
+                      {video.isPremium && (
                         <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">Premium</span>
                       )}
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                        {movie.contentType}
+                        {getContentTypeLabel(video.contentType)}
                       </span>
+                      {video.eligibleForLive && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -397,7 +439,7 @@ export default function MoviesManagement() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => openEditDialog(movie)}
+                    onClick={() => openEditDialog(video)}
                     disabled={updateVideo.isPending}
                   >
                     <Edit className="h-4 w-4" />
@@ -405,7 +447,7 @@ export default function MoviesManagement() {
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => handleDelete(movie.id)}
+                    onClick={() => handleDelete(video.id)}
                     disabled={deleteVideo.isPending}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -413,7 +455,7 @@ export default function MoviesManagement() {
                 </div>
               </div>
             ))}
-            {movies.length === 0 && (
+            {movieVideos.length === 0 && (
               <p className="text-center text-muted-foreground py-8">No movies uploaded yet</p>
             )}
           </div>
@@ -422,7 +464,7 @@ export default function MoviesManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Movie</DialogTitle>
           </DialogHeader>
@@ -470,7 +512,6 @@ export default function MoviesManagement() {
                   id="edit-roles"
                   value={roles}
                   onChange={(e) => setRoles(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
 
@@ -480,7 +521,6 @@ export default function MoviesManagement() {
                   id="edit-genre"
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
 
@@ -491,12 +531,11 @@ export default function MoviesManagement() {
                   type="number"
                   value={releaseYear}
                   onChange={(e) => setReleaseYear(e.target.value)}
-                  placeholder="Optional"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-video">Video File (leave empty to keep current)</Label>
                 <Input
@@ -516,19 +555,19 @@ export default function MoviesManagement() {
                   onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-trailer">Trailer (leave empty to keep current)</Label>
-                <Input
-                  id="edit-trailer"
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setTrailerFile(e.target.files?.[0] || null)}
-                />
-              </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="edit-trailer">Trailer (leave empty to keep current)</Label>
+              <Input
+                id="edit-trailer"
+                type="file"
+                accept="video/*"
+                onChange={(e) => setTrailerFile(e.target.files?.[0] || null)}
+              />
+            </div>
+
+            <div className="flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isPremium"
@@ -547,6 +586,18 @@ export default function MoviesManagement() {
                 <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="edit-eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={setEligibleForLive}
+                />
+                <Label htmlFor="edit-eligibleForLive" className="flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV
                 </Label>
               </div>
             </div>

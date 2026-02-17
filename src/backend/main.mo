@@ -10,8 +10,11 @@ import OutCall "http-outcalls/outcall";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import Migration "migration";
+import Bool "mo:core/Bool";
+import Array "mo:core/Array";
 
 // Set migration to run on upgrade
+
 (with migration = Migration.run)
 actor {
   public type ContentType = {
@@ -42,6 +45,7 @@ actor {
     roles : ?Text;
     genre : ?Text;
     releaseYear : ?Nat;
+    eligibleForLive : Bool;
   };
 
   public type TVSeries = {
@@ -233,6 +237,16 @@ actor {
   var adImpressions = 0;
 
   include MixinStorage();
+
+  public query func getAdAssignmentsForLive(_liveChannelId : Text) : async [AdAssignment] {
+    let filteredAssignments = adAssignments.filter(
+      func(_id, assignment) {
+        assignment.scope == "live" and Bool.equal(assignment.showOnFreeOnly, false)
+      }
+    );
+
+    filteredAssignments.values().toArray();
+  };
 
   // ===== ACCESS CONTROL FUNCTIONS =====
 
@@ -511,6 +525,17 @@ actor {
 
   public query func getAllSeries() : async [TVSeries] {
     series.values().toArray();
+  };
+
+  // ===== GET VIDEOS ELIGIBLE FOR LIVE TV (ADMIN ONLY) =====
+
+  public query ({ caller }) func getEligibleVideosForLive() : async [VideoContent] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view eligible videos for Live TV scheduling");
+    };
+    videos.values().toArray().filter(
+      func(v) { v.eligibleForLive }
+    );
   };
 
   // ===== STRIPE CONFIGURATION (ADMIN ONLY) =====

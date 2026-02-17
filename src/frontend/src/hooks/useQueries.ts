@@ -119,6 +119,27 @@ export function useGetAllClips() {
   });
 }
 
+// Get Live-eligible videos (Admin only)
+export function useGetEligibleVideosForLive() {
+  const { actor, isFetching } = useActor();
+  const { isAuthenticated, authStatus } = useAuth();
+
+  return useQuery<VideoContent[]>({
+    queryKey: ['eligibleVideosForLive'],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await actor.getEligibleVideosForLive();
+      } catch (error) {
+        console.error('Failed to fetch eligible videos for Live TV:', error);
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching && isAuthenticated && authStatus !== 'initializing',
+    staleTime: 30000,
+  });
+}
+
 export function useAddVideo() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -131,6 +152,7 @@ export function useAddVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
       queryClient.invalidateQueries({ queryKey: ['clips'] });
+      queryClient.invalidateQueries({ queryKey: ['eligibleVideosForLive'] });
     },
   });
 }
@@ -147,6 +169,7 @@ export function useUpdateVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
       queryClient.invalidateQueries({ queryKey: ['clips'] });
+      queryClient.invalidateQueries({ queryKey: ['eligibleVideosForLive'] });
     },
   });
 }
@@ -163,6 +186,7 @@ export function useDeleteVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
       queryClient.invalidateQueries({ queryKey: ['clips'] });
+      queryClient.invalidateQueries({ queryKey: ['eligibleVideosForLive'] });
     },
   });
 }
