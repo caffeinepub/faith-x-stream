@@ -1,15 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability, and add separate admin upload sections by content type.",
+  "projectStateVersion": 7,
+  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability, add separate admin upload sections by content type, and evolve the UX to be more like Pluto TV (FAST/live channels + guide-style browsing).",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
-    "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic."
+    "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic.",
+    "Explore Pluto TV-like FAST model: channel entities + scheduled programming (EPG) and guide-based navigation layered on top of existing VOD content.",
+    "Live TV VOD scheduling relies on program duration derived from VOD asset length; playback must not reset to 0 on program transitions or scheduler ticks."
   ],
   "known_issues": [
     "Autoplay is freezing and not playing.",
     "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
-    "Updating videos fails with 'Failed to update'."
+    "Updating videos fails with 'Failed to update'.",
+    "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -42,6 +45,46 @@
       "title": "Restructure the Admin Panel to include separate upload/management sections for Movies, TV Shows, Podcasts, Clips, and Live TV, while keeping existing Brands/Channels/Ads sections.\n\nScope:\n- AdminPage tabs must include distinct entries for:\n  - Movies upload/management\n  - TV Shows upload/management (use existing SeriesManagement)\n  - Podcasts upload/management\n  - Clips upload/management (existing ClipsManagement)\n  - Live TV upload/management (existing LiveScheduleManagement and/or existing live channel management as appropriate)\n  - Brands, Channels, Ads, Analytics, Stripe (keep existing)\n- Implement Movies and Podcasts management UIs as separate panels (new components) that reuse existing video upload/edit functionality but:\n  - Default contentType appropriately (Movie/Podcast)\n  - Filter the “Manage” list to only show items of that category\n  - Ensure edit/update preserves category and allows changing it when needed",
       "reqIds": [
         "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-pluto-tv-like-guide-experience-for-live-tv-by-enhancing-the-existing-live-page-with-a-tv-guide-style-schedule-view-epg-grid-that-lets-users-browse-channels-and-time-slots-while-keeping-playback-available",
+      "title": "Add a Pluto-TV-like guide experience for Live TV by enhancing the existing Live page with a TV guide-style schedule view (EPG grid) that lets users browse channels and time slots while keeping playback available.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-pluto-tv-like-channel-surfing-behavior-on-the-live-page-allow-fast-channel-switching-show-now-next-metadata-and-persist-the-last-selected-channel-across-page-reloads-within-the-same-browser-session",
+      "title": "Implement Pluto-TV-like channel surfing behavior on the Live page: allow fast channel switching, show 'Now/Next' metadata, and persist the last selected channel across page reloads within the same browser session.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-global-navigation-to-better-match-a-pluto-tv-like-fast-product-by-adding-an-explicit-entry-point-for-the-live-guide-experience-and-ensuring-it-works-on-both-desktop-and-mobile-navigation",
+      "title": "Update global navigation to better match a Pluto-TV-like FAST product by adding an explicit entry point for the Live Guide experience and ensuring it works on both desktop and mobile navigation.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-livepage-scheduled-vod-playback-so-it-does-not-restart-the-currently-airing-program-from-the-beginning-every-few-seconds-on-all-channels",
+      "title": "Fix LivePage scheduled VOD playback so it does not restart the currently airing program from the beginning every few seconds on all channels.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-align-livepage-playback-position-with-the-channel-schedule-by-seeking-into-the-current-program-based-on-the-computed-position-in-loop-so-playback-reflects-where-the-program-should-be-at-the-current-time-instead-of-always-starting-at-0",
+      "title": "Align LivePage playback position with the channel schedule by seeking into the current program based on the computed position-in-loop, so playback reflects where the program should be at the current time (instead of always starting at 0).",
+      "reqIds": [
+        "REQ-11"
       ],
       "version": 1
     }
@@ -92,6 +135,18 @@
         "REQ-6"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Make the app UX more like Pluto TV (FAST/live channel experience with guide-style browsing and curated channel rails)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Fix Live TV VOD-scheduled channels restarting after a few seconds (playback loops to start instead of continuing through scheduled programming)",
+      "reqIds": [],
+      "status": "in_progress"
     }
   ],
   "gameProjectType": "none",

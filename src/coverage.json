@@ -1,123 +1,53 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T12:03:53.624Z",
+  "generatedAt": "2026-02-17T20:07:31.910Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 4,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Fix the VideoPlayer autoplay/ad playback logic so autoplay no longer freezes and playback reliably starts.\n\nScope:\n- Ensure autoplay can start muted (to comply with browser policies) and does not get stuck in a paused/frozen state.\n- Fix ad switching so that when an ad ends, the player returns to the correct main-content timestamp (store and restore a dedicated “contentTimeBeforeAd” instead of using the ad’s currentTime).\n- Ensure duration/currentTime state used for midroll scheduling is based on the main content, not overwritten by ad playback.\n- Ensure Live TV playback (isLiveTV=true) does not trigger preroll/midroll ad behavior that breaks playback.",
+        "id": "REQ-10",
+        "summary": "Fix LivePage scheduled VOD playback so it does not restart the currently airing program from the beginning every few seconds on all channels.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/VideoPlayer.tsx",
-          "frontend/src/pages/LivePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/VideoPlayer.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Implement preview playback behavior for featured/autoplay use cases: when a trailer exists, use it for preview; otherwise use the first 30–60 seconds of the main video as a preview without breaking subsequent playback.\n\nScope:\n- When trailerUrl is available for a video, preview/autoplay uses trailerUrl.\n- When trailerUrl is not available, preview/autoplay uses the main videoUrl but stops preview after 30–60 seconds and triggers the existing onAutoplayComplete callback (if provided) to allow the UI to transition cleanly.\n- Ensure preview playback does not interfere with later full playback of the same content (i.e., state resets cleanly).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/VideoPlayer.tsx",
-          "frontend/src/components/HeroSection.tsx",
-          "frontend/src/pages/HomePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/VideoPlayer.tsx",
-          "frontend/src/components/HeroSection.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Add content-type classification that can distinguish Movies/Films vs Podcasts and expose it consistently across admin upload/edit flows.\n\nScope:\n- Backend: extend ContentType to include Podcast and Movie (while retaining existing Film).\n- Frontend: update all ContentType selectors (upload + edit) to include Movie, Film, and Podcast options in addition to existing options.\n- Ensure VideoCard/content labels and filters that rely on ContentType continue to work with the expanded enum.\n- Add conditional migration logic if required due to enum changes in persisted data.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/contentType.ts",
-          "frontend/src/components/admin/VideoManagement.tsx",
-          "frontend/src/components/admin/ClipsManagement.tsx",
-          "frontend/src/components/admin/SeriesManagement.tsx",
-          "frontend/src/components/VideoCard.tsx",
-          "frontend/src/pages/MoviesPage.tsx",
-          "frontend/src/pages/OriginalsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/contentType.ts"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Restructure the Admin Panel to include separate upload/management sections for Movies, TV Shows, Podcasts, Clips, and Live TV, while keeping existing Brands/Channels/Ads sections.\n\nScope:\n- AdminPage tabs must include distinct entries for:\n  - Movies upload/management\n  - TV Shows upload/management (use existing SeriesManagement)\n  - Podcasts upload/management\n  - Clips upload/management (existing ClipsManagement)\n  - Live TV upload/management (existing LiveScheduleManagement and/or existing live channel management as appropriate)\n  - Brands, Channels, Ads, Analytics, Stripe (keep existing)\n- Implement Movies and Podcasts management UIs as separate panels (new components) that reuse existing video upload/edit functionality but:\n  - Default contentType appropriately (Movie/Podcast)\n  - Filter the “Manage” list to only show items of that category\n  - Ensure edit/update preserves category and allows changing it when needed",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/MoviesManagement.tsx",
-          "frontend/src/components/admin/PodcastsManagement.tsx",
-          "frontend/src/components/admin/VideoManagement.tsx",
-          "frontend/src/pages/AdminPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/MoviesManagement.tsx",
-          "frontend/src/components/admin/PodcastsManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Fix the video update/edit flow so it no longer fails with a generic “Failed to update”, and provide actionable error details.\n\nScope:\n- Ensure the edit dialog’s form state is correctly populated from the selected video and remains consistent through update submission.\n- Ensure update payloads sent to updateVideo conform to the backend VideoContent type (including optional fields).\n- Improve mutation error handling to surface the actual error message (when available) in the UI toast instead of only “Failed to update”.\n- Confirm update invalidates and refreshes the correct React Query caches so the admin list reflects changes immediately.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/admin/VideoManagement.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Stabilize and fix UI issues on the following pages/sections so they render reliably and do not appear “bugged”: Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.\n\nScope:\n- Ensure these pages do not break when actor/auth state is still initializing (avoid rendering incorrect states due to undefined query results).\n- Ensure each page has a clear loading/empty/error state and does not incorrectly show “Access Denied” or redirect loops due to queries being disabled during initialization.\n- Specifically validate LivePage, OriginalsPage, ProfilePage, and AdminPage flows with anonymous, authenticated non-admin, and authenticated admin sessions.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/pages/ProfilePage.tsx",
           "frontend/src/pages/LivePage.tsx",
-          "frontend/src/pages/OriginalsPage.tsx"
+          "frontend/src/utils/epg.ts"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/pages/LivePage.tsx",
+          "frontend/src/utils/epg.ts"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Align LivePage playback position with the channel schedule by seeking into the current program based on the computed position-in-loop, so playback reflects where the program should be at the current time (instead of always starting at 0).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/VideoPlayer.tsx",
+          "frontend/src/pages/LivePage.tsx",
+          "frontend/src/utils/epg.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/VideoPlayer.tsx",
+          "frontend/src/pages/LivePage.tsx",
+          "frontend/src/utils/epg.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
-    "build-template/Dockerfile",
-    "build-template/LICENSE",
-    "build-template/README.md",
-    "build-template/deploy.sh",
-    "build-template/icp.yaml",
-    "build-template/src/backend/canister.yaml",
-    "build-template/src/frontend/canister.yaml",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/HeroSection.tsx",
     "frontend/src/components/VideoPlayer.tsx",
-    "frontend/src/components/admin/MoviesManagement.tsx",
-    "frontend/src/components/admin/PodcastsManagement.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useInternetIdentity.ts",
-    "frontend/src/utils/contentType.ts",
+    "frontend/src/pages/LivePage.tsx",
+    "frontend/src/utils/epg.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

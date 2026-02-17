@@ -1,189 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stabilize VideoPlayer autoplay/ads, add preview playback, improve admin content-type management, and harden key pages",
+  "title": "Live TV scheduled VOD playback restart + schedule-synced seeking fix",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Fix VideoPlayer autoplay, ad switching, midroll scheduling state isolation, and Live TV ad bypass to prevent freezes.",
+      "id": "REQ-10",
+      "summary": "Prevent LivePage polling updates from resetting/remounting the live scheduled VOD player while the same program remains current.",
       "acceptanceCriteria": [
-        "On pages that use VideoPlayer with autoplay=true (e.g., Live TV), video begins playing automatically (muted if necessary) without freezing.",
-        "When an ad plays and ends, the main video resumes at the correct pre-ad playback time (not the ad timestamp).",
-        "Midroll logic does not repeatedly trigger or break playback due to duration/currentTime switching between ad and content.",
-        "No uncaught promise rejections or console errors occur during autoplay/ad transitions in normal use."
+        "When watching any VOD-scheduled live channel, the video continues playing past the first few seconds and does not restart from 0 unless the schedule program actually changes.",
+        "The LivePage polling/update loop does not cause the VideoPlayer component to remount (or otherwise reset src/currentTime) while the same scheduled program is still current.",
+        "Switching channels still starts playback of the newly selected channel’s current program."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LivePage.tsx",
+          "operation": "modify",
+          "description": "Change the schedule polling/update loop to only update state (and only change the VideoPlayer key / identity) when the computed current scheduled content actually changes (e.g., contentId or program-instance start). Keep current program updates stable across polls to avoid resetting video src/currentTime. Ensure channel switching still forces a new program selection and starts playback for the selected channel."
+        },
+        {
+          "path": "frontend/src/utils/epg.ts",
+          "operation": "modify",
+          "description": "Add/adjust a shared helper that, given a channel schedule and a timestamp, determines the current scheduled item and its position within the looping schedule (including the computed offset into the current item). Use this helper from LivePage so polling comparisons are consistent and do not trigger unnecessary re-renders."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Seek into the currently airing scheduled VOD program based on schedule-derived offset, without affecting non-live VOD playback behavior.",
+      "acceptanceCriteria": [
+        "On entering LivePage (or switching channels), playback starts at the correct offset within the scheduled VOD program for the current time.",
+        "When the schedule rolls over to the next program, playback switches to the next program and starts at the correct offset (typically near 0 at program start).",
+        "The schedule-aligned seeking does not break non-live usage of VideoPlayer (VOD pages continue to start at 0 unless otherwise intended)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/VideoPlayer.tsx",
           "operation": "modify",
-          "description": "Refactor playback state to track main-content time/duration separately from ad playback; add a dedicated contentTimeBeforeAd snapshot that is stored before switching to an ad and restored when returning to main content; ensure midroll scheduling reads only main-content time/duration and is disabled for isLiveTV=true; harden autoplay to start muted, handle play() promise rejections safely, and avoid stuck paused/frozen state during autoplay/ad transitions."
+          "description": "Extend VideoPlayer with an optional Live TV schedule-seek capability (props such as an initial seek seconds and a seek token/version). When isLiveTV is enabled and a new seek token is received (e.g., on channel switch or program change), seek the underlying <video> to the provided offset after metadata is available, without reloading the source if unchanged. Ensure default/non-live usage remains unchanged (no seeking unless explicitly requested)."
         },
         {
           "path": "frontend/src/pages/LivePage.tsx",
           "operation": "modify",
-          "description": "Confirm Live TV usage of VideoPlayer passes isLiveTV=true and relies on updated autoplay behavior; ensure LivePage renders stable loading/empty states around player and channel list while queries are resolving."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add preview autoplay behavior using trailer when available, otherwise time-limited main-video preview that cleanly completes without affecting later playback.",
-      "acceptanceCriteria": [
-        "For a video with a trailerUrl, preview autoplay plays the trailer source.",
-        "For a video without a trailerUrl, preview autoplay plays the main video and stops after 30–60 seconds, calling onAutoplayComplete when provided.",
-        "After preview completes, starting full playback of the content works normally (no stuck muted state, no incorrect currentTime)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Implement a preview/autoplay mode (driven by existing props such as autoplay + onAutoplayComplete, and an added optional trailerUrl/previewSeconds input) that selects trailer source when available; otherwise plays the main source, stops after a configurable 30–60 seconds, calls onAutoplayComplete (if provided), and resets internal state (muted/autoplay flags, played markers, timers) so later full playback is unaffected."
+          "description": "Compute the schedule-aligned playback offset for the currently airing scheduled item (using the looping schedule math), and pass it into VideoPlayer along with a token that changes only when the channel changes or the current scheduled content changes. Ensure rollover to the next program updates the videoUrl and seek offset appropriately."
         },
         {
-          "path": "frontend/src/components/HeroSection.tsx",
+          "path": "frontend/src/utils/epg.ts",
           "operation": "modify",
-          "description": "Wire featured/preview playback to VideoPlayer by passing trailerUrl when present (using ExternalBlob.getDirectURL() where applicable) and providing onAutoplayComplete to allow the UI to transition after the preview completes."
-        },
-        {
-          "path": "frontend/src/pages/HomePage.tsx",
-          "operation": "modify",
-          "description": "Ensure any featured/autoplay preview instances that render VideoPlayer are updated to use the new preview behavior (trailer-first, otherwise time-limited main video) and respond to onAutoplayComplete for clean slideshow/hero transitions."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Expose Movie/Film/Podcast content type consistently across admin upload/edit selectors and user-facing labels/filters.",
-      "acceptanceCriteria": [
-        "Backend exposes ContentType variants that include Movie and Podcast without breaking canister compilation.",
-        "Frontend admin content-type dropdowns include Movie, Film, and Podcast and persist the chosen value successfully.",
-        "Existing content continues to load; any previously stored items retain a valid ContentType (no runtime traps due to unknown variants)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/contentType.ts",
-          "operation": "create",
-          "description": "Add a small content-type helper module to centralize display labels and category matching (e.g., treating Movie/Film equivalently where needed) so UI filters and labels remain consistent as ContentType expands."
-        },
-        {
-          "path": "frontend/src/components/admin/VideoManagement.tsx",
-          "operation": "modify",
-          "description": "Update admin content-type selectors to include Movie, Film, and Podcast options in addition to existing options; ensure edit/update preserves and can change contentType, and defaults remain appropriate for the generic videos section."
-        },
-        {
-          "path": "frontend/src/components/admin/ClipsManagement.tsx",
-          "operation": "modify",
-          "description": "Update any content-type selector(s) or content-type rendering in ClipsManagement to include Movie, Film, and Podcast when applicable, using shared helpers from frontend/src/utils/contentType.ts."
-        },
-        {
-          "path": "frontend/src/components/admin/SeriesManagement.tsx",
-          "operation": "modify",
-          "description": "Update any content-type selector(s) used for episodes/series metadata (if present) so Movie, Film, and Podcast variants are handled safely in UI rendering and persisted values (even if not commonly selected for series)."
-        },
-        {
-          "path": "frontend/src/components/VideoCard.tsx",
-          "operation": "modify",
-          "description": "Update content-type labels to render Movie/Film/Podcast consistently (via frontend/src/utils/contentType.ts) so cards show correct categories without breaking existing variants."
-        },
-        {
-          "path": "frontend/src/pages/MoviesPage.tsx",
-          "operation": "modify",
-          "description": "Adjust MoviesPage filtering/grouping logic to include Movie and Film in the movies listing (and exclude Podcast), using the shared helpers to keep behavior consistent."
-        },
-        {
-          "path": "frontend/src/pages/OriginalsPage.tsx",
-          "operation": "modify",
-          "description": "Update OriginalsPage category filters so Movie and Film originals are included in the appropriate grouping, and podcasts are handled consistently (either in their own grouping if present or excluded from film-only group), using frontend/src/utils/contentType.ts."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Restructure Admin Panel to add dedicated Movies and Podcasts sections and separate management tabs while preserving existing sections.",
-      "acceptanceCriteria": [
-        "Admin panel shows separate tabs/sections for Movies, TV Shows, Podcasts, Clips, and Live TV.",
-        "Movies section only lists movie/film-type items (per implemented mapping) and can upload/edit/delete successfully.",
-        "Podcasts section only lists podcast-type items and can upload/edit/delete successfully.",
-        "Existing admin sections (Brands/Channels/Ads/Analytics/Stripe) still render and function."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/MoviesManagement.tsx",
-          "operation": "create",
-          "description": "Create a MoviesManagement admin panel that reuses the existing video upload/edit functionality while defaulting contentType to Movie (and allowing Film) and filtering the manage list to movie/film-type items."
-        },
-        {
-          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
-          "operation": "create",
-          "description": "Create a PodcastsManagement admin panel that reuses the existing video upload/edit functionality while defaulting contentType to Podcast and filtering the manage list to podcast-type items."
-        },
-        {
-          "path": "frontend/src/components/admin/VideoManagement.tsx",
-          "operation": "modify",
-          "description": "Refactor VideoManagement to support reuse by MoviesManagement/PodcastsManagement (e.g., extract a shared internal component or accept configuration props for default contentType and list filtering) while retaining the existing generic videos section behavior."
-        },
-        {
-          "path": "frontend/src/pages/AdminPage.tsx",
-          "operation": "modify",
-          "description": "Update AdminPage tabs to include distinct entries for Movies, TV Shows (existing SeriesManagement), Podcasts, Clips (existing ClipsManagement), and Live TV (existing LiveScheduleManagement), while keeping Brands/Channels/Ads/Analytics/Stripe; wire MoviesManagement and PodcastsManagement into their respective TabsContent to avoid orphan panels."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Repair admin video update flow by fixing edit form state, aligning update payloads with VideoContent type, improving error messaging, and ensuring cache refresh.",
-      "acceptanceCriteria": [
-        "Editing an existing video and saving updates succeeds and the list updates immediately to reflect the change.",
-        "If an update fails, the toast displays a specific error message (when available) rather than only a generic message.",
-        "No runtime type errors occur when updating optional fields (roles/genre/releaseYear/trailerUrl)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/VideoManagement.tsx",
-          "operation": "modify",
-          "description": "Separate create vs edit form state so the edit dialog always populates from the selected video and remains stable through submission; ensure update payload strictly conforms to VideoContent including optional fields (omit empty strings as undefined, preserve isClip/id/videoUrl/thumbnailUrl/trailerUrl correctly); improve error handling to surface real error details in the toast (prefer error.message / stringified backend error) instead of only 'Failed to update'."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Improve updateVideo mutation cache invalidation to refresh any relevant React Query caches used by admin lists and detail views (e.g., videos, clips, and any per-video cache keys if present) so edits reflect immediately; preserve existing behavior for other queries."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Stabilize Live, Originals, Profile, and Admin pages with correct loading/empty/error states during auth/actor initialization to avoid bugged UI and incorrect access denial.",
-      "acceptanceCriteria": [
-        "Live page renders consistently (channels list and player area), even while queries are loading; no broken layout or blank states without messaging.",
-        "Originals page loads and filters originals without crashing, and shows appropriate empty states when no originals exist.",
-        "Profile page does not get stuck in redirect loops and shows loading skeletons only while appropriate data is loading.",
-        "Admin page does not incorrectly show Access Denied solely because admin/auth queries are disabled during initialization; it shows an appropriate loading or login-required state until admin status is known."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Align admin/profile query hooks loading semantics with actor/auth initialization so pages can reliably distinguish 'still initializing' vs 'not authorized' vs 'loaded'; ensure hooks expose an isLoading state that accounts for disabled queries during auth initialization rather than returning misleading non-loading states."
-        },
-        {
-          "path": "frontend/src/pages/AdminPage.tsx",
-          "operation": "modify",
-          "description": "Update AdminPage gating to avoid showing 'Access Denied' when auth/admin status is not yet known (e.g., during authStatus initializing or when queries are disabled); add a login-required or initializing state until admin status is fetched, then show Access Denied only when confirmed non-admin."
-        },
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "modify",
-          "description": "Prevent redirect loops by delaying unauthenticated redirects until authentication state is fully initialized; ensure clear loading/empty states when profile/watch history data is still resolving and avoid rendering bugged intermediate states."
-        },
-        {
-          "path": "frontend/src/pages/LivePage.tsx",
-          "operation": "modify",
-          "description": "Harden LivePage against transient undefined query data by ensuring stable loading/empty/error UI for channels/program selection and preventing blank/broken player layout while data is resolving."
-        },
-        {
-          "path": "frontend/src/pages/OriginalsPage.tsx",
-          "operation": "modify",
-          "description": "Ensure OriginalsPage remains stable with consistent empty states and robust filtering when videos/series arrays are empty or still resolving, and incorporate expanded content type handling without crashes."
+          "description": "Support schedule-aligned seeking by returning a precise offset (milliseconds/seconds) into the current scheduled program instance, suitable for clamping to the video duration on the player side."
         }
       ]
     }

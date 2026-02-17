@@ -1,4 +1,4 @@
-import Migration "migration";
+
 import AccessControl "authorization/access-control";
 import Stripe "stripe/stripe";
 import OutCall "http-outcalls/outcall";
@@ -12,7 +12,7 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
 // Apply migration on upgrade via "with ... " syntax
-(with migration = Migration.run)
+
 actor {
   public type ContentType = {
     #documentary;

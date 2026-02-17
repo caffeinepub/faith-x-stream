@@ -15,6 +15,8 @@ interface VideoPlayerProps {
   isPremiumContent?: boolean;
   trailerUrl?: string;
   previewSeconds?: number;
+  liveSeekSeconds?: number;
+  liveSeekToken?: number;
 }
 
 export default function VideoPlayer({ 
@@ -28,6 +30,8 @@ export default function VideoPlayer({
   isPremiumContent = false,
   trailerUrl,
   previewSeconds = 45,
+  liveSeekSeconds = 0,
+  liveSeekToken = 0,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,6 +50,8 @@ export default function VideoPlayer({
   const [playedMidrollMarkers, setPlayedMidrollMarkers] = useState<Set<number>>(new Set());
   const [quality, setQuality] = useState<'auto' | 'hd' | '4k'>('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const lastSeekTokenRef = useRef<number>(-1);
+  const hasPerformedInitialSeekRef = useRef(false);
   
   // State for tracking main content time separately from ad time
   const [contentTimeBeforeAd, setContentTimeBeforeAd] = useState(0);
@@ -136,23 +142,55 @@ export default function VideoPlayer({
     }
   }, [userInteracted, isMuted, autoplay, isPreviewMode, videoUrl]);
 
-  // Midroll ad scheduling - only for main content, not for Live TV
+  // Live TV schedule-aligned seeking
   useEffect(() => {
-    if (isPlayingAd || isPremiumUser || ads.length === 0 || !duration || isLiveTV || isPreviewMode) return;
-
     const video = videoRef.current;
-    if (!video) return;
-
-    const midrollPosition = duration / 2;
+    if (!video || !isLiveTV) return;
     
-    if (currentTime >= midrollPosition && !playedMidrollMarkers.has(midrollPosition)) {
-      const midrollAds = ads.filter((_, index) => index > 0);
-      if (midrollAds.length > 0) {
-        setPlayedMidrollMarkers((prev) => new Set(prev).add(midrollPosition));
-        playAd(1);
+    // Only seek if we have a new seek token and metadata is loaded
+    if (liveSeekToken !== lastSeekTokenRef.current && video.readyState >= 1) {
+      const performSeek = () => {
+        if (video.duration && liveSeekSeconds > 0) {
+          // Clamp seek position to video duration
+          const seekPosition = Math.min(liveSeekSeconds, video.duration - 0.5);
+          video.currentTime = seekPosition;
+          hasPerformedInitialSeekRef.current = true;
+        }
+        lastSeekTokenRef.current = liveSeekToken;
+      };
+
+      if (video.readyState >= 1) {
+        performSeek();
+      } else {
+        const handleLoadedMetadata = () => {
+          performSeek();
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        };
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        return () => video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       }
     }
-  }, [currentTime, duration, isPlayingAd, isPremiumUser, ads, playedMidrollMarkers, isLiveTV, isPreviewMode]);
+  }, [isLiveTV, liveSeekSeconds, liveSeekToken]);
+
+  // Reset seek tracking when video source changes
+  useEffect(() => {
+    hasPerformedInitialSeekRef.current = false;
+  }, [videoUrl]);
+
+  const prerollAds = ads.filter(ad => {
+    const adAssignment = ad as any;
+    return !adAssignment.position || adAssignment.position === 0;
+  });
+
+  const midrollAds = ads.filter(ad => {
+    const adAssignment = ad as any;
+    return adAssignment.position && adAssignment.position > 0 && adAssignment.position < 100;
+  });
+
+  const postrollAds = ads.filter(ad => {
+    const adAssignment = ad as any;
+    return adAssignment.position === 100;
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -161,122 +199,147 @@ export default function VideoPlayer({
     const handleTimeUpdate = () => {
       if (!isPlayingAd) {
         setCurrentTime(video.currentTime);
+        
+        // Check for midroll ads (disabled for Live TV)
+        if (!isLiveTV && midrollAds.length > 0 && !isPremiumUser) {
+          midrollAds.forEach((ad: any) => {
+            const triggerTime = (ad.position / 100) * video.duration;
+            const marker = Math.floor(triggerTime);
+            
+            if (
+              video.currentTime >= triggerTime &&
+              video.currentTime < triggerTime + 1 &&
+              !playedMidrollMarkers.has(marker)
+            ) {
+              setContentTimeBeforeAd(video.currentTime);
+              setPlayedMidrollMarkers(prev => new Set(prev).add(marker));
+              playAd(ad);
+            }
+          });
+        }
       }
     };
-    
-    const handleDurationChange = () => {
-      if (!isPlayingAd) {
-        setDuration(video.duration);
-      }
+
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
     };
-    
+
     const handleEnded = () => {
       if (isPlayingAd) {
         handleAdEnded();
-      } else if (isPreviewMode && onAutoplayComplete) {
-        setIsPlaying(false);
-        onAutoplayComplete();
       } else {
-        setIsPlaying(false);
+        // Play postroll ads
+        if (postrollAds.length > 0 && !isPremiumUser) {
+          setContentTimeBeforeAd(video.currentTime);
+          playAd(postrollAds[0]);
+        } else {
+          setIsPlaying(false);
+          if (onAutoplayComplete) {
+            onAutoplayComplete();
+          }
+        }
       }
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('ended', handleEnded);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('ended', handleEnded);
     };
-  }, [isPlayingAd, isPreviewMode, onAutoplayComplete]);
+  }, [isPlayingAd, ads, isPremiumUser, playedMidrollMarkers, onAutoplayComplete, isLiveTV, midrollAds, postrollAds]);
 
-  const playAd = async (adIndex: number) => {
-    const video = videoRef.current;
-    if (!video || !ads[adIndex] || isPremiumUser || isLiveTV) return;
-
-    // Store current main content time before switching to ad
-    setContentTimeBeforeAd(video.currentTime);
-    
-    const wasPlaying = isPlaying;
-    if (wasPlaying) {
-      video.pause();
+  // Play preroll ads
+  useEffect(() => {
+    if (!hasPlayedPreroll && prerollAds.length > 0 && !isPremiumUser && !autoplay) {
+      const video = videoRef.current;
+      if (video && video.readyState >= 1) {
+        setContentTimeBeforeAd(0);
+        playAd(prerollAds[0]);
+        setHasPlayedPreroll(true);
+      }
     }
+  }, [hasPlayedPreroll, prerollAds, isPremiumUser, autoplay]);
+
+  const playAd = (ad: AdMedia) => {
+    const video = videoRef.current;
+    if (!video) return;
 
     setIsPlayingAd(true);
-    setCurrentAdIndex(adIndex);
-    
-    const adUrl = ads[adIndex].adFile.getDirectURL();
-    video.src = adUrl;
-    
-    try {
-      await video.play();
-      setIsPlaying(true);
-    } catch (error) {
-      console.error('Ad playback failed:', error);
-      handleAdEnded();
-    }
+    setCurrentAdIndex(0);
+    video.src = ad.adFile.getDirectURL();
+    video.play();
   };
 
-  const handleAdEnded = async () => {
+  const handleAdEnded = () => {
     const video = videoRef.current;
     if (!video) return;
 
     setIsPlayingAd(false);
-    
-    // Restore main content and resume from saved time
     video.src = videoUrl;
     video.currentTime = contentTimeBeforeAd;
-    
-    try {
-      await video.play();
-      setIsPlaying(true);
-    } catch (error) {
-      console.error('Resume playback failed:', error);
-      setIsPlaying(false);
-    }
+    video.play();
   };
 
-  const togglePlay = async () => {
+  const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
 
     setUserInteracted(true);
 
-    // Play preroll ad on first play (not for Live TV)
-    if (!isPlaying && !hasPlayedPreroll && ads.length > 0 && !isPremiumUser && !isLiveTV) {
-      setHasPlayedPreroll(true);
-      await playAd(0);
-      return;
-    }
-
-    if (isPlaying) {
+    if (video.paused) {
+      video.play();
+      setIsPlaying(true);
+    } else {
       video.pause();
       setIsPlaying(false);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    const video = videoRef.current;
+    if (!video || isPlayingAd) return;
+
+    setUserInteracted(true);
+    video.currentTime = value[0];
+    setCurrentTime(value[0]);
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const newVolume = value[0];
+    video.volume = newVolume;
+    setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    setUserInteracted(true);
+
+    if (isMuted) {
+      video.muted = false;
+      video.volume = volume || 0.5;
+      setIsMuted(false);
     } else {
-      try {
-        await video.play();
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Play failed:', error);
-      }
+      video.muted = true;
+      setIsMuted(true);
     }
   };
 
   const skip = (seconds: number) => {
     const video = videoRef.current;
     if (!video || isPlayingAd) return;
-    setUserInteracted(true);
-    video.currentTime = Math.max(0, Math.min(video.currentTime + seconds, duration));
-  };
 
-  const handleSeek = (value: number[]) => {
-    const video = videoRef.current;
-    if (!video || isPlayingAd) return;
     setUserInteracted(true);
-    video.currentTime = value[0];
-    setCurrentTime(value[0]);
+    video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
   };
 
   const toggleFullscreen = () => {
@@ -292,40 +355,9 @@ export default function VideoPlayer({
     }
   };
 
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    setUserInteracted(true);
-    video.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    const video = videoRef.current;
-    if (!video) return;
-    setUserInteracted(true);
-    video.volume = value[0];
-    setVolume(value[0]);
-    if (value[0] === 0) {
-      setIsMuted(true);
-    } else if (isMuted) {
-      setIsMuted(false);
-      video.muted = false;
-    }
-  };
-
-  const handleQualityChange = (newQuality: string) => {
-    setQuality(newQuality as 'auto' | 'hd' | '4k');
-    setShowQualityMenu(false);
-  };
-
   const formatTime = (time: number) => {
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
+    const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
@@ -341,211 +373,136 @@ export default function VideoPlayer({
     }, 3000);
   };
 
-  const getQualityLabel = (q: string) => {
-    switch (q) {
-      case 'hd': return 'HD 1080p';
-      case '4k': return '4K 2160p';
-      default: return 'Auto';
-    }
-  };
-
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-[#000000] group"
+      className="relative w-full h-full bg-black group"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
       <video
         ref={videoRef}
-        src={videoUrl}
         className="w-full h-full"
+        src={videoUrl}
         onClick={togglePlay}
-        playsInline
-        webkit-playsinline="true"
       />
 
-      {/* Logo Watermark - Top Left */}
-      <div className="absolute top-6 left-6 z-10 opacity-80">
-        <img
-          src="/assets/4-removebg-preview.png"
-          alt="X"
-          className="h-16 w-auto"
-        />
-      </div>
-
-      {/* Title - Top Center */}
-      <div className={`absolute top-6 left-1/2 transform -translate-x-1/2 z-10 transition-opacity ${
-        showControls ? 'opacity-100' : 'opacity-0'
-      }`}>
-        <h1 className="text-white text-xl md:text-2xl font-bold text-center px-4">
-          {title}
-        </h1>
-      </div>
-
-      {/* Settings Icon - Top Right */}
-      <div className={`absolute top-6 right-6 z-10 transition-opacity ${
-        showControls ? 'opacity-100' : 'opacity-0'
-      }`}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-white hover:bg-white/20 h-12 w-12"
-        >
-          <Settings className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Ad Indicator */}
-      {isPlayingAd && !isPremiumUser && (
-        <div className="absolute top-6 right-24 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold z-10">
-          AD {currentAdIndex + 1}/{ads.length}
+      {isPlayingAd && (
+        <div className="absolute top-4 right-4 bg-black/80 text-white px-3 py-1 rounded text-sm">
+          Ad Playing
         </div>
       )}
 
-      {/* Premium Badge */}
-      {isPremiumUser && isPremiumContent && (
-        <div className="absolute top-24 left-6 bg-gradient-to-r from-[#cc0000] to-[#990000] text-white px-3 py-1 rounded-full text-xs font-bold z-10 flex items-center gap-1">
-          <span>AD-FREE</span>
-          {quality !== 'auto' && <span>• {quality.toUpperCase()}</span>}
-        </div>
-      )}
-
-      {/* Muted Autoplay Indicator */}
-      {autoplay && isMuted && isPlaying && !userInteracted && (
-        <div className="absolute top-24 left-6 bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 z-10">
-          <VolumeX className="h-4 w-4" />
-          <span>Click to unmute</span>
-        </div>
-      )}
-
-      {/* Center Play Controls */}
       <div
-        className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 ${
           showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="flex items-center gap-16">
-          <button
-            onClick={() => skip(-15)}
-            disabled={isPlayingAd}
-            className="w-24 h-24 rounded-full bg-black/50 backdrop-blur flex flex-col items-center justify-center hover:bg-black/70 transition-colors disabled:opacity-50"
-          >
-            <RotateCcw className="h-12 w-12 text-white" />
-            <span className="text-sm font-bold text-white mt-1">15</span>
-          </button>
-          <button
-            onClick={togglePlay}
-            className="w-32 h-32 rounded-full bg-black/50 backdrop-blur flex items-center justify-center hover:bg-black/70 transition-colors"
-          >
-            {isPlaying ? (
-              <Pause className="h-16 w-16 text-white" />
-            ) : (
-              <Play className="h-16 w-16 text-white fill-white ml-2" />
-            )}
-          </button>
-          <button
-            onClick={() => skip(15)}
-            disabled={isPlayingAd}
-            className="w-24 h-24 rounded-full bg-black/50 backdrop-blur flex flex-col items-center justify-center hover:bg-black/70 transition-colors disabled:opacity-50"
-          >
-            <RotateCw className="h-12 w-12 text-white" />
-            <span className="text-sm font-bold text-white mt-1">15</span>
-          </button>
-        </div>
-      </div>
+        {!isPlayingAd && (
+          <Slider
+            value={[currentTime]}
+            max={duration || 100}
+            step={0.1}
+            onValueChange={handleSeek}
+            className="mb-4"
+          />
+        )}
 
-      {/* Bottom Controls */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <div className="px-6 pb-6 pt-12">
-          {/* Progress Bar - Red */}
-          <div className="mb-4">
-            <Slider
-              value={[currentTime]}
-              max={duration || 100}
-              step={0.1}
-              onValueChange={handleSeek}
-              disabled={isPlayingAd}
-              className="cursor-pointer [&_[role=slider]]:bg-[#cc0000] [&_[role=slider]]:border-[#cc0000] [&_.bg-primary]:bg-[#cc0000]"
-            />
-          </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={togglePlay}
+              className="text-white hover:bg-white/20"
+            >
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            </Button>
 
-          {/* Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePlay}
-                className="text-white hover:bg-white/20"
-              >
-                {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-              </Button>
-              <div className="flex items-center gap-2">
+            {!isPlayingAd && (
+              <>
                 <Button
-                  variant="ghost"
                   size="icon"
-                  onClick={toggleMute}
+                  variant="ghost"
+                  onClick={() => skip(-10)}
                   className="text-white hover:bg-white/20"
                 >
-                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  <RotateCcw className="h-5 w-5" />
                 </Button>
-                <div className="w-24">
-                  <Slider
-                    value={[isMuted ? 0 : volume]}
-                    max={1}
-                    step={0.01}
-                    onValueChange={handleVolumeChange}
-                    className="cursor-pointer [&_[role=slider]]:bg-white [&_[role=slider]]:border-white [&_.bg-primary]:bg-white"
-                  />
-                </div>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => skip(10)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <RotateCw className="h-5 w-5" />
+                </Button>
+              </>
+            )}
+
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleMute}
+              className="text-white hover:bg-white/20"
+            >
+              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </Button>
+
+            <Slider
+              value={[isMuted ? 0 : volume]}
+              max={1}
+              step={0.01}
+              onValueChange={handleVolumeChange}
+              className="w-24"
+            />
+
+            <span className="text-white text-sm ml-2">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {availableQualities.length > 1 && (
+              <div className="relative">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setShowQualityMenu(!showQualityMenu)}
+                  className="text-white hover:bg-white/20"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+                {showQualityMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg p-2 min-w-[100px]">
+                    {availableQualities.map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => {
+                          setQuality(q as any);
+                          setShowQualityMenu(false);
+                        }}
+                        className={`block w-full text-left px-3 py-2 rounded text-sm ${
+                          quality === q ? 'bg-primary text-white' : 'text-white hover:bg-white/20'
+                        }`}
+                      >
+                        {q.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span className="text-white text-sm font-medium">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {isPremiumUser && isPremiumContent && availableQualities.length > 1 && (
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowQualityMenu(!showQualityMenu)}
-                    className="text-white hover:bg-white/20"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                  {showQualityMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 backdrop-blur rounded-lg p-2 min-w-[120px]">
-                      <div className="text-xs text-white/70 px-2 py-1">Quality</div>
-                      {availableQualities.map((q) => (
-                        <button
-                          key={q}
-                          onClick={() => handleQualityChange(q)}
-                          className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-white/10 transition-colors ${
-                            quality === q ? 'text-[#cc0000]' : 'text-white'
-                          }`}
-                        >
-                          {getQualityLabel(q)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFullscreen}
-                className="text-white hover:bg-white/20"
-              >
-                <Maximize className="h-5 w-5" />
-              </Button>
-            </div>
+            )}
+
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleFullscreen}
+              className="text-white hover:bg-white/20"
+            >
+              <Maximize className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>

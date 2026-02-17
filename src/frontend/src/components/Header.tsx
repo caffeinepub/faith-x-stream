@@ -43,6 +43,7 @@ export default function Header() {
   const navItems = [
     { label: 'Home', path: '/' },
     { label: 'Live', path: '/live' },
+    { label: 'Guide', path: '/live', search: { mode: 'guide' } },
     { label: 'Originals', path: '/originals' },
     { label: 'Movies', path: '/movies' },
     { label: 'TV Shows', path: '/tv-shows' },
@@ -65,19 +66,26 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-3 bg-[#4d0000] rounded-full px-4 py-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#330000] ${
-                currentPath === item.path
-                  ? 'bg-[#cc0000] text-white shadow-lg shadow-[#cc0000]/50'
-                  : 'text-white/80 hover:text-white hover:bg-[#660000]'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = item.search 
+              ? currentPath === item.path && (routerState.location.search as any)?.mode === item.search.mode
+              : currentPath === item.path;
+            
+            return (
+              <Link
+                key={`${item.path}-${item.search?.mode || 'default'}`}
+                to={item.path}
+                search={item.search as any}
+                className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#330000] ${
+                  isActive
+                    ? 'bg-[#cc0000] text-white shadow-lg shadow-[#cc0000]/50'
+                    : 'text-white/80 hover:text-white hover:bg-[#660000]'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Desktop Actions */}
@@ -180,20 +188,27 @@ export default function Header() {
                 </button>
               </form>
 
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-full text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000] ${
-                    currentPath === item.path
-                      ? 'bg-[#cc0000] text-white shadow-md'
-                      : 'text-white/80 hover:text-white hover:bg-[#660000]'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = item.search 
+                  ? currentPath === item.path && (routerState.location.search as any)?.mode === item.search.mode
+                  : currentPath === item.path;
+                
+                return (
+                  <Link
+                    key={`${item.path}-${item.search?.mode || 'default'}`}
+                    to={item.path}
+                    search={item.search as any}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-4 py-3 rounded-full text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000] ${
+                      isActive
+                        ? 'bg-[#cc0000] text-white shadow-md'
+                        : 'text-white/80 hover:text-white hover:bg-[#660000]'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
               {isAuthenticated && userProfile && !profileLoading && (
                 <>
                   <Link
@@ -212,37 +227,30 @@ export default function Header() {
                       Admin Panel
                     </Link>
                   )}
+                  <Button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    variant="ghost"
+                    className="px-4 py-3 rounded-full text-sm font-bold text-[#ff6666] hover:text-white hover:bg-[#660000] transition-all duration-300 justify-start"
+                  >
+                    Logout
+                  </Button>
                 </>
               )}
-              <div className="border-t-2 border-[#660000] pt-4 mt-4">
-                {isAuthenticated && userProfile && !profileLoading && (
-                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-white/80 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#cc0000] to-[#990000] flex items-center justify-center shadow-md">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-semibold">{userProfile.name}</span>
-                  </div>
-                )}
+              {!isAuthenticated && (
                 <Button
                   onClick={() => {
-                    if (isAuthenticated) {
-                      handleLogout();
-                    } else {
-                      handleLogin();
-                    }
                     setMobileMenuOpen(false);
+                    handleLogin();
                   }}
                   disabled={isAuthenticating}
-                  variant={isAuthenticated ? 'outline' : 'default'}
-                  className={`w-full transition-all duration-300 font-bold focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000] rounded-full ${
-                    isAuthenticated 
-                      ? 'border-2 border-[#660000] hover:bg-[#660000] text-white' 
-                      : 'bg-[#cc0000] hover:bg-[#990000] text-white shadow-md'
-                  }`}
+                  className="bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300 shadow-md rounded-full"
                 >
-                  {isAuthenticating ? 'Loading...' : isAuthenticated ? 'Logout' : 'Login'}
+                  {isAuthenticating ? 'Loading...' : 'Login'}
                 </Button>
-              </div>
+              )}
             </nav>
           </SheetContent>
         </Sheet>

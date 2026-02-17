@@ -1,129 +1,57 @@
 {
   "kind": "build_request",
-  "title": "Fix autoplay freezing, stabilize key pages, add content-type aware admin uploads (Movies/Podcasts), and repair video update flow",
+  "title": "Fix Live TV VOD-scheduled channels restarting after a few seconds",
+  "projectName": "Live TV Scheduler Fix",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Fix the VideoPlayer autoplay/ad playback logic so autoplay no longer freezes and playback reliably starts.\n\nScope:\n- Ensure autoplay can start muted (to comply with browser policies) and does not get stuck in a paused/frozen state.\n- Fix ad switching so that when an ad ends, the player returns to the correct main-content timestamp (store and restore a dedicated “contentTimeBeforeAd” instead of using the ad’s currentTime).\n- Ensure duration/currentTime state used for midroll scheduling is based on the main content, not overwritten by ad playback.\n- Ensure Live TV playback (isLiveTV=true) does not trigger preroll/midroll ad behavior that breaks playback.",
+      "id": "REQ-10",
+      "text": "Fix LivePage scheduled VOD playback so it does not restart the currently airing program from the beginning every few seconds on all channels.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-1"
+          "msg-6",
+          "msg-10",
+          "msg-12"
         ],
         "quotes": [
-          "Autoplay is freezing and not playing"
+          "The live video isn't playing according to the programming set as scheduled? it keeps playing a few seconds of the video and restarting",
+          "restart-after-a-few-seconds issue happen on all scheduled VOD channels",
+          "restart full video from the beginning, not from where it left off at."
         ]
       },
       "acceptanceCriteria": [
-        "On pages that use VideoPlayer with autoplay=true (e.g., Live TV), video begins playing automatically (muted if necessary) without freezing.",
-        "When an ad plays and ends, the main video resumes at the correct pre-ad playback time (not the ad timestamp).",
-        "Midroll logic does not repeatedly trigger or break playback due to duration/currentTime switching between ad and content.",
-        "No uncaught promise rejections or console errors occur during autoplay/ad transitions in normal use."
+        "When watching any VOD-scheduled live channel, the video continues playing past the first few seconds and does not restart from 0 unless the schedule program actually changes.",
+        "The LivePage polling/update loop does not cause the VideoPlayer component to remount (or otherwise reset src/currentTime) while the same scheduled program is still current.",
+        "Switching channels still starts playback of the newly selected channel’s current program."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Implement preview playback behavior for featured/autoplay use cases: when a trailer exists, use it for preview; otherwise use the first 30–60 seconds of the main video as a preview without breaking subsequent playback.\n\nScope:\n- When trailerUrl is available for a video, preview/autoplay uses trailerUrl.\n- When trailerUrl is not available, preview/autoplay uses the main videoUrl but stops preview after 30–60 seconds and triggers the existing onAutoplayComplete callback (if provided) to allow the UI to transition cleanly.\n- Ensure preview playback does not interfere with later full playback of the same content (i.e., state resets cleanly).",
+      "id": "REQ-11",
+      "text": "Align LivePage playback position with the channel schedule by seeking into the current program based on the computed position-in-loop, so playback reflects where the program should be at the current time (instead of always starting at 0).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-1"
+          "msg-8"
         ],
         "quotes": [
-          "Autoplay is freezing and not playing"
+          "its VOD and it plays based on the video its supposed to create the program based on the length of the video."
         ]
       },
       "acceptanceCriteria": [
-        "For a video with a trailerUrl, preview autoplay plays the trailer source.",
-        "For a video without a trailerUrl, preview autoplay plays the main video and stops after 30–60 seconds, calling onAutoplayComplete when provided.",
-        "After preview completes, starting full playback of the content works normally (no stuck muted state, no incorrect currentTime)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add content-type classification that can distinguish Movies/Films vs Podcasts and expose it consistently across admin upload/edit flows.\n\nScope:\n- Backend: extend ContentType to include Podcast and Movie (while retaining existing Film).\n- Frontend: update all ContentType selectors (upload + edit) to include Movie, Film, and Podcast options in addition to existing options.\n- Ensure VideoCard/content labels and filters that rely on ContentType continue to work with the expanded enum.\n- Add conditional migration logic if required due to enum changes in persisted data.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "recent-1"
-        ],
-        "quotes": [
-          "Need to determine whether video is a movie or podcast or etc. And movie/film and podcast as well need their own upload sections in the Admin Dashboard/Panel."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend exposes ContentType variants that include Movie and Podcast without breaking canister compilation.",
-        "Frontend admin content-type dropdowns include Movie, Film, and Podcast and persist the chosen value successfully.",
-        "Existing content continues to load; any previously stored items retain a valid ContentType (no runtime traps due to unknown variants)."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Restructure the Admin Panel to include separate upload/management sections for Movies, TV Shows, Podcasts, Clips, and Live TV, while keeping existing Brands/Channels/Ads sections.\n\nScope:\n- AdminPage tabs must include distinct entries for:\n  - Movies upload/management\n  - TV Shows upload/management (use existing SeriesManagement)\n  - Podcasts upload/management\n  - Clips upload/management (existing ClipsManagement)\n  - Live TV upload/management (existing LiveScheduleManagement and/or existing live channel management as appropriate)\n  - Brands, Channels, Ads, Analytics, Stripe (keep existing)\n- Implement Movies and Podcasts management UIs as separate panels (new components) that reuse existing video upload/edit functionality but:\n  - Default contentType appropriately (Movie/Podcast)\n  - Filter the “Manage” list to only show items of that category\n  - Ensure edit/update preserves category and allows changing it when needed",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-1"
-        ],
-        "quotes": [
-          "movie/film and podcast as well need their own upload sections in the Admin Dashboard/Panel."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Admin panel shows separate tabs/sections for Movies, TV Shows, Podcasts, Clips, and Live TV.",
-        "Movies section only lists movie/film-type items (per implemented mapping) and can upload/edit/delete successfully.",
-        "Podcasts section only lists podcast-type items and can upload/edit/delete successfully.",
-        "Existing admin sections (Brands/Channels/Ads/Analytics/Stripe) still render and function."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Fix the video update/edit flow so it no longer fails with a generic “Failed to update”, and provide actionable error details.\n\nScope:\n- Ensure the edit dialog’s form state is correctly populated from the selected video and remains consistent through update submission.\n- Ensure update payloads sent to updateVideo conform to the backend VideoContent type (including optional fields).\n- Improve mutation error handling to surface the actual error message (when available) in the UI toast instead of only “Failed to update”.\n- Confirm update invalidates and refreshes the correct React Query caches so the admin list reflects changes immediately.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-1"
-        ],
-        "quotes": [
-          "Updating Videos isn't working (says \"Failed to update\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "Editing an existing video and saving updates succeeds and the list updates immediately to reflect the change.",
-        "If an update fails, the toast displays a specific error message (when available) rather than only a generic message.",
-        "No runtime type errors occur when updating optional fields (roles/genre/releaseYear/trailerUrl)."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Stabilize and fix UI issues on the following pages/sections so they render reliably and do not appear “bugged”: Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.\n\nScope:\n- Ensure these pages do not break when actor/auth state is still initializing (avoid rendering incorrect states due to undefined query results).\n- Ensure each page has a clear loading/empty/error state and does not incorrectly show “Access Denied” or redirect loops due to queries being disabled during initialization.\n- Specifically validate LivePage, OriginalsPage, ProfilePage, and AdminPage flows with anonymous, authenticated non-admin, and authenticated admin sessions.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "recent-1"
-        ],
-        "quotes": [
-          "the UI bugged some things (Live, Originals, Profile/MyProfile, Admin Panel Dashboard)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Live page renders consistently (channels list and player area), even while queries are loading; no broken layout or blank states without messaging.",
-        "Originals page loads and filters originals without crashing, and shows appropriate empty states when no originals exist.",
-        "Profile page does not get stuck in redirect loops and shows loading skeletons only while appropriate data is loading.",
-        "Admin page does not incorrectly show Access Denied solely because admin/auth queries are disabled during initialization; it shows an appropriate loading or login-required state until admin status is known."
+        "On entering LivePage (or switching channels), playback starts at the correct offset within the scheduled VOD program for the current time.",
+        "When the schedule rolls over to the next program, playback switches to the next program and starts at the correct offset (typically near 0 at program start).",
+        "The schedule-aligned seeking does not break non-live usage of VideoPlayer (VOD pages continue to start at 0 unless otherwise intended)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if a state upgrade is required.",
-    "Do not edit files under frontend/src/components/ui or any paths listed as immutable (e.g., frontend/src/hooks/useInternetIdentity.ts/tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx).",
-    "Use English for all user-facing text."
+    "Frontend immutable paths must not be modified: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Backend must remain single-actor; do not introduce additional backend services."
   ],
   "nonGoals": [
-    "Implementing third-party authentication providers (only Internet Identity is supported).",
-    "Adding external databases or non-Motoko backend services.",
-    "Adding real-time features (WebSockets/chat/push notifications)."
+    "Do not redesign the Live Guide (EPG grid) UI or add new guide features beyond fixing the playback restart/position behavior.",
+    "Do not change ad business logic beyond what is necessary to prevent live scheduled playback from restarting."
   ],
   "imageRequirements": {
     "required": [],
