@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '../components/ui/button';
@@ -11,7 +11,7 @@ import { Shield, Mail, Lock, User as UserIcon } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { loginWithEmail, registerWithEmail, loginWithInternetIdentity, isAuthenticating, isAuthenticated } = useAuth();
+  const { loginWithEmail, registerWithEmail, loginWithInternetIdentity, isAuthenticating, isAuthenticated, authStatus } = useAuth();
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -23,9 +23,15 @@ export default function LoginPage() {
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate({ to: '/' });
+  // Effect-based redirect when authenticated
+  useEffect(() => {
+    if (isAuthenticated && authStatus === 'success') {
+      navigate({ to: '/' });
+    }
+  }, [isAuthenticated, authStatus, navigate]);
+
+  // Don't render login form if already authenticated
+  if (isAuthenticated && authStatus === 'success') {
     return null;
   }
 
@@ -40,9 +46,10 @@ export default function LoginPage() {
     try {
       await loginWithEmail(loginEmail, loginPassword);
       toast.success('Login successful!');
-      navigate({ to: '/' });
+      // Navigation will happen via useEffect
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      // Display the normalized error message
+      toast.error(error.message || 'Login failed. Please try again.');
     }
   };
 
@@ -71,9 +78,10 @@ export default function LoginPage() {
         password: registerPassword,
       });
       toast.success('Account created successfully! Welcome to FAITH X-Stream!');
-      navigate({ to: '/' });
+      // Navigation will happen via useEffect
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      // Display the normalized error message
+      toast.error(error.message || 'Registration failed. Please try again.');
     }
   };
 
@@ -256,7 +264,7 @@ export default function LoginPage() {
               disabled={isAuthenticating}
             >
               <Shield className="h-4 w-4 mr-2" />
-              Login with Internet Identity
+              {isAuthenticating ? 'Logging in...' : 'Login with Internet Identity'}
             </Button>
           </CardContent>
         </Card>

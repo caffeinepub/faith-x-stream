@@ -175,6 +175,18 @@ export const UserProfile = IDL.Record({
   'email' : IDL.Text,
   'hasPrioritySupport' : IDL.Bool,
 });
+export const LoginStatus = IDL.Variant({
+  'admin' : UserProfile,
+  'regularUser' : UserProfile,
+  'anonymous' : IDL.Null,
+});
+export const RegularUserStatus = IDL.Variant({
+  'accessGranted' : IDL.Record({
+    'password' : IDL.Text,
+    'userProfile' : UserProfile,
+  }),
+  'failed' : IDL.Record({ 'error' : IDL.Text }),
+});
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
     'userPrincipal' : IDL.Opt(IDL.Text),
@@ -275,6 +287,8 @@ export const idlService = IDL.Service({
   'getAllVideos' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
   'getAnalytics' : IDL.Func([], [Analytics], ['query']),
   'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
+  'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
+  'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getChannelsByBrand' : IDL.Func(
@@ -500,6 +514,18 @@ export const idlFactory = ({ IDL }) => {
     'email' : IDL.Text,
     'hasPrioritySupport' : IDL.Bool,
   });
+  const LoginStatus = IDL.Variant({
+    'admin' : UserProfile,
+    'regularUser' : UserProfile,
+    'anonymous' : IDL.Null,
+  });
+  const RegularUserStatus = IDL.Variant({
+    'accessGranted' : IDL.Record({
+      'password' : IDL.Text,
+      'userProfile' : UserProfile,
+    }),
+    'failed' : IDL.Record({ 'error' : IDL.Text }),
+  });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
       'userPrincipal' : IDL.Opt(IDL.Text),
@@ -597,6 +623,8 @@ export const idlFactory = ({ IDL }) => {
     'getAllVideos' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
     'getAnalytics' : IDL.Func([], [Analytics], ['query']),
     'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
+    'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
+    'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getChannelsByBrand' : IDL.Func(

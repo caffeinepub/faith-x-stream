@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-livepage-scheduled-vod-playback-so-it-does-not-restart-the-currently-airing-program-from-the-beginning-every-few-seconds-on-all-channels",
-      "featureTitle": "Fix LivePage scheduled VOD playback so it does not restart the currently airing program from the beginning every few seconds on all channels.",
+      "featureId": "feature-restore-working-email-password-authentication-so-users-can-register-and-log-in-successfully-from-the-login-page-without-requiring-internet-identity",
+      "featureTitle": "Restore working email/password authentication so users can register and log in successfully from the Login page, without requiring Internet Identity.",
       "files": [
-        "frontend/src/pages/LivePage.tsx",
-        "frontend/src/utils/epg.ts"
+        "frontend/src/hooks/useAuth.tsx",
+        "frontend/src/pages/LoginPage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -20,17 +20,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-10"
+        "REQ-12"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-align-livepage-playback-position-with-the-channel-schedule-by-seeking-into-the-current-program-based-on-the-computed-position-in-loop-so-playback-reflects-where-the-program-should-be-at-the-current-time-instead-of-always-starting-at-0",
-      "featureTitle": "Align LivePage playback position with the channel schedule by seeking into the current program based on the computed position-in-loop, so playback reflects where the program should be at the current time (instead of always starting at 0).",
+      "featureId": "feature-fix-the-frontend-authentication-state-machine-so-that-login-status-session-restoration-and-actor-initialization-do-not-prevent-logging-in-email-password-and-do-not-leave-the-ui-stuck-in-an-initializing-authenticating-state",
+      "featureTitle": "Fix the frontend authentication state machine so that login status, session restoration, and actor initialization do not prevent logging in (email/password) and do not leave the UI stuck in an initializing/authenticating state.",
       "files": [
-        "frontend/src/components/VideoPlayer.tsx",
-        "frontend/src/pages/LivePage.tsx",
-        "frontend/src/utils/epg.ts"
+        "frontend/src/components/Header.tsx",
+        "frontend/src/hooks/useAuth.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -44,7 +43,53 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-11"
+        "REQ-14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-login-navigation-redirect-behavior-so-it-does-not-trigger-navigation-during-render-and-does-not-cause-redirect-loops-or-blank-screens-when-authentication-state-changes",
+      "featureTitle": "Fix /login navigation/redirect behavior so it does not trigger navigation during render and does not cause redirect loops or blank screens when authentication state changes.",
+      "files": [
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-internet-identity-admin-login-still-works-end-to-end-button-on-login-page-including-correct-actor-creation-and-access-control-initialization-after-ii-login",
+      "featureTitle": "Ensure Internet Identity admin login still works end-to-end (button on Login page), including correct actor creation and access control initialization after II login.",
+      "files": [
+        "frontend/src/components/Header.tsx",
+        "frontend/src/hooks/useAuth.tsx",
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-16"
       ],
       "confidence": "high"
     }

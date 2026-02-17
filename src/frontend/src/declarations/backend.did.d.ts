@@ -99,11 +99,18 @@ export interface LiveChannel {
   'isOriginal' : boolean,
   'schedule' : Array<ScheduledContent>,
 }
+export type LoginStatus = { 'admin' : UserProfile } |
+  { 'regularUser' : UserProfile } |
+  { 'anonymous' : null };
 export interface RegisterInput {
   'password' : string,
   'name' : string,
   'email' : string,
 }
+export type RegularUserStatus = {
+    'accessGranted' : { 'password' : string, 'userProfile' : UserProfile }
+  } |
+  { 'failed' : { 'error' : string } };
 export interface ScheduledContent {
   'startTime' : bigint,
   'contentId' : string,
@@ -254,6 +261,8 @@ export interface _SERVICE {
   'getAllVideos' : ActorMethod<[], Array<VideoContent>>,
   'getAnalytics' : ActorMethod<[], Analytics>,
   'getBrandById' : ActorMethod<[string], [] | [Brand]>,
+  'getCallerLoginStatus' : ActorMethod<[], LoginStatus>,
+  'getCallerRegularUserStatus' : ActorMethod<[], RegularUserStatus>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getChannelsByBrand' : ActorMethod<

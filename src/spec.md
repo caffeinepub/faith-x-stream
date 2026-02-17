@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix LivePage scheduled VOD playback so it no longer restarts every few seconds and correctly reflects the current position within the scheduled program.
+**Goal:** Restore reliable login/registration for email/password while keeping Internet Identity admin login working, eliminating traps, stuck loading states, and redirect loops.
 
 **Planned changes:**
-- Prevent LivePage polling/schedule updates from remounting or resetting the VideoPlayer while the currently airing scheduled program is unchanged.
-- On LivePage entry and channel switches, compute the correct offset into the current scheduled VOD program and seek playback to that position (instead of always starting at 0).
-- When the schedule rolls over to a new program, switch playback to the new program and start at the appropriate offset for the current time.
+- Fix backend register/login and access control initialization so anonymous callers can authenticate without trapping and can subsequently call user-only methods (e.g., getCallerUserProfile).
+- Standardize backend error responses for common auth failures (invalid credentials, email already registered) so the frontend can display clear messages.
+- Fix frontend auth/session state handling so actor initialization and session restoration do not block email/password login or leave the UI stuck in an initializing/loading state.
+- Fix /login redirect/navigation behavior to avoid navigation during render and prevent redirect loops/blank screens, while maintaining correct behavior for authenticated vs unauthenticated users.
+- Ensure “Login with Internet Identity” still completes end-to-end and establishes the correct authenticated/admin state, with logout fully clearing the II session.
 
-**User-visible outcome:** Scheduled VOD live channels play continuously without repeated restarts, start at the correct point in the currently airing program, and still switch correctly when changing channels or when the schedule advances to the next program.
+**User-visible outcome:** Users can sign up and log in with email/password from /login and get redirected to / on success, see clear error messages on failures, reliably stay logged in across reloads when a session exists, and admins can still log in via Internet Identity and log out cleanly.

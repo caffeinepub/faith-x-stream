@@ -177,6 +177,16 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
+export type LoginStatus = {
+    __kind__: "admin";
+    admin: UserProfile;
+} | {
+    __kind__: "regularUser";
+    regularUser: UserProfile;
+} | {
+    __kind__: "anonymous";
+    anonymous: null;
+};
 export interface ShoppingItem {
     productName: string;
     currency: string;
@@ -184,6 +194,18 @@ export interface ShoppingItem {
     priceInCents: bigint;
     productDescription: string;
 }
+export type RegularUserStatus = {
+    __kind__: "accessGranted";
+    accessGranted: {
+        password: string;
+        userProfile: UserProfile;
+    };
+} | {
+    __kind__: "failed";
+    failed: {
+        error: string;
+    };
+};
 export interface AdAssignment {
     id: string;
     showOnFreeOnly: boolean;
@@ -243,6 +265,8 @@ export interface backendInterface {
     getAllVideos(): Promise<Array<VideoContent>>;
     getAnalytics(): Promise<Analytics>;
     getBrandById(brandId: string): Promise<Brand | null>;
+    getCallerLoginStatus(): Promise<LoginStatus>;
+    getCallerRegularUserStatus(): Promise<RegularUserStatus>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getChannelsByBrand(brandId: string): Promise<{

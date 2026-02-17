@@ -61,9 +61,34 @@ export const useAuth = (): AuthContext => {
   return context;
 };
 
+// Normalize backend error messages into user-friendly errors
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    
+    // Check for common backend error patterns
+    if (message.includes('invalid email or password')) {
+      return new Error('Invalid email or password. Please try again.');
+    }
+    if (message.includes('email already registered')) {
+      return new Error('This email is already registered. Please login instead.');
+    }
+    if (message.includes('unauthorized')) {
+      return new Error('Authentication failed. Please try again.');
+    }
+    if (message.includes('actor not available')) {
+      return new Error('Service temporarily unavailable. Please wait a moment and try again.');
+    }
+    
+    return error;
+  }
+  
+  return new Error('An unexpected error occurred. Please try again.');
+}
+
 export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNode }>) {
   const { identity, login: iiLogin, clear: iiClear, loginStatus: iiStatus } = useInternetIdentity();
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('initializing');
   const [authError, setAuthError] = useState<Error | undefined>(undefined);
@@ -73,9 +98,9 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
   // Check if user is authenticated via Internet Identity
   const isIIAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  // Initialize: restore email auth session if exists
+  // Initialize: restore email auth session if exists, then transition to idle
   useEffect(() => {
-    if (!actor || sessionRestored) return;
+    if (!actor || sessionRestored || actorFetching) return;
 
     const restoreSession = async () => {
       const storedAuth = localStorage.getItem('emailAuth');
@@ -109,13 +134,14 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
           setAuthStatus('idle');
         }
       } else {
+        // No stored session, transition to idle
         setAuthStatus('idle');
       }
       setSessionRestored(true);
     };
 
     restoreSession();
-  }, [actor, sessionRestored]);
+  }, [actor, sessionRestored, actorFetching]);
 
   // Update auth method when II authentication changes
   useEffect(() => {
@@ -127,15 +153,46 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
       setEmailAuthActive(false);
     } else if (!emailAuthActive && sessionRestored) {
       setAuthMethod(null);
-      if (authStatus !== 'initializing') {
+      // Only set to idle if we're not in the middle of authenticating
+      if (authStatus !== 'authenticating') {
         setAuthStatus('idle');
       }
     }
   }, [isIIAuthenticated, emailAuthActive, authStatus, sessionRestored]);
 
+  // Track Internet Identity login status changes
+  useEffect(() => {
+    if (authMethod === 'internet-identity' || iiStatus === 'logging-in') {
+      if (iiStatus === 'logging-in') {
+        setAuthStatus('authenticating');
+      } else if (iiStatus === 'success' && isIIAuthenticated) {
+        setAuthMethod('internet-identity');
+        setAuthStatus('success');
+        setAuthError(undefined);
+      } else if (iiStatus === 'loginError') {
+        setAuthStatus('error');
+        setAuthError(new Error('Internet Identity login failed. Please try again.'));
+        setAuthMethod(null);
+      } else if (iiStatus === 'idle' && !isIIAuthenticated && authStatus === 'authenticating') {
+        // Login was cancelled or failed
+        setAuthStatus('idle');
+        setAuthMethod(null);
+      }
+    }
+  }, [iiStatus, isIIAuthenticated, authMethod, authStatus]);
+
   const loginWithEmail = useCallback(async (email: string, password: string) => {
+    // Wait for actor to be ready (with timeout)
     if (!actor) {
-      throw new Error('Actor not available');
+      if (actorFetching) {
+        // Actor is still initializing, wait a bit
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!actor) {
+          throw new Error('Service temporarily unavailable. Please wait a moment and try again.');
+        }
+      } else {
+        throw new Error('Service temporarily unavailable. Please try again.');
+      }
     }
     
     setAuthStatus('authenticating');
@@ -155,21 +212,30 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
         setAuthMethod('email-password');
         setAuthStatus('success');
       } else {
-        throw new Error('Login failed');
+        throw new Error('Invalid email or password');
       }
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('Login failed');
-      setAuthError(err);
+      const normalizedError = normalizeError(error);
+      setAuthError(normalizedError);
       setAuthStatus('error');
       localStorage.removeItem('emailAuth');
       setEmailAuthActive(false);
-      throw err;
+      throw normalizedError;
     }
-  }, [actor]);
+  }, [actor, actorFetching]);
 
   const registerWithEmail = useCallback(async (input: RegisterInput) => {
+    // Wait for actor to be ready (with timeout)
     if (!actor) {
-      throw new Error('Actor not available');
+      if (actorFetching) {
+        // Actor is still initializing, wait a bit
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!actor) {
+          throw new Error('Service temporarily unavailable. Please wait a moment and try again.');
+        }
+      } else {
+        throw new Error('Service temporarily unavailable. Please try again.');
+      }
     }
     
     setAuthStatus('authenticating');
@@ -180,16 +246,19 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
       // After registration, automatically log in
       await loginWithEmail(input.email, input.password);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('Registration failed');
-      setAuthError(err);
+      const normalizedError = normalizeError(error);
+      setAuthError(normalizedError);
       setAuthStatus('error');
-      throw err;
+      throw normalizedError;
     }
-  }, [actor, loginWithEmail]);
+  }, [actor, actorFetching, loginWithEmail]);
 
   const loginWithInternetIdentity = useCallback(() => {
     setAuthStatus('authenticating');
     setAuthError(undefined);
+    // Clear any email auth session
+    localStorage.removeItem('emailAuth');
+    setEmailAuthActive(false);
     iiLogin();
   }, [iiLogin]);
 

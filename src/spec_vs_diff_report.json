@@ -1,45 +1,70 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T20:07:31.907Z",
-  "summary": "Diff shows targeted changes to LivePage polling/program selection and adds schedule-aligned seeking inputs to VideoPlayer, plus new EPG utility support. No clear missing items for REQ-10/REQ-11 are evident from the provided snippets, but some unrelated app-wide/UI/auth feature work is referenced in modified summary/state files.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-17T20:20:15.550Z",
+  "summary": "The diff includes substantial frontend auth/UI changes (useAuth state machine tweaks, /login redirect handled via useEffect, clearer toast errors) but provides no visible backend changes for email/password authentication or access control. The diff also adds/mentions multiple unrelated streaming/admin features and a data migration unrelated to fixing login.",
+  "missing_requirements": [
     {
-      "description": "App routing/auth changes such as adding a new /login route and wrapping the app with an AuthProvider",
-      "reason": "Not requested by REQ-10/REQ-11; BuildRequest scope is limited to fixing LivePage VOD-scheduled playback restart and aligning seek position to schedule.",
+      "id": "REQ-13",
+      "requirement": "Fix backend authentication and access control so that calling register/login from an unauthenticated (anonymous) frontend session does not trap and can correctly establish a user session for subsequent user-only actions (e.g., getCallerUserProfile).",
+      "reason": "No backend login/register/access-control logic changes are shown in the backend diff snippet; backend/main.mo changes shown are type definitions and upgrade migration wiring, not authentication/access control behavior.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": new /login route, wrapped with AuthProvider)"
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Header navigation change adding a \"Guide\" entry routing to /live with mode=guide",
-      "reason": "BuildRequest explicitly states non-goal: do not redesign Live Guide UI or add new guide features beyond fixing playback restart/position behavior.",
+      "id": "REQ-12",
+      "requirement": "Restore working email/password authentication so users can register and log in successfully from the Login page, without requiring Internet Identity.",
+      "reason": "Frontend adds login/register flows and messaging, but the diff provides no evidence that the backend email/password register/login endpoints were fixed to succeed (especially from anonymous callers) or to return consistent, displayable errors.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/components/Header.tsx\": new \"Guide\" entry)"
+        "frontend/src/hooks/useAuth.tsx",
+        "frontend/src/pages/LoginPage.tsx",
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Broad UI/UX restyling and numerous new/changed page/admin features (e.g., footer theme changes, profile setup modal branding, home page autoplay carousel behavior, expanded admin panel tabs, originals page filtering, payment success/failure pages)",
-      "reason": "Not requested; BuildRequest is narrowly focused on LivePage playback restart and schedule-aligned seeking, and includes constraints/non-goals against unrelated redesign/feature work.",
+      "id": "REQ-16",
+      "requirement": "Ensure Internet Identity admin login still works end-to-end (button on Login page), including correct actor creation and access control initialization after II login.",
+      "reason": "While the Login page calls an II login function, there is no diff evidence that backend/admin access control initialization was fixed or that actor creation/authorization after II login was adjusted to ensure admin checks (e.g., isCallerAdmin) work reliably.",
       "evidence": [
-        "frontend-file-summaries.txt (multiple entries describing unrelated changes across pages/components)"
-      ]
-    },
-    {
-      "description": "Updating overall project state/roadmap unrelated to the specific LivePage playback fix",
-      "reason": "Not part of REQ-10/REQ-11 implementation; appears to reflect broader platform evolution work outside the requested bugfix scope.",
-      "evidence": [
-        "project_state.json (summary describes broader scope like evolving UX to Pluto TV, admin dashboard/autoplay/video management)"
+        "frontend/src/pages/LoginPage.tsx",
+        "frontend/src/hooks/useAuth.tsx",
+        "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.62,
+  "hallucinated_features": [
+    {
+      "description": "Added/introduced a backend upgrade migration module and wired migration execution on upgrade, focused on content/video/series/live-channel/brand storage types.",
+      "reason": "The BuildRequest constraints allow adding backend/migration.mo only if persisted state changes require it for the login fix; the added migration concerns content platform data types and is not evidenced as necessary for authentication repairs.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Implemented or significantly modified video streaming features (VideoPlayer live TV schedule-aligned seeking, autoplay previews/ads, Live page polling logic to prevent restarts, and multiple content browsing page enhancements).",
+      "reason": "Not requested; the BuildRequest is specifically about fixing broken login (email/password + Internet Identity) and avoiding broader UI redesign beyond necessary messaging/reliability fixes.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Expanded/implemented a large admin panel and numerous admin/content management sections (nine admin tabs; video management; ads/analytics/stripe sections).",
+      "reason": "Not requested as part of login repair; also conflicts with the stated non-goal of redesigning overall UI beyond what is necessary to fix login reliability and messaging.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.74,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/VideoPlayer.tsx",
-    "frontend/src/pages/LivePage.tsx",
-    "frontend/src/utils/epg.ts",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/hooks/useAuth.tsx",
+    "frontend/src/pages/LoginPage.tsx",
     "project_state.json"
   ]
 }

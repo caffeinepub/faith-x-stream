@@ -1,57 +1,110 @@
 {
   "kind": "build_request",
-  "title": "Fix Live TV VOD-scheduled channels restarting after a few seconds",
-  "projectName": "Live TV Scheduler Fix",
+  "title": "Fix broken login (email/password + Internet Identity)",
+  "projectName": "FAITH X-Stream",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-10",
-      "text": "Fix LivePage scheduled VOD playback so it does not restart the currently airing program from the beginning every few seconds on all channels.",
-      "target": "frontend",
+      "id": "REQ-12",
+      "text": "Restore working email/password authentication so users can register and log in successfully from the Login page, without requiring Internet Identity.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-10",
-          "msg-12"
+          "msg-6"
         ],
         "quotes": [
-          "The live video isn't playing according to the programming set as scheduled? it keeps playing a few seconds of the video and restarting",
-          "restart-after-a-few-seconds issue happen on all scheduled VOD channels",
-          "restart full video from the beginning, not from where it left off at."
+          "Please fix the platform, Im not able to log in at all"
         ]
       },
       "acceptanceCriteria": [
-        "When watching any VOD-scheduled live channel, the video continues playing past the first few seconds and does not restart from 0 unless the schedule program actually changes.",
-        "The LivePage polling/update loop does not cause the VideoPlayer component to remount (or otherwise reset src/currentTime) while the same scheduled program is still current.",
-        "Switching channels still starts playback of the newly selected channel’s current program."
+        "A new user can successfully register via the Sign Up tab on /login and is redirected to / after success.",
+        "An existing user can successfully log in via the Login tab on /login and is redirected to / after success.",
+        "Registration and login do not fail due to backend access control initialization or authorization traps.",
+        "Login failures show a clear, user-readable error message (not a generic failure) on the Login page toast."
       ]
     },
     {
-      "id": "REQ-11",
-      "text": "Align LivePage playback position with the channel schedule by seeking into the current program based on the computed position-in-loop, so playback reflects where the program should be at the current time (instead of always starting at 0).",
-      "target": "frontend",
+      "id": "REQ-13",
+      "text": "Fix backend authentication and access control so that calling register/login from an unauthenticated (anonymous) frontend session does not trap and can correctly establish a user session for subsequent user-only actions (e.g., getCallerUserProfile).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-6"
         ],
         "quotes": [
-          "its VOD and it plays based on the video its supposed to create the program based on the length of the video."
+          "Please fix the platform, Im not able to log in at all"
         ]
       },
       "acceptanceCriteria": [
-        "On entering LivePage (or switching channels), playback starts at the correct offset within the scheduled VOD program for the current time.",
-        "When the schedule rolls over to the next program, playback switches to the next program and starts at the correct offset (typically near 0 at program start).",
-        "The schedule-aligned seeking does not break non-live usage of VideoPlayer (VOD pages continue to start at 0 unless otherwise intended)."
+        "Backend register/login succeed from an anonymous caller context without trapping due to uninitialized access control state.",
+        "After successful email/password login, getCallerUserProfile returns the stored profile for that caller session (and does not trap with Unauthorized).",
+        "Error cases (invalid email/password, email already registered) return consistent errors that the frontend can display."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Fix the frontend authentication state machine so that login status, session restoration, and actor initialization do not prevent logging in (email/password) and do not leave the UI stuck in an initializing/authenticating state.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "Please fix the platform, Im not able to log in at all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Login button is not stuck on \"Loading...\" indefinitely on first app load.",
+        "Clicking Login (email/password) while the actor is still initializing either waits safely or shows a clear message, and then proceeds when ready.",
+        "If a stored emailAuth session exists, the app restores it reliably and sets authenticated UI state (Header shows profile menu, not Login button).",
+        "If session restoration fails, the stored session is cleared and the app returns to an idle unauthenticated state without loops."
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Fix /login navigation/redirect behavior so it does not trigger navigation during render and does not cause redirect loops or blank screens when authentication state changes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "Please fix the platform, Im not able to log in at all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When already authenticated, visiting /login redirects to / without console errors/warnings about state updates or navigation during render.",
+        "When unauthenticated, /login remains accessible and does not unexpectedly redirect away.",
+        "After logout, the user can navigate to /login and log in again successfully."
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Ensure Internet Identity admin login still works end-to-end (button on Login page), including correct actor creation and access control initialization after II login.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "Please fix the platform, Im not able to log in at all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking \"Login with Internet Identity\" completes II login successfully when configured, and authenticated state becomes true.",
+        "After II login, admin-only checks (e.g., isCallerAdmin) work and admin navigation items can appear when appropriate.",
+        "Logging out clears the II session and returns the app to unauthenticated state."
       ]
     }
   ],
   "constraints": [
-    "Frontend immutable paths must not be modified: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Backend must remain single-actor; do not introduce additional backend services."
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if persisted state changes require it.",
+    "Do not edit immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui."
   ],
   "nonGoals": [
-    "Do not redesign the Live Guide (EPG grid) UI or add new guide features beyond fixing the playback restart/position behavior.",
-    "Do not change ad business logic beyond what is necessary to prevent live scheduled playback from restarting."
+    "Adding third-party authentication providers beyond Internet Identity.",
+    "Implementing external databases or moving credential storage off-canister.",
+    "Redesigning the overall UI beyond what is necessary to fix login reliability and messaging."
   ],
   "imageRequirements": {
     "required": [],

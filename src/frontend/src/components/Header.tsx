@@ -20,7 +20,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isAuthenticating = authStatus === 'authenticating' || authStatus === 'initializing';
+  // Only show loading state when actively authenticating, not during initialization
+  const isAuthenticating = authStatus === 'authenticating';
 
   const handleLogout = async () => {
     await logout();
@@ -153,7 +154,7 @@ export default function Header() {
               size="sm"
               className="bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6"
             >
-              {isAuthenticating ? 'Loading...' : 'Login'}
+              {isAuthenticating ? 'Logging in...' : 'Login'}
             </Button>
           )}
         </div>
@@ -248,7 +249,7 @@ export default function Header() {
                   disabled={isAuthenticating}
                   className="bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300 shadow-md rounded-full"
                 >
-                  {isAuthenticating ? 'Loading...' : 'Login'}
+                  {isAuthenticating ? 'Logging in...' : 'Login'}
                 </Button>
               )}
             </nav>

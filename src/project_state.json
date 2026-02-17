@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
+  "projectStateVersion": 9,
   "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability, add separate admin upload sections by content type, and evolve the UX to be more like Pluto TV (FAST/live channels + guide-style browsing).",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
@@ -12,7 +12,8 @@
     "Autoplay is freezing and not playing.",
     "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
     "Updating videos fails with 'Failed to update'.",
-    "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule."
+    "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule.",
+    "Users are unable to log in at all (login/authentication appears broken)."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -87,6 +88,38 @@
         "REQ-11"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-restore-working-email-password-authentication-so-users-can-register-and-log-in-successfully-from-the-login-page-without-requiring-internet-identity",
+      "title": "Restore working email/password authentication so users can register and log in successfully from the Login page, without requiring Internet Identity.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-frontend-authentication-state-machine-so-that-login-status-session-restoration-and-actor-initialization-do-not-prevent-logging-in-email-password-and-do-not-leave-the-ui-stuck-in-an-initializing-authenticating-state",
+      "title": "Fix the frontend authentication state machine so that login status, session restoration, and actor initialization do not prevent logging in (email/password) and do not leave the UI stuck in an initializing/authenticating state.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-login-navigation-redirect-behavior-so-it-does-not-trigger-navigation-during-render-and-does-not-cause-redirect-loops-or-blank-screens-when-authentication-state-changes",
+      "title": "Fix /login navigation/redirect behavior so it does not trigger navigation during render and does not cause redirect loops or blank screens when authentication state changes.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-internet-identity-admin-login-still-works-end-to-end-button-on-login-page-including-correct-actor-creation-and-access-control-initialization-after-ii-login",
+      "title": "Ensure Internet Identity admin login still works end-to-end (button on Login page), including correct actor creation and access control initialization after II login.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -147,6 +180,20 @@
       "summary": "Fix Live TV VOD-scheduled channels restarting after a few seconds (playback loops to start instead of continuing through scheduled programming)",
       "reqIds": [],
       "status": "in_progress"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Fix login failure preventing users from logging in at all (investigate auth flow, session/token handling, and UI error states)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Fix backend authentication and access control so that calling register/login from an unauthenticated (anonymous) frontend session does not trap and can correctly establish a user session for subsequent user-only actions (e.g., getCallerUserProfile).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "status": "pending"
     }
   ],
   "gameProjectType": "none",
