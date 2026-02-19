@@ -6,9 +6,9 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
+import { Checkbox } from '../ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Film, Edit, Radio } from 'lucide-react';
+import { Trash2, Upload, Star, Film, Edit, Radio, Tv } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
@@ -25,7 +25,8 @@ export default function MoviesManagement() {
   const [contentType, setContentType] = useState<ContentType>(ContentType.movie);
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
-  const [eligibleForLive, setEligibleForLive] = useState(false);
+  const [eligibleForLive, setEligibleForLive] = useState(true);
+  const [availableAsVOD, setAvailableAsVOD] = useState(true);
   const [roles, setRoles] = useState('');
   const [genre, setGenre] = useState('');
   const [releaseYear, setReleaseYear] = useState('');
@@ -79,6 +80,7 @@ export default function MoviesManagement() {
         genre: genre || undefined,
         releaseYear: releaseYear ? BigInt(releaseYear) : undefined,
         eligibleForLive,
+        availableAsVOD,
       };
 
       await addVideo.mutateAsync(video);
@@ -90,7 +92,8 @@ export default function MoviesManagement() {
       setContentType(ContentType.movie);
       setIsPremium(false);
       setIsOriginal(false);
-      setEligibleForLive(false);
+      setEligibleForLive(true);
+      setAvailableAsVOD(true);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -111,6 +114,7 @@ export default function MoviesManagement() {
     setIsPremium(video.isPremium);
     setIsOriginal(video.isOriginal);
     setEligibleForLive(video.eligibleForLive);
+    setAvailableAsVOD(video.availableAsVOD);
     setRoles(video.roles || '');
     setGenre(video.genre || '');
     setReleaseYear(video.releaseYear ? String(video.releaseYear) : '');
@@ -155,6 +159,7 @@ export default function MoviesManagement() {
         isPremium,
         isOriginal,
         eligibleForLive,
+        availableAsVOD,
         videoUrl: videoBlob,
         trailerUrl: trailerBlob,
         thumbnailUrl: thumbnailBlob,
@@ -173,7 +178,8 @@ export default function MoviesManagement() {
       setContentType(ContentType.movie);
       setIsPremium(false);
       setIsOriginal(false);
-      setEligibleForLive(false);
+      setEligibleForLive(true);
+      setAvailableAsVOD(true);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -328,21 +334,21 @@ export default function MoviesManagement() {
               />
             </div>
 
-            <div className="flex items-center gap-6 flex-wrap">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="isPremium"
                   checked={isPremium}
-                  onCheckedChange={setIsPremium}
+                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
                 />
                 <Label htmlFor="isPremium" className="cursor-pointer">Premium Content</Label>
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="isOriginal"
                   checked={isOriginal}
-                  onCheckedChange={setIsOriginal}
+                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
                 />
                 <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
@@ -351,14 +357,26 @@ export default function MoviesManagement() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="eligibleForLive"
                   checked={eligibleForLive}
-                  onCheckedChange={setEligibleForLive}
+                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
                 />
                 <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
                   <Radio className="h-4 w-4 text-primary" />
-                  Eligible for Live TV
+                  Eligible for Live TV scheduling
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
+                />
+                <Label htmlFor="availableAsVOD" className="cursor-pointer flex items-center gap-1">
+                  <Tv className="h-4 w-4 text-primary" />
+                  Available as standalone VOD
                 </Label>
               </div>
             </div>
@@ -420,6 +438,11 @@ export default function MoviesManagement() {
                           <Radio className="h-4 w-4 text-primary" />
                         </span>
                       )}
+                      {video.availableAsVOD && (
+                        <span title="Available as VOD">
+                          <Tv className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground">{video.description}</p>
                     <div className="flex gap-2 mt-1">
@@ -431,6 +454,9 @@ export default function MoviesManagement() {
                       </span>
                       {video.eligibleForLive && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
+                      {video.availableAsVOD && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">VOD</span>
                       )}
                     </div>
                   </div>
@@ -537,7 +563,7 @@ export default function MoviesManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-video">Video File (leave empty to keep current)</Label>
+                <Label htmlFor="edit-video">Replace Video (Optional)</Label>
                 <Input
                   id="edit-video"
                   type="file"
@@ -547,7 +573,7 @@ export default function MoviesManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-thumbnail">Thumbnail (leave empty to keep current)</Label>
+                <Label htmlFor="edit-thumbnail">Replace Thumbnail (Optional)</Label>
                 <Input
                   id="edit-thumbnail"
                   type="file"
@@ -558,7 +584,7 @@ export default function MoviesManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-trailer">Trailer (leave empty to keep current)</Label>
+              <Label htmlFor="edit-trailer">Replace Trailer (Optional)</Label>
               <Input
                 id="edit-trailer"
                 type="file"
@@ -567,37 +593,49 @@ export default function MoviesManagement() {
               />
             </div>
 
-            <div className="flex items-center gap-6 flex-wrap">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="edit-isPremium"
                   checked={isPremium}
-                  onCheckedChange={setIsPremium}
+                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
                 />
-                <Label htmlFor="edit-isPremium">Premium Content</Label>
+                <Label htmlFor="edit-isPremium" className="cursor-pointer">Premium Content</Label>
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="edit-isOriginal"
                   checked={isOriginal}
-                  onCheckedChange={setIsOriginal}
+                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
                 />
-                <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
+                <Label htmlFor="edit-isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
                 </Label>
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="edit-eligibleForLive"
                   checked={eligibleForLive}
-                  onCheckedChange={setEligibleForLive}
+                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
                 />
-                <Label htmlFor="edit-eligibleForLive" className="flex items-center gap-1">
+                <Label htmlFor="edit-eligibleForLive" className="cursor-pointer flex items-center gap-1">
                   <Radio className="h-4 w-4 text-primary" />
-                  Eligible for Live TV
+                  Eligible for Live TV scheduling
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
+                />
+                <Label htmlFor="edit-availableAsVOD" className="cursor-pointer flex items-center gap-1">
+                  <Tv className="h-4 w-4 text-primary" />
+                  Available as standalone VOD
                 </Label>
               </div>
             </div>
@@ -608,26 +646,28 @@ export default function MoviesManagement() {
                   <span>Uploading...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-secondary rounded-full h-2">
+                <div className="w-full bg-black/60 rounded-full h-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
+                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
+                className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateVideo.isPending}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary"
               >
                 {updateVideo.isPending ? 'Updating...' : 'Update Movie'}
               </Button>

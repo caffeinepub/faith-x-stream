@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-prevent-users-from-seeking-forward-during-live-tv-playback-only-regular-and-guest-users-while-keeping-normal-seeking-behavior-for-non-live-vod-playback",
-      "featureTitle": "Prevent users from seeking forward during Live TV playback only (regular and guest users), while keeping normal seeking behavior for non-Live (VOD) playback.",
+      "featureId": "feature-update-moviesmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
+      "featureTitle": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
       "files": [
-        "frontend/src/components/VideoPlayer.tsx"
+        "frontend/src/components/admin/MoviesManagement.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -19,16 +19,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-17"
+        "REQ-22"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-live-tv-ad-breaks-that-auto-insert-at-scheduled-timestamps-during-the-currently-airing-program-and-make-those-ads-unskippable-no-seeking-scrubbing-skip-forward-for-regular-and-guest-users",
-      "featureTitle": "Implement Live TV ad breaks that auto-insert at scheduled timestamps during the currently airing program, and make those ads unskippable (no seeking/scrubbing/skip-forward) for regular and guest users.",
+      "featureId": "feature-update-podcastsmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
+      "featureTitle": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
       "files": [
-        "frontend/src/components/VideoPlayer.tsx",
-        "frontend/src/pages/LivePage.tsx"
+        "frontend/src/components/admin/PodcastsManagement.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -42,19 +41,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-18"
+        "REQ-23"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-an-admin-selectable-flag-on-uploaded-edited-videos-to-mark-whether-the-content-is-eligible-to-be-scheduled-into-live-tv-channels-versus-being-standalone-vod-only-and-enforce-that-eligibility-in-live-scheduling-ui",
-      "featureTitle": "Add an admin-selectable flag on uploaded/edited videos to mark whether the content is eligible to be scheduled into Live TV channels versus being standalone VOD-only, and enforce that eligibility in Live scheduling UI.",
+      "featureId": "feature-update-seriesmanagement-episode-creation-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-episodes",
+      "featureTitle": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
       "files": [
-        "frontend/src/components/admin/ClipsManagement.tsx",
-        "frontend/src/components/admin/LiveScheduleManagement.tsx",
-        "frontend/src/components/admin/MoviesManagement.tsx",
-        "frontend/src/components/admin/VideoManagement.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/admin/SeriesManagement.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -68,16 +63,17 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-19"
+        "REQ-24"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-allow-admins-to-configure-scheduled-ad-break-timestamps-for-live-tv-programs-in-the-live-schedule-so-that-scheduled-timestamps-can-be-managed-without-code-changes",
-      "featureTitle": "Allow admins to configure scheduled ad break timestamps for Live TV programs in the Live schedule so that scheduled timestamps can be managed without code changes.",
+      "featureId": "feature-filter-content-displayed-on-moviespage-podcastspage-if-exists-tvshowspage-and-seriesdetailpage-to-only-show-content-where-availableasvod-is-true-ensuring-live-only-content-does-not-appear-in-standalone-vod-sections",
+      "featureTitle": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
       "files": [
-        "frontend/src/components/admin/LiveScheduleManagement.tsx",
-        "frontend/src/pages/LivePage.tsx"
+        "frontend/src/pages/MoviesPage.tsx",
+        "frontend/src/pages/SeriesDetailPage.tsx",
+        "frontend/src/pages/TVShowsPage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -91,7 +87,74 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-20"
+        "REQ-25"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-enforce-eligibleforlive-flag-in-liveschedulemanagement-so-that-only-videos-with-eligibleforlive-true-can-be-added-to-live-channel-schedules-preventing-vod-only-content-from-being-scheduled",
+      "featureTitle": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
+      "files": [
+        "frontend/src/components/admin/LiveScheduleManagement.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-26"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-clipsmanagement-to-display-both-manually-uploaded-clips-and-auto-generated-clips-showing-the-source-video-title-and-a-caption-for-each-clip-and-allow-admins-to-edit-clip-captions-and-metadata-without-breaking-the-link-to-the-source-video",
+      "featureTitle": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
+      "files": [
+        "frontend/src/components/admin/ClipsManagement.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-29"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-podcasts-section-in-adminpage-remains-a-separate-dedicated-tab-with-its-own-upload-management-interface-podcastsmanagement-that-defaults-contenttype-to-podcast-and-filters-the-manage-list-to-only-show-podcast-type-videos",
+      "featureTitle": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+      "files": [
+        "frontend/src/components/admin/PodcastsManagement.tsx",
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-30"
       ],
       "confidence": "high"
     }

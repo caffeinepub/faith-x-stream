@@ -126,6 +126,11 @@ const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/search',
   component: SearchResultsPage,
+  validateSearch: (search: Record<string, unknown>): { q?: string } => {
+    return {
+      q: typeof search.q === 'string' ? search.q : undefined,
+    };
+  },
 });
 
 const loginRoute = createRoute({

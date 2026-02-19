@@ -1,5 +1,8 @@
 import Map "mo:core/Map";
-import Text "mo:core/Text";
+import Nat "mo:core/Nat";
+import Iter "mo:core/Iter";
+import Principal "mo:core/Principal";
+import Storage "blob-storage/Storage";
 
 module {
   type OldContentType = {
@@ -23,17 +26,19 @@ module {
     isPremium : Bool;
     isOriginal : Bool;
     isClip : Bool;
-    videoUrl : Blob;
-    trailerUrl : ?Blob;
-    previewClipUrl : ?Blob;
-    thumbnailUrl : Blob;
+    videoUrl : Storage.ExternalBlob;
+    trailerUrl : ?Storage.ExternalBlob;
+    previewClipUrl : ?Storage.ExternalBlob;
+    thumbnailUrl : Storage.ExternalBlob;
     roles : ?Text;
     genre : ?Text;
     releaseYear : ?Nat;
+    eligibleForLive : Bool;
   };
 
   type OldActor = {
     videos : Map.Map<Text, OldVideoContent>;
+    // other fields unchanged for this migration
   };
 
   type NewContentType = {
@@ -57,29 +62,35 @@ module {
     isPremium : Bool;
     isOriginal : Bool;
     isClip : Bool;
-    videoUrl : Blob;
-    trailerUrl : ?Blob;
-    previewClipUrl : ?Blob;
-    thumbnailUrl : Blob;
+    videoUrl : Storage.ExternalBlob;
+    trailerUrl : ?Storage.ExternalBlob;
+    previewClipUrl : ?Storage.ExternalBlob;
+    thumbnailUrl : Storage.ExternalBlob;
     roles : ?Text;
     genre : ?Text;
     releaseYear : ?Nat;
     eligibleForLive : Bool;
+    availableAsVOD : Bool;
+    sourceVideoId : ?Text;
+    clipCaption : ?Text;
   };
 
   type NewActor = {
     videos : Map.Map<Text, NewVideoContent>;
+    // other fields unchanged for this migration
   };
 
   public func run(old : OldActor) : NewActor {
-    let videos = old.videos.map<Text, OldVideoContent, NewVideoContent>(
-      func(_, v) {
+    let newVideos = old.videos.map<Text, OldVideoContent, NewVideoContent>(
+      func(_id, oldVideo) {
         {
-          v with
-          eligibleForLive = false;
+          oldVideo with
+          availableAsVOD = true; // default to true for existing videos
+          sourceVideoId = null;
+          clipCaption = null;
         };
       }
     );
-    { videos };
+    { videos = newVideos };
   };
 };

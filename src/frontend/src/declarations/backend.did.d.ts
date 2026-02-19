@@ -191,6 +191,8 @@ export interface VideoContent {
   'thumbnailUrl' : ExternalBlob,
   'contentType' : ContentType,
   'isPremium' : boolean,
+  'availableAsVOD' : boolean,
+  'sourceVideoId' : [] | [string],
   'isOriginal' : boolean,
   'description' : string,
   'isClip' : boolean,
@@ -200,6 +202,7 @@ export interface VideoContent {
   'videoUrl' : ExternalBlob,
   'roles' : [] | [string],
   'releaseYear' : [] | [bigint],
+  'clipCaption' : [] | [string],
 }
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,

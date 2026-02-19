@@ -7,7 +7,7 @@ import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Trash2, Upload, Star, Film, Edit, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
@@ -25,6 +25,7 @@ export default function VideoManagement() {
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
   const [eligibleForLive, setEligibleForLive] = useState(false);
+  const [availableAsVOD, setAvailableAsVOD] = useState(true);
   const [roles, setRoles] = useState('');
   const [genre, setGenre] = useState('');
   const [releaseYear, setReleaseYear] = useState('');
@@ -76,6 +77,7 @@ export default function VideoManagement() {
         genre: genre || undefined,
         releaseYear: releaseYear ? BigInt(releaseYear) : undefined,
         eligibleForLive,
+        availableAsVOD,
       };
 
       await addVideo.mutateAsync(video);
@@ -88,6 +90,7 @@ export default function VideoManagement() {
       setIsPremium(false);
       setIsOriginal(false);
       setEligibleForLive(false);
+      setAvailableAsVOD(true);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -101,7 +104,20 @@ export default function VideoManagement() {
     }
   };
 
-  const handleEdit = (video: VideoContent) => {
+  const openEditDialog = (video: VideoContent) => {
+    setTitle(video.title);
+    setDescription(video.description);
+    setContentType(video.contentType);
+    setIsPremium(video.isPremium);
+    setIsOriginal(video.isOriginal);
+    setEligibleForLive(video.eligibleForLive);
+    setAvailableAsVOD(video.availableAsVOD);
+    setRoles(video.roles || '');
+    setGenre(video.genre || '');
+    setReleaseYear(video.releaseYear ? String(video.releaseYear) : '');
+    setVideoFile(null);
+    setTrailerFile(null);
+    setThumbnailFile(null);
     setEditingVideo(video);
     setEditDialogOpen(true);
   };
@@ -115,7 +131,6 @@ export default function VideoManagement() {
       let thumbnailBlob = editingVideo.thumbnailUrl;
       let trailerBlob = editingVideo.trailerUrl;
 
-      // Only update if new files are selected
       if (videoFile) {
         const videoBytes = new Uint8Array(await videoFile.arrayBuffer());
         videoBlob = ExternalBlob.fromBytes(videoBytes).withUploadProgress((percentage) => {
@@ -141,6 +156,7 @@ export default function VideoManagement() {
         isPremium,
         isOriginal,
         eligibleForLive,
+        availableAsVOD,
         videoUrl: videoBlob,
         trailerUrl: trailerBlob,
         thumbnailUrl: thumbnailBlob,
@@ -152,7 +168,6 @@ export default function VideoManagement() {
       await updateVideo.mutateAsync({ videoId: editingVideo.id, video: updatedVideo });
       toast.success('Video updated successfully!');
       
-      // Reset form
       setEditDialogOpen(false);
       setEditingVideo(null);
       setTitle('');
@@ -161,6 +176,7 @@ export default function VideoManagement() {
       setIsPremium(false);
       setIsOriginal(false);
       setEligibleForLive(false);
+      setAvailableAsVOD(true);
       setRoles('');
       setGenre('');
       setReleaseYear('');
@@ -172,22 +188,6 @@ export default function VideoManagement() {
       toast.error('Failed to update video');
       console.error(error);
     }
-  };
-
-  const openEditDialog = (video: VideoContent) => {
-    setTitle(video.title);
-    setDescription(video.description);
-    setContentType(video.contentType);
-    setIsPremium(video.isPremium);
-    setIsOriginal(video.isOriginal);
-    setEligibleForLive(video.eligibleForLive);
-    setRoles(video.roles || '');
-    setGenre(video.genre || '');
-    setReleaseYear(video.releaseYear ? String(video.releaseYear) : '');
-    setVideoFile(null);
-    setTrailerFile(null);
-    setThumbnailFile(null);
-    handleEdit(video);
   };
 
   const handleDelete = async (videoId: string) => {
@@ -323,7 +323,7 @@ export default function VideoManagement() {
             <div className="space-y-2">
               <Label htmlFor="trailer" className="flex items-center gap-2">
                 <Film className="h-4 w-4" />
-                Trailer Video (Optional - for preview in featured slideshow)
+                Trailer Video (Optional)
               </Label>
               <Input
                 id="trailer"
@@ -332,9 +332,6 @@ export default function VideoManagement() {
                 onChange={(e) => setTrailerFile(e.target.files?.[0] || null)}
                 className="bg-black/60 border-primary/40"
               />
-              <p className="text-xs text-muted-foreground">
-                Upload a short trailer that will play automatically in the featured slideshow. If no trailer is provided, the first 30-60 seconds of the main video will be used as preview.
-              </p>
             </div>
 
             <div className="flex items-center gap-6 flex-wrap">
@@ -369,6 +366,15 @@ export default function VideoManagement() {
                   <Radio className="h-4 w-4 text-primary" />
                   Eligible for Live TV
                 </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={setAvailableAsVOD}
+                />
+                <Label htmlFor="availableAsVOD" className="cursor-pointer">Available as VOD</Label>
               </div>
             </div>
 
@@ -440,6 +446,9 @@ export default function VideoManagement() {
                       </span>
                       {video.eligibleForLive && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
+                      {video.availableAsVOD && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">VOD</span>
                       )}
                     </div>
                   </div>
@@ -549,7 +558,7 @@ export default function VideoManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-video">Video File (leave empty to keep current)</Label>
+                <Label htmlFor="edit-video">Replace Video (Optional)</Label>
                 <Input
                   id="edit-video"
                   type="file"
@@ -559,7 +568,7 @@ export default function VideoManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-thumbnail">Thumbnail (leave empty to keep current)</Label>
+                <Label htmlFor="edit-thumbnail">Replace Thumbnail (Optional)</Label>
                 <Input
                   id="edit-thumbnail"
                   type="file"
@@ -570,7 +579,7 @@ export default function VideoManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-trailer">Trailer (leave empty to keep current)</Label>
+              <Label htmlFor="edit-trailer">Replace Trailer (Optional)</Label>
               <Input
                 id="edit-trailer"
                 type="file"
@@ -586,7 +595,7 @@ export default function VideoManagement() {
                   checked={isPremium}
                   onCheckedChange={setIsPremium}
                 />
-                <Label htmlFor="edit-isPremium">Premium Content</Label>
+                <Label htmlFor="edit-isPremium" className="cursor-pointer">Premium Content</Label>
               </div>
 
               <div className="flex items-center gap-2">
@@ -595,7 +604,7 @@ export default function VideoManagement() {
                   checked={isOriginal}
                   onCheckedChange={setIsOriginal}
                 />
-                <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
+                <Label htmlFor="edit-isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
                 </Label>
@@ -607,10 +616,19 @@ export default function VideoManagement() {
                   checked={eligibleForLive}
                   onCheckedChange={setEligibleForLive}
                 />
-                <Label htmlFor="edit-eligibleForLive" className="flex items-center gap-1">
+                <Label htmlFor="edit-eligibleForLive" className="cursor-pointer flex items-center gap-1">
                   <Radio className="h-4 w-4 text-primary" />
                   Eligible for Live TV
                 </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="edit-availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={setAvailableAsVOD}
+                />
+                <Label htmlFor="edit-availableAsVOD" className="cursor-pointer">Available as VOD</Label>
               </div>
             </div>
 
@@ -620,26 +638,28 @@ export default function VideoManagement() {
                   <span>Uploading...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-secondary rounded-full h-2">
+                <div className="w-full bg-black/60 rounded-full h-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
+                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
+                className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateVideo.isPending}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary"
               >
                 {updateVideo.isPending ? 'Updating...' : 'Update Video'}
               </Button>

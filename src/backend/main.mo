@@ -9,12 +9,12 @@ import Stripe "stripe/stripe";
 import OutCall "http-outcalls/outcall";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-import Migration "migration";
 import Bool "mo:core/Bool";
 import Array "mo:core/Array";
+import Migration "migration";
+import List "mo:core/List";
 
 // Set migration to run on upgrade
-
 (with migration = Migration.run)
 actor {
   public type ContentType = {
@@ -46,6 +46,9 @@ actor {
     genre : ?Text;
     releaseYear : ?Nat;
     eligibleForLive : Bool;
+    availableAsVOD : Bool; // New field
+    sourceVideoId : ?Text; // Link back to original video for clips
+    clipCaption : ?Text; // Caption for clips
   };
 
   public type TVSeries = {
@@ -259,6 +262,10 @@ actor {
   };
 
   public query ({ caller }) func getCallerRegularUserStatus() : async RegularUserStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access regular user status");
+    };
+    
     let currentUser = getActiveRegularUser();
     switch (currentUser) {
       case (null) {
@@ -594,20 +601,76 @@ actor {
     OutCall.transform(input);
   };
 
+  // ===== CLIP MANAGER (ADMIN ONLY) =====
+
+  func createClip(originalVideo : VideoContent, caption : Text, clipId : Text) : VideoContent {
+    {
+      originalVideo with
+      id = clipId;
+      isClip = true;
+      sourceVideoId = ?originalVideo.id;
+      clipCaption = ?caption;
+    };
+  };
+
+  func getClipVariants(title : Text) : [Text] {
+    [
+      title # " - Short",
+      title # " - Highlight",
+      title # " - Quick View",
+    ];
+  };
+
+  func generateClips(originalVideo : VideoContent) : [VideoContent] {
+    let captions = getClipVariants(originalVideo.title);
+    let clips = List.fromIter<VideoContent>([].values());
+    for (caption in captions.values()) {
+      let clipId = originalVideo.id # "-clip-" # caption;
+      let clip = createClip(originalVideo, caption, clipId);
+      clips.add(clip);
+    };
+    clips.toArray();
+  };
+
+  func createClipsForVideo(video : VideoContent) : [VideoContent] {
+    if (video.isClip) {
+      [];
+    } else {
+      generateClips(video);
+    };
+  };
+
+  func updateClipsForVideo(video : VideoContent) : [VideoContent] {
+    videos.remove(video.id);
+    createClipsForVideo(video);
+  };
+
   // ===== CONTENT MANAGEMENT (ADMIN ONLY) =====
 
   public shared ({ caller }) func addVideo(video : VideoContent) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
+
     videos.add(video.id, video);
+
+    let clips = createClipsForVideo(video);
+    for (clip in clips.values()) {
+      videos.add(clip.id, clip);
+    };
   };
 
   public shared ({ caller }) func updateVideo(videoId : Text, video : VideoContent) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
+
     videos.add(videoId, video);
+
+    let clips = updateClipsForVideo(video);
+    for (clip in clips.values()) {
+      videos.add(clip.id, clip);
+    };
   };
 
   public shared ({ caller }) func deleteVideo(videoId : Text) : async () {

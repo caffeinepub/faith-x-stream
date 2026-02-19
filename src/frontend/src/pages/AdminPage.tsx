@@ -1,97 +1,146 @@
+import { useState } from 'react';
 import { useIsCallerAdmin } from '../hooks/useQueries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { Lock } from 'lucide-react';
-import { Skeleton } from '../components/ui/skeleton';
-import VideoManagement from '../components/admin/VideoManagement';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Shield, Video, Scissors, Tv, Radio, Building2, DollarSign, BarChart3, CreditCard, Podcast } from 'lucide-react';
+import MoviesManagement from '../components/admin/MoviesManagement';
+import PodcastsManagement from '../components/admin/PodcastsManagement';
+import ClipsManagement from '../components/admin/ClipsManagement';
 import SeriesManagement from '../components/admin/SeriesManagement';
 import ChannelManagement from '../components/admin/ChannelManagement';
-import ManualAdsManagement from '../components/admin/ManualAdsManagement';
-import StripeSetup from '../components/admin/StripeSetup';
-import BrandManagement from '../components/admin/BrandManagement';
-import ClipsManagement from '../components/admin/ClipsManagement';
 import LiveScheduleManagement from '../components/admin/LiveScheduleManagement';
+import BrandManagement from '../components/admin/BrandManagement';
+import ManualAdsManagement from '../components/admin/ManualAdsManagement';
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
+import StripeSetup from '../components/admin/StripeSetup';
 
 export default function AdminPage() {
   const { data: isAdmin, isLoading } = useIsCallerAdmin();
+  const [activeTab, setActiveTab] = useState('movies');
 
   if (isLoading) {
     return (
-      <div className="container px-4 md:px-8 py-12">
-        <Skeleton className="h-10 w-48 mb-8" />
-        <Skeleton className="h-96 w-full" />
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Loading...</p>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="container px-4 md:px-8 py-12">
-        <Alert className="gradient-card border-2 border-destructive shadow-xl">
-          <Lock className="h-4 w-4 text-destructive" />
-          <AlertTitle className="text-destructive">Access Denied</AlertTitle>
-          <AlertDescription>
-            You do not have permission to access the admin panel.
-          </AlertDescription>
-        </Alert>
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Shield className="h-6 w-6" />
+              Access Denied
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              You do not have permission to access the admin panel.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container px-4 md:px-8 py-12">
-      <h1 className="text-3xl font-bold mb-8 text-glow-primary">Admin Panel</h1>
+    <div className="min-h-screen py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground">Manage your streaming platform</p>
+        </div>
 
-      <Tabs defaultValue="videos" className="space-y-6">
-        <TabsList className="grid w-full max-w-5xl grid-cols-9 h-auto gradient-card border-2 border-primary/30 p-1">
-          <TabsTrigger value="videos" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Videos</TabsTrigger>
-          <TabsTrigger value="clips" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Clips</TabsTrigger>
-          <TabsTrigger value="series" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Series</TabsTrigger>
-          <TabsTrigger value="channels" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Channels</TabsTrigger>
-          <TabsTrigger value="live" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Live TV</TabsTrigger>
-          <TabsTrigger value="brands" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Brands</TabsTrigger>
-          <TabsTrigger value="ads" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Ads</TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Analytics</TabsTrigger>
-          <TabsTrigger value="stripe" className="text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl">Stripe</TabsTrigger>
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-10 gap-2 h-auto p-2 bg-gradient-to-r from-black/80 to-primary/10">
+            <TabsTrigger value="movies" className="flex items-center gap-2">
+              <Video className="h-4 w-4" />
+              <span className="hidden sm:inline">Movies</span>
+            </TabsTrigger>
+            <TabsTrigger value="podcasts" className="flex items-center gap-2">
+              <Podcast className="h-4 w-4" />
+              <span className="hidden sm:inline">Podcasts</span>
+            </TabsTrigger>
+            <TabsTrigger value="clips" className="flex items-center gap-2">
+              <Scissors className="h-4 w-4" />
+              <span className="hidden sm:inline">Clips</span>
+            </TabsTrigger>
+            <TabsTrigger value="series" className="flex items-center gap-2">
+              <Tv className="h-4 w-4" />
+              <span className="hidden sm:inline">Series</span>
+            </TabsTrigger>
+            <TabsTrigger value="channels" className="flex items-center gap-2">
+              <Radio className="h-4 w-4" />
+              <span className="hidden sm:inline">Channels</span>
+            </TabsTrigger>
+            <TabsTrigger value="live" className="flex items-center gap-2">
+              <Radio className="h-4 w-4" />
+              <span className="hidden sm:inline">Live TV</span>
+            </TabsTrigger>
+            <TabsTrigger value="brands" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Brands</span>
+            </TabsTrigger>
+            <TabsTrigger value="ads" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Ads</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="stripe" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Stripe</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="videos">
-          <VideoManagement />
-        </TabsContent>
+          <TabsContent value="movies">
+            <MoviesManagement />
+          </TabsContent>
 
-        <TabsContent value="clips">
-          <ClipsManagement />
-        </TabsContent>
+          <TabsContent value="podcasts">
+            <PodcastsManagement />
+          </TabsContent>
 
-        <TabsContent value="series">
-          <SeriesManagement />
-        </TabsContent>
+          <TabsContent value="clips">
+            <ClipsManagement />
+          </TabsContent>
 
-        <TabsContent value="channels">
-          <ChannelManagement />
-        </TabsContent>
+          <TabsContent value="series">
+            <SeriesManagement />
+          </TabsContent>
 
-        <TabsContent value="live">
-          <LiveScheduleManagement />
-        </TabsContent>
+          <TabsContent value="channels">
+            <ChannelManagement />
+          </TabsContent>
 
-        <TabsContent value="brands">
-          <BrandManagement />
-        </TabsContent>
+          <TabsContent value="live">
+            <LiveScheduleManagement />
+          </TabsContent>
 
-        <TabsContent value="ads">
-          <ManualAdsManagement />
-        </TabsContent>
+          <TabsContent value="brands">
+            <BrandManagement />
+          </TabsContent>
 
-        <TabsContent value="analytics">
-          <AnalyticsDashboard />
-        </TabsContent>
+          <TabsContent value="ads">
+            <ManualAdsManagement />
+          </TabsContent>
 
-        <TabsContent value="stripe">
-          <StripeSetup />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="stripe">
+            <StripeSetup />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

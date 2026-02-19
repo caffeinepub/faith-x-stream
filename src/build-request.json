@@ -1,108 +1,218 @@
 {
   "kind": "build_request",
-  "title": "Live TV: disable forward seeking, scheduled unskippable ad breaks, and Live-eligible upload flag",
-  "projectName": "Caffeine Live TV",
+  "title": "Add dual availability toggles and auto-generate clips from uploaded videos",
+  "projectName": "Streaming Platform",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-17",
-      "text": "Prevent users from seeking forward during Live TV playback only (regular and guest users), while keeping normal seeking behavior for non-Live (VOD) playback.",
+      "id": "REQ-21",
+      "text": "Add two independent toggles to the backend Video type: 'eligibleForLive' (already exists) and a new 'availableAsVOD' boolean field that controls whether content appears as standalone VOD in Movies/Podcasts/TV Shows sections.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "Two separate toggles",
+          "on the live program(s), on the platform itself, or it can be on both"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend Video type includes both eligibleForLive and availableAsVOD boolean fields",
+        "Both flags can be true, false, or any combination independently",
+        "Existing eligibleForLive field continues to work as before"
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "text": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-final"
         ],
         "quotes": [
-          "1. Live TV Channels",
-          "Every program should be live, no seeking forward"
+          "Movies, Podcasts, and TV Shows (selecting episodes)",
+          "Two separate toggles"
         ]
       },
       "acceptanceCriteria": [
-        "When VideoPlayer is rendered with isLiveTV=true, the scrubber/seek UI cannot be used to jump forward beyond the current live position for the program.",
-        "When isLiveTV=true, the 10-second forward skip control is not available and keyboard/mouse interactions cannot advance playback beyond the computed live position.",
-        "When isLiveTV=false, seeking and skip controls continue to work as they do today."
+        "MoviesManagement upload form shows both checkboxes",
+        "MoviesManagement edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
       ]
     },
     {
-      "id": "REQ-18",
-      "text": "Implement Live TV ad breaks that auto-insert at scheduled timestamps during the currently airing program, and make those ads unskippable (no seeking/scrubbing/skip-forward) for regular and guest users.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Yes, ads should auto-insert at scheduled timestamps but the user should not be able to skip them."
-        ]
-      },
-      "acceptanceCriteria": [
-        "For Live TV playback (isLiveTV=true) and non-premium viewers, when the current program reaches each scheduled ad timestamp, the player automatically switches to ad playback.",
-        "While an ad is playing, the user cannot seek/scrub or skip forward; attempts to change playback position do not bypass the ad.",
-        "After the ad finishes, playback returns to the correct Live TV program position (resume the main content at the correct timestamp, not at 0).",
-        "Premium users do not see these scheduled Live TV ads (consistent with existing free-only ad behavior)."
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "text": "Add an admin-selectable flag on uploaded/edited videos to mark whether the content is eligible to be scheduled into Live TV channels versus being standalone VOD-only, and enforce that eligibility in Live scheduling UI.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "We should also be able to select what content we have when I upload whether it can be shown live or just on the platform as a standalone content",
-          "Yes"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend VideoContent includes a persisted field representing Live TV eligibility (e.g., Live-eligible vs VOD-only), and add/update operations preserve it.",
-        "Admin video upload/edit UIs expose a clear toggle/select to set this Live TV eligibility value using English user-facing text.",
-        "LiveScheduleManagement only offers Live-eligible videos in the “Choose a video” selector for scheduling (or clearly labels and blocks ineligible items from being scheduled).",
-        "Existing videos without an explicit eligibility value remain valid after upgrade (migration applied only if needed) and default behavior is consistent and documented in code."
-      ]
-    },
-    {
-      "id": "REQ-20",
-      "text": "Allow admins to configure scheduled ad break timestamps for Live TV programs in the Live schedule so that scheduled timestamps can be managed without code changes.",
+      "id": "REQ-23",
+      "text": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-final"
         ],
         "quotes": [
-          "Yes, ads should auto-insert at scheduled timestamps"
+          "Movies, Podcasts, and TV Shows (selecting episodes)",
+          "Two separate toggles"
         ]
       },
       "acceptanceCriteria": [
-        "LiveScheduleManagement provides a way to add/remove one or more ad break entries for a scheduled program, including a timestamp/position value and associated ad media selection.",
-        "The configured ad breaks are saved into the existing LiveChannel.schedule entries (ScheduledContent.adLocations) and are used by LivePage/VideoPlayer to trigger scheduled ad playback.",
-        "All new admin UI text is in English."
+        "PodcastsManagement upload form shows both checkboxes",
+        "PodcastsManagement edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "text": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "Movies, Podcasts, and TV Shows (selecting episodes)",
+          "Two separate toggles"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Episode creation form in SeriesManagement shows both checkboxes",
+        "Episode edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "text": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "on the platform itself",
+          "Two separate toggles"
+        ]
+      },
+      "acceptanceCriteria": [
+        "MoviesPage only displays movies with availableAsVOD=true",
+        "TVShowsPage only displays series with at least one episode where availableAsVOD=true",
+        "SeriesDetailPage only shows episodes where availableAsVOD=true",
+        "Live-only content (availableAsVOD=false) is hidden from these pages"
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "text": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "only on the live program(s)",
+          "Two separate toggles"
+        ]
+      },
+      "acceptanceCriteria": [
+        "LiveScheduleManagement filters available videos to only show eligibleForLive=true content",
+        "Attempting to schedule a video with eligibleForLive=false is prevented or shows a validation error",
+        "Existing scheduled programs continue to work"
+      ]
+    },
+    {
+      "id": "REQ-27",
+      "text": "Implement auto-generation of clip entries in the backend when a video is uploaded or updated: for each uploaded video (Movies/Podcasts/TV Shows episodes), automatically create linked clip records that reference the source video, use the same video file URL, share the same title as the source content, but include a generated caption field with a descriptive variation.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "the video uploaded creates its own clips/short-form content based on that uploaded version using the same name of the content, just different captions"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a video is uploaded via addVideo, the backend automatically creates one or more clip records linked to that video",
+        "Each auto-generated clip uses the same videoUrl as the source video",
+        "Each clip has the same title as the source video but includes a distinct caption string",
+        "Clips are stored with contentType='Clip' and include a reference to the source video ID"
+      ]
+    },
+    {
+      "id": "REQ-28",
+      "text": "Extend the backend Video type to include an optional sourceVideoId field that links auto-generated clips back to their original video, enabling traceability and potential playback-range metadata for clips.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "creates its own clips/short-form content based on that uploaded version"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Video type includes an optional sourceVideoId : ?Text field",
+        "Auto-generated clips populate sourceVideoId with the ID of the originating video",
+        "Non-clip videos leave sourceVideoId as null"
+      ]
+    },
+    {
+      "id": "REQ-29",
+      "text": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "We have a clips/short-form section",
+          "just different captions"
+        ]
+      },
+      "acceptanceCriteria": [
+        "ClipsManagement displays all clips including auto-generated ones",
+        "Each clip row shows its title, caption, and source video title if available",
+        "Admins can edit clip captions in the edit dialog",
+        "Editing a clip does not remove its sourceVideoId link"
+      ]
+    },
+    {
+      "id": "REQ-30",
+      "text": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "Keep Movies Separate and have Podcasts as another separate section as well"
+        ]
+      },
+      "acceptanceCriteria": [
+        "AdminPage includes a 'Podcasts' tab separate from Movies and other sections",
+        "Selecting the Podcasts tab renders PodcastsManagement component",
+        "PodcastsManagement upload form defaults contentType to Podcast",
+        "PodcastsManagement manage list only displays videos with contentType=Podcast"
       ]
     }
   ],
   "constraints": [
-    "Respect single-actor backend architecture: all Motoko logic must remain in backend/main.mo; only add backend/migration.mo changes if persisted state requires migration.",
-    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*.",
-    "Use the existing React + TypeScript + Tailwind + React Query stack; no external databases or third-party auth beyond existing patterns."
+    "Do not modify frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui (read-only paths)",
+    "All Motoko logic must remain in the single main actor file (backend/main.mo)",
+    "Only generate backend/migration.mo if upgrading existing state (adding availableAsVOD field and sourceVideoId field requires migration)",
+    "Auto-generated clips must not duplicate manually uploaded clips"
   ],
   "nonGoals": [
-    "Do not change seeking behavior for on-demand (non-Live) movies, series episodes, clips, or podcasts.",
-    "Do not introduce real-time/WebSocket-based live streaming; continue using the existing scheduled VOD-to-live approach.",
-    "Do not add new third-party ad SDKs or external ad servers; use existing ad media storage and scheduling structures."
+    "Implementing AI-based clip detection or video segmentation (clips reuse the full source video URL)",
+    "Creating separate video files or transcoding for clips",
+    "Modifying existing Live TV scheduling or ad insertion logic beyond filtering eligibleForLive content",
+    "Changing the existing authentication or user profile flows"
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

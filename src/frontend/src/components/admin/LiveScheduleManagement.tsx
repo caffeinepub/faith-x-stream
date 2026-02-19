@@ -1,169 +1,113 @@
 import { useState } from 'react';
-import { useGetAllLiveChannels, useUpdateLiveChannel, useGetEligibleVideosForLive, useGetAllAdMedia } from '../../hooks/useQueries';
+import { useGetAllLiveChannels, useUpdateLiveChannel, useGetEligibleVideosForLive } from '../../hooks/useQueries';
 import { Button } from '../ui/button';
-import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Checkbox } from '../ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Calendar, Plus, Trash2, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import { Radio, Loader2, Plus, Trash2, Star, Clock } from 'lucide-react';
-import type { ScheduledContent, AdLocation } from '../../backend';
-import { ExternalBlob } from '../../backend';
+import type { LiveChannel, ScheduledContent } from '../../backend';
 
 export default function LiveScheduleManagement() {
   const { data: channels, isLoading: channelsLoading } = useGetAllLiveChannels();
   const { data: eligibleVideos, isLoading: videosLoading } = useGetEligibleVideosForLive();
-  const { data: adMedia } = useGetAllAdMedia();
   const updateChannel = useUpdateLiveChannel();
 
-  const [selectedChannelId, setSelectedChannelId] = useState<string>('');
-  const [newProgramVideoId, setNewProgramVideoId] = useState<string>('');
-  const [newProgramStartTime, setNewProgramStartTime] = useState<string>('');
-  const [newProgramEndTime, setNewProgramEndTime] = useState<string>('');
-  const [newProgramIsOriginal, setNewProgramIsOriginal] = useState(false);
+  const [selectedChannel, setSelectedChannel] = useState<LiveChannel | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
-  // Ad break state
-  const [editingProgramIndex, setEditingProgramIndex] = useState<number | null>(null);
-  const [adBreaks, setAdBreaks] = useState<AdLocation[]>([]);
+  const [selectedVideoId, setSelectedVideoId] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [isOriginal, setIsOriginal] = useState(false);
 
-  const selectedChannel = channels?.find(c => c.id === selectedChannelId);
+  const openScheduleDialog = (channel: LiveChannel) => {
+    setSelectedChannel(channel);
+    setSelectedVideoId('');
+    setStartTime('');
+    setEndTime('');
+    setIsOriginal(false);
+    setScheduleDialogOpen(true);
+  };
 
-  const handleAddProgram = async () => {
-    if (!selectedChannel || !newProgramVideoId || !newProgramStartTime || !newProgramEndTime) {
-      toast.error('Please fill in all fields');
+  const handleAddProgram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedChannel) return;
+
+    if (!selectedVideoId) {
+      toast.error('Please select a video');
       return;
     }
 
-    const startTime = new Date(newProgramStartTime).getTime();
-    const endTime = new Date(newProgramEndTime).getTime();
-
-    if (endTime <= startTime) {
-      toast.error('End time must be after start time');
+    const selectedVideo = eligibleVideos?.find(v => v.id === selectedVideoId);
+    if (!selectedVideo) {
+      toast.error('Selected video is not eligible for Live TV scheduling');
       return;
     }
-
-    const newProgram: ScheduledContent = {
-      contentId: newProgramVideoId,
-      startTime: BigInt(startTime),
-      endTime: BigInt(endTime),
-      isOriginal: newProgramIsOriginal,
-      adLocations: undefined,
-    };
-
-    const updatedSchedule = [...selectedChannel.schedule, newProgram].sort(
-      (a, b) => Number(a.startTime) - Number(b.startTime)
-    );
 
     try {
-      await updateChannel.mutateAsync({
-        channelId: selectedChannel.id,
-        channel: {
-          ...selectedChannel,
-          schedule: updatedSchedule,
-        },
-      });
-      toast.success('Program added successfully');
-      setNewProgramVideoId('');
-      setNewProgramStartTime('');
-      setNewProgramEndTime('');
-      setNewProgramIsOriginal(false);
+      const startTimestamp = new Date(startTime).getTime();
+      const endTimestamp = new Date(endTime).getTime();
+
+      if (endTimestamp <= startTimestamp) {
+        toast.error('End time must be after start time');
+        return;
+      }
+
+      const newProgram: ScheduledContent = {
+        contentId: selectedVideoId,
+        startTime: BigInt(startTimestamp),
+        endTime: BigInt(endTimestamp),
+        isOriginal,
+      };
+
+      const updatedChannel: LiveChannel = {
+        ...selectedChannel,
+        schedule: [...selectedChannel.schedule, newProgram],
+      };
+
+      await updateChannel.mutateAsync({ channelId: selectedChannel.id, channel: updatedChannel });
+      toast.success('Program added to schedule!');
+      
+      setScheduleDialogOpen(false);
+      setSelectedVideoId('');
+      setStartTime('');
+      setEndTime('');
+      setIsOriginal(false);
     } catch (error) {
       toast.error('Failed to add program');
       console.error(error);
     }
   };
 
-  const handleRemoveProgram = async (index: number) => {
-    if (!selectedChannel) return;
-
-    const updatedSchedule = selectedChannel.schedule.filter((_, i) => i !== index);
+  const handleRemoveProgram = async (channel: LiveChannel, programIndex: number) => {
+    if (!confirm('Are you sure you want to remove this program?')) return;
 
     try {
-      await updateChannel.mutateAsync({
-        channelId: selectedChannel.id,
-        channel: {
-          ...selectedChannel,
-          schedule: updatedSchedule,
-        },
-      });
-      toast.success('Program removed successfully');
+      const updatedSchedule = channel.schedule.filter((_, index) => index !== programIndex);
+      const updatedChannel: LiveChannel = {
+        ...channel,
+        schedule: updatedSchedule,
+      };
+
+      await updateChannel.mutateAsync({ channelId: channel.id, channel: updatedChannel });
+      toast.success('Program removed from schedule');
     } catch (error) {
       toast.error('Failed to remove program');
       console.error(error);
     }
   };
 
-  const handleEditAdBreaks = (index: number) => {
-    if (!selectedChannel) return;
-    const program = selectedChannel.schedule[index];
-    setEditingProgramIndex(index);
-    setAdBreaks(program.adLocations || []);
-  };
-
-  const handleAddAdBreak = () => {
-    setAdBreaks([...adBreaks, { position: BigInt(0), adUrls: [] }]);
-  };
-
-  const handleRemoveAdBreak = (adIndex: number) => {
-    setAdBreaks(adBreaks.filter((_, i) => i !== adIndex));
-  };
-
-  const handleUpdateAdBreakPosition = (adIndex: number, position: string) => {
-    const updated = [...adBreaks];
-    updated[adIndex] = { ...updated[adIndex], position: BigInt(Math.floor(Number(position))) };
-    setAdBreaks(updated);
-  };
-
-  const handleUpdateAdBreakMedia = (adIndex: number, adMediaId: string) => {
-    const ad = adMedia?.find(a => a.id === adMediaId);
-    if (!ad) return;
-    
-    const updated = [...adBreaks];
-    updated[adIndex] = { ...updated[adIndex], adUrls: [ad.adFile] };
-    setAdBreaks(updated);
-  };
-
-  const handleSaveAdBreaks = async () => {
-    if (!selectedChannel || editingProgramIndex === null) return;
-
-    const updatedSchedule = [...selectedChannel.schedule];
-    updatedSchedule[editingProgramIndex] = {
-      ...updatedSchedule[editingProgramIndex],
-      adLocations: adBreaks.length > 0 ? adBreaks : undefined,
-    };
-
-    try {
-      await updateChannel.mutateAsync({
-        channelId: selectedChannel.id,
-        channel: {
-          ...selectedChannel,
-          schedule: updatedSchedule,
-        },
-      });
-      toast.success('Ad breaks saved successfully');
-      setEditingProgramIndex(null);
-      setAdBreaks([]);
-    } catch (error) {
-      toast.error('Failed to save ad breaks');
-      console.error(error);
-    }
+  const getVideoTitle = (videoId: string): string => {
+    const video = eligibleVideos?.find(v => v.id === videoId);
+    return video?.title || 'Unknown Video';
   };
 
   if (channelsLoading || videosLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!channels || channels.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">No live channels available. Create a channel first.</p>
-      </div>
-    );
+    return <div className="text-center py-8">Loading...</div>;
   }
 
   return (
@@ -171,252 +115,168 @@ export default function LiveScheduleManagement() {
       <Card className="gradient-card border-2 border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Radio className="h-5 w-5" />
-            Manage Live TV Schedule
+            <Calendar className="h-5 w-5" />
+            Live TV Schedule Management
           </CardTitle>
-          <CardDescription>
-            Add programs to your live TV channels and configure ad breaks
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="channel">Select Channel</Label>
-            <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
-              <SelectTrigger className="bg-black/60 border-primary/40">
-                <SelectValue placeholder="Choose a channel" />
-              </SelectTrigger>
-              <SelectContent>
-                {channels.map((channel) => (
-                  <SelectItem key={channel.id} value={channel.id}>
-                    {channel.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedChannel && (
-            <>
-              <div className="border-t border-primary/20 pt-6">
-                <h3 className="text-lg font-semibold mb-4">Add New Program</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="video">Choose a video (Live-eligible only)</Label>
-                    <Select value={newProgramVideoId} onValueChange={setNewProgramVideoId}>
-                      <SelectTrigger className="bg-black/60 border-primary/40">
-                        <SelectValue placeholder="Select video" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eligibleVideos && eligibleVideos.length > 0 ? (
-                          eligibleVideos.map((video) => (
-                            <SelectItem key={video.id} value={video.id}>
-                              {video.title}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            No Live-eligible videos available
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+        <CardContent>
+          <div className="space-y-6">
+            {channels?.map((channel) => (
+              <div key={channel.id} className="p-4 rounded-lg bg-black/60 border border-primary/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {channel.logo && (
+                      <img
+                        src={channel.logo.getDirectURL()}
+                        alt={channel.name}
+                        className="w-12 h-12 object-contain rounded"
+                      />
+                    )}
+                    <div>
+                      <h3 className="font-semibold flex items-center gap-2">
+                        {channel.name}
+                        {channel.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {channel.schedule.length} program(s) scheduled
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">Start Time</Label>
-                    <Input
-                      id="startTime"
-                      type="datetime-local"
-                      value={newProgramStartTime}
-                      onChange={(e) => setNewProgramStartTime(e.target.value)}
-                      className="bg-black/60 border-primary/40"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime">End Time</Label>
-                    <Input
-                      id="endTime"
-                      type="datetime-local"
-                      value={newProgramEndTime}
-                      onChange={(e) => setNewProgramEndTime(e.target.value)}
-                      className="bg-black/60 border-primary/40"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="isOriginal"
-                      checked={newProgramIsOriginal}
-                      onCheckedChange={setNewProgramIsOriginal}
-                    />
-                    <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
-                      <Star className="h-4 w-4 text-secondary" />
-                      Mark as Original
-                    </Label>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openScheduleDialog(channel)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Program
+                  </Button>
                 </div>
 
-                <Button
-                  onClick={handleAddProgram}
-                  disabled={updateChannel.isPending || !eligibleVideos || eligibleVideos.length === 0}
-                  className="mt-4 bg-gradient-to-r from-primary to-secondary"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Program
-                </Button>
-              </div>
-
-              <div className="border-t border-primary/20 pt-6">
-                <h3 className="text-lg font-semibold mb-4">Current Schedule</h3>
-                <div className="space-y-3">
-                  {selectedChannel.schedule.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">No programs scheduled</p>
-                  ) : (
-                    selectedChannel.schedule.map((program, index) => {
-                      const video = eligibleVideos?.find(v => v.id === program.contentId);
-                      const startDate = new Date(Number(program.startTime));
-                      const endDate = new Date(Number(program.endTime));
-                      const adCount = program.adLocations?.length || 0;
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-4 rounded-lg bg-black/40 border border-primary/20"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold">{video?.title || 'Unknown Video'}</h4>
-                              {program.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {startDate.toLocaleString()} - {endDate.toLocaleString()}
-                            </p>
-                            {adCount > 0 && (
-                              <p className="text-xs text-primary mt-1">
-                                <Clock className="h-3 w-3 inline mr-1" />
-                                {adCount} ad break{adCount > 1 ? 's' : ''} configured
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditAdBreaks(index)}
-                            >
-                              <Clock className="h-4 w-4 mr-1" />
-                              Ad Breaks
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => handleRemoveProgram(index)}
-                              disabled={updateChannel.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                {channel.schedule.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    {channel.schedule.map((program, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 rounded bg-black/40 border border-primary/10"
+                      >
+                        <div>
+                          <p className="font-medium flex items-center gap-2">
+                            {getVideoTitle(program.contentId)}
+                            {program.isOriginal && <Star className="h-3 w-3 text-secondary fill-secondary" />}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(Number(program.startTime)).toLocaleString()} - {new Date(Number(program.endTime)).toLocaleString()}
+                          </p>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveProgram(channel, index)}
+                          disabled={updateChannel.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            ))}
+            {(!channels || channels.length === 0) && (
+              <p className="text-center text-muted-foreground py-8">No channels available</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Ad Breaks Editor Dialog */}
-      {editingProgramIndex !== null && selectedChannel && (
-        <Card className="gradient-card border-2 border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Configure Ad Breaks
-            </CardTitle>
-            <CardDescription>
-              {eligibleVideos?.find(v => v.id === selectedChannel.schedule[editingProgramIndex].contentId)?.title}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {adBreaks.map((adBreak, adIndex) => (
-              <div key={adIndex} className="flex items-end gap-4 p-4 rounded-lg bg-black/40 border border-primary/20">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`position-${adIndex}`}>Position (seconds into program)</Label>
-                  <Input
-                    id={`position-${adIndex}`}
-                    type="number"
-                    value={Number(adBreak.position)}
-                    onChange={(e) => handleUpdateAdBreakPosition(adIndex, e.target.value)}
-                    placeholder="e.g., 300 for 5 minutes"
-                    className="bg-black/60 border-primary/40"
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`ad-${adIndex}`}>Ad Media</Label>
-                  <Select
-                    value={adBreak.adUrls.length > 0 ? adMedia?.find(a => a.adFile.getDirectURL() === adBreak.adUrls[0].getDirectURL())?.id : ''}
-                    onValueChange={(value) => handleUpdateAdBreakMedia(adIndex, value)}
-                  >
-                    <SelectTrigger className="bg-black/60 border-primary/40">
-                      <SelectValue placeholder="Select ad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {adMedia && adMedia.length > 0 ? (
-                        adMedia.map((ad) => (
-                          <SelectItem key={ad.id} value={ad.id}>
-                            {ad.description}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>
-                          No ad media available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleRemoveAdBreak(adIndex)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+      {/* Add Program Dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Program to {selectedChannel?.name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddProgram} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="video">Select Video (Live TV Eligible Only)</Label>
+              <Select value={selectedVideoId} onValueChange={setSelectedVideoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a video..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {eligibleVideos && eligibleVideos.length > 0 ? (
+                    eligibleVideos.map((video) => (
+                      <SelectItem key={video.id} value={video.id}>
+                        {video.title}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      No eligible videos available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {(!eligibleVideos || eligibleVideos.length === 0) && (
+                <p className="text-xs text-muted-foreground">
+                  No videos are marked as eligible for Live TV. Please enable "Eligible for Live TV scheduling" when uploading content.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="startTime">Start Time</Label>
+              <Input
+                id="startTime"
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endTime">End Time</Label>
+              <Input
+                id="endTime"
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="isOriginal"
+                checked={isOriginal}
+                onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
+              />
+              <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
+                <Star className="h-4 w-4 text-secondary" />
+                Mark as Original
+              </Label>
+            </div>
 
             <div className="flex gap-2">
               <Button
+                type="button"
                 variant="outline"
-                onClick={handleAddAdBreak}
-                disabled={!adMedia || adMedia.length === 0}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Ad Break
-              </Button>
-              <Button
-                onClick={handleSaveAdBreaks}
-                disabled={updateChannel.isPending}
-                className="bg-gradient-to-r from-primary to-secondary"
-              >
-                Save Ad Breaks
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setEditingProgramIndex(null);
-                  setAdBreaks([]);
-                }}
+                onClick={() => setScheduleDialogOpen(false)}
+                className="flex-1"
               >
                 Cancel
               </Button>
+              <Button
+                type="submit"
+                disabled={updateChannel.isPending || !eligibleVideos || eligibleVideos.length === 0}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary"
+              >
+                Add Program
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

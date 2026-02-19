@@ -128,6 +128,8 @@ export const VideoContent = IDL.Record({
   'thumbnailUrl' : ExternalBlob,
   'contentType' : ContentType,
   'isPremium' : IDL.Bool,
+  'availableAsVOD' : IDL.Bool,
+  'sourceVideoId' : IDL.Opt(IDL.Text),
   'isOriginal' : IDL.Bool,
   'description' : IDL.Text,
   'isClip' : IDL.Bool,
@@ -137,6 +139,7 @@ export const VideoContent = IDL.Record({
   'videoUrl' : ExternalBlob,
   'roles' : IDL.Opt(IDL.Text),
   'releaseYear' : IDL.Opt(IDL.Nat),
+  'clipCaption' : IDL.Opt(IDL.Text),
 });
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
@@ -474,6 +477,8 @@ export const idlFactory = ({ IDL }) => {
     'thumbnailUrl' : ExternalBlob,
     'contentType' : ContentType,
     'isPremium' : IDL.Bool,
+    'availableAsVOD' : IDL.Bool,
+    'sourceVideoId' : IDL.Opt(IDL.Text),
     'isOriginal' : IDL.Bool,
     'description' : IDL.Text,
     'isClip' : IDL.Bool,
@@ -483,6 +488,7 @@ export const idlFactory = ({ IDL }) => {
     'videoUrl' : ExternalBlob,
     'roles' : IDL.Opt(IDL.Text),
     'releaseYear' : IDL.Opt(IDL.Nat),
+    'clipCaption' : IDL.Opt(IDL.Text),
   });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,

@@ -1,12 +1,16 @@
 # Specification
 
 ## Summary
-**Goal:** Improve Live TV playback controls and scheduling so Live streams cannot be fast-forwarded, scheduled ad breaks play unskippably for non-premium viewers, and admins can manage Live-eligibility and ad break configuration via the UI.
+**Goal:** Add dual availability toggles (live TV eligibility and VOD availability) to all video content and implement auto-generation of clips from uploaded videos.
 
 **Planned changes:**
-- Update Live TV playback behavior so when the player is in Live TV mode, users cannot seek or skip forward beyond the current live position, while keeping existing seeking behavior for VOD.
-- Add scheduled, auto-inserted Live TV ad breaks for non-premium viewers that trigger at configured timestamps and are unskippable; return to the correct Live program position after ads finish.
-- Add an admin-controlled “Live-eligible vs VOD-only” flag to video upload/edit, persist it in backend video content, and enforce it in Live scheduling so only eligible videos can be scheduled (or ineligible items are blocked/clearly labeled).
-- Add admin UI in Live scheduling to configure ad break timestamps (and select associated ad media) per scheduled program, saving into existing schedule entry fields used by playback.
+- Add `availableAsVOD` boolean field to backend Video type alongside existing `eligibleForLive` field
+- Add `sourceVideoId` optional field to Video type for linking auto-generated clips to source videos
+- Update MoviesManagement, PodcastsManagement, and SeriesManagement forms to include two independent checkboxes: "Eligible for Live TV scheduling" and "Available as standalone VOD" (both default to true)
+- Filter MoviesPage, TVShowsPage, and SeriesDetailPage to only show content where `availableAsVOD=true`
+- Filter LiveScheduleManagement to only allow scheduling videos where `eligibleForLive=true`
+- Auto-generate clip records when videos are uploaded, reusing the same video URL and title but with different captions
+- Update ClipsManagement to display both manual and auto-generated clips with source video title and editable captions
+- Ensure Podcasts section remains a separate dedicated tab in AdminPage with its own management interface
 
-**User-visible outcome:** Viewers watching Live TV cannot fast-forward and will see unskippable scheduled ad breaks (free/non-premium only), while admins can mark videos as Live-eligible and configure per-program ad break timestamps and ad media directly in the Live scheduling UI.
+**User-visible outcome:** Admins can independently control whether content appears in live TV schedules, standalone VOD sections, or both. When videos are uploaded, clips are automatically created and appear in the clips section. The Podcasts section has its own dedicated management interface separate from Movies.

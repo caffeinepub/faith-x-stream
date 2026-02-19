@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
-  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; add admin upload option to mark content as Live-eligible vs standalone VOD.",
+  "projectStateVersion": 13,
+  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
     "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic.",
@@ -9,7 +9,8 @@
     "Live TV VOD scheduling relies on program duration derived from VOD asset length; playback must not reset to 0 on program transitions or scheduler ticks.",
     "Live TV playback should disable forward seeking/scrubbing while preserving linear schedule-based playback behavior.",
     "Ad system should support server/client-defined scheduled insertion points and enforce unskippable playback during ads for guest and authenticated users.",
-    "Video/content entities should include a flag/field indicating Live-eligible vs VOD-only to control scheduling into channels and admin upload behavior."
+    "Content availability is controlled by two independent toggles: 'Eligible for Live TV scheduling' and 'Available as standalone VOD'; content can be Live-only, VOD-only, or both.",
+    "System should auto-generate clips/short-form content entries when videos are uploaded (Movies/Podcasts/TV Shows), using the same name but different captions, and maintain linkage to source content."
   ],
   "known_issues": [
     "Autoplay is freezing and not playing.",
@@ -155,6 +156,62 @@
         "REQ-20"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-moviesmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
+      "title": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-podcastsmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
+      "title": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-seriesmanagement-episode-creation-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-episodes",
+      "title": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-filter-content-displayed-on-moviespage-podcastspage-if-exists-tvshowspage-and-seriesdetailpage-to-only-show-content-where-availableasvod-is-true-ensuring-live-only-content-does-not-appear-in-standalone-vod-sections",
+      "title": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-eligibleforlive-flag-in-liveschedulemanagement-so-that-only-videos-with-eligibleforlive-true-can-be-added-to-live-channel-schedules-preventing-vod-only-content-from-being-scheduled",
+      "title": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-clipsmanagement-to-display-both-manually-uploaded-clips-and-auto-generated-clips-showing-the-source-video-title-and-a-caption-for-each-clip-and-allow-admins-to-edit-clip-captions-and-metadata-without-breaking-the-link-to-the-source-video",
+      "title": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-podcasts-section-in-adminpage-remains-a-separate-dedicated-tab-with-its-own-upload-management-interface-podcastsmanagement-that-defaults-contenttype-to-podcast-and-filters-the-manage-list-to-only-show-podcast-type-videos",
+      "title": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -243,9 +300,45 @@
       "status": "pending"
     },
     {
-      "id": "AR-19",
-      "summary": "Admin upload: allow selecting whether content is Live-eligible (can be scheduled into channels) vs standalone VOD-only content",
+      "id": "AR-20",
+      "summary": "Add two separate toggles for content availability: 'Eligible for Live TV scheduling' and 'Available as standalone VOD' (both can be enabled independently) on upload/edit for Movies, Podcasts, and TV Shows episodes",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Auto-generate clips/short-form content entries from uploaded videos (Movies/Podcasts/TV Shows) using the same name as the source content but with different captions, and link clips to the original video",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Ensure Movies and Podcasts remain separate dedicated sections in the admin panel with their own upload/management interfaces",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Add two independent toggles to the backend Video type: 'eligibleForLive' (already exists) and a new 'availableAsVOD' boolean field that controls whether content appears as standalone VOD in Movies/Podcasts/TV Shows sections.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Implement auto-generation of clip entries in the backend when a video is uploaded or updated: for each uploaded video (Movies/Podcasts/TV Shows episodes), automatically create linked clip records that reference the source video, use the same video file URL, share the same title as the source content, but include a generated caption field with a descriptive variation.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Extend the backend Video type to include an optional sourceVideoId field that links auto-generated clips back to their original video, enabling traceability and potential playback-range metadata for clips.",
+      "reqIds": [
+        "REQ-28"
+      ],
       "status": "pending"
     }
   ],

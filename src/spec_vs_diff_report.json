@@ -1,90 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T21:00:22.264Z",
-  "summary": "Diff implements Live-eligible upload flag with persisted backend field plus a migration default, adds admin UI toggles, and adds LiveScheduleManagement plumbing for selecting only eligible videos and editing ad break structures. However, the diff summary does not provide clear evidence that Live TV forward-seek blocking and scheduled unskippable ad-break playback are fully implemented in the player, and backend support for the new eligibility query/mutations is not shown.",
+  "generatedAt": "2026-02-18T23:58:58.524Z",
+  "summary": "The implementation covers most requirements including dual availability toggles (availableAsVOD and eligibleForLive), backend migration for new fields (availableAsVOD, sourceVideoId, clipCaption), frontend forms updated with checkboxes in MoviesManagement, PodcastsManagement, and SeriesManagement, filtering on MoviesPage and TVShowsPage, LiveScheduleManagement enforcement, ClipsManagement displaying auto-generated clips, and AdminPage Podcasts tab. However, several requirements are missing or incomplete: auto-generation of clips on upload (REQ-27) is not evident in the diff, SeriesDetailPage filtering (REQ-25) is missing, and PodcastsPage filtering (REQ-25) is not implemented.",
   "missing_requirements": [
     {
-      "id": "REQ-17",
-      "requirement": "Prevent users from seeking forward during Live TV playback only (disable forward seek UI/control/keyboard interactions when isLiveTV=true; preserve normal VOD seeking).",
-      "reason": "VideoPlayer changes shown add schedule-aligned seeking props (liveSeekSeconds/liveSeekToken) but the diff summary does not show logic disabling forward seeking UI (scrubber/skip-forward/keyboard) only for Live TV, nor enforcement against jumping beyond the computed live position.",
+      "id": "REQ-27",
+      "requirement": "Implement auto-generation of clip entries in the backend when a video is uploaded or updated: for each uploaded video (Movies/Podcasts/TV Shows episodes), automatically create linked clip records that reference the source video, use the same video file URL, share the same title as the source content, but include a generated caption field with a descriptive variation.",
+      "reason": "The backend main.mo diff is truncated and does not show evidence of logic that automatically creates clip records when addVideo is called. The migration.mo adds fields but does not implement auto-generation. The frontend forms (MoviesManagement, PodcastsManagement, SeriesManagement) call addVideo but there is no indication the backend responds by creating clips automatically.",
       "evidence": [
-        "frontend/src/components/VideoPlayer.tsx",
-        "frontend-file-summaries.txt (VideoPlayer description mentions schedule-aligned seeking, not seek-blocking)"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-18",
-      "requirement": "Implement scheduled Live TV ad breaks that auto-insert at scheduled timestamps and are unskippable for non-premium viewers; premium users should not see them; resume main content at correct live position after ad.",
-      "reason": "LivePage passes ad locations to VideoPlayer and VideoPlayer has props/state suggesting ad playback, but the diff summary does not show (a) automatic switching at scheduled timestamps during Live playback, (b) unskippable enforcement during ads (seek/scrub/skip-forward blocked), (c) premium-user bypass for these scheduled Live ads, or (d) correct return to live program position after ad completion.",
+      "id": "REQ-25",
+      "requirement": "Filter content displayed on SeriesDetailPage to only show episodes where availableAsVOD=true, ensuring Live-only content does not appear in standalone VOD sections.",
+      "reason": "SeriesDetailPage.tsx diff shows rendering of series.seasons and episodes but does not include any filter logic to exclude episodes where availableAsVOD is false. The code loops through season.episodes directly without checking availableAsVOD.",
       "evidence": [
-        "frontend/src/pages/LivePage.tsx (passes schedule.adLocations to VideoPlayer)",
-        "frontend/src/components/VideoPlayer.tsx (has liveAdLocations prop and ad-related state, but scheduled switching/unskippable/premium-bypass not evidenced)"
+        "frontend/src/pages/SeriesDetailPage.tsx"
       ]
     },
     {
-      "id": "REQ-19",
-      "requirement": "Enforce Live TV eligibility in backend and scheduling UI, including persisted field, preserving it on add/update, and providing a backend method to fetch eligible videos.",
-      "reason": "Eligibility field and migration are shown, and the scheduling UI uses a hook that calls actor.getEligibleVideosForLive(), but the diff summary does not show the backend implementation of getEligibleVideosForLive nor updated add/update logic ensuring eligibleForLive is persisted/returned for all relevant operations.",
-      "evidence": [
-        "backend/main.mo (type VideoContent includes eligibleForLive but methods are truncated/not shown)",
-        "frontend/src/hooks/useQueries.ts (calls actor.getEligibleVideosForLive())",
-        "frontend/src/components/admin/LiveScheduleManagement.tsx (uses useGetEligibleVideosForLive())"
-      ]
-    },
-    {
-      "id": "REQ-20",
-      "requirement": "Admin UI for configuring scheduled ad break timestamps and selecting ad media per break, persisted into LiveChannel.schedule entries (ScheduledContent.adLocations) and used by LivePage/VideoPlayer.",
-      "reason": "LiveScheduleManagement shows ad break editing state (AdLocation with position/adUrls) and loads ad media, but the diff summary is truncated before showing the UI for timestamp entry + ad media selection and before showing persistence back into ScheduledContent.adLocations on save.",
-      "evidence": [
-        "frontend/src/components/admin/LiveScheduleManagement.tsx (adBreaks state and handlers shown, but save/UI details truncated)"
-      ]
+      "id": "REQ-25",
+      "requirement": "Filter content displayed on PodcastsPage (if exists) to only show content where availableAsVOD is true.",
+      "reason": "No PodcastsPage.tsx file is present in the diff (not in added or modified files). The requirement explicitly mentions filtering PodcastsPage if it exists, but it is not implemented or shown.",
+      "evidence": []
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Addition of a new /login route and wrapping app with an AuthProvider / unified auth management.",
-      "reason": "Not requested by the BuildRequest (which focuses on Live TV seeking, ad breaks, and Live-eligible flag).",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/App.tsx summary mentions new /login route and AuthProvider)"
-      ]
-    },
-    {
-      "description": "Major UI theming changes (Footer deep red background; red/black branding across multiple pages/components).",
-      "reason": "Not requested by the BuildRequest.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/components/Footer.tsx, Header.tsx, ProfileSetupModal.tsx summaries)"
-      ]
-    },
-    {
-      "description": "HomePage changes: featured slideshow carousel that autoplays video ads/content previews and image ads behavior updates.",
-      "reason": "Not requested by the BuildRequest.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/pages/HomePage.tsx summary)"
-      ]
-    },
-    {
-      "description": "Search results page modifications and/or result shaping unrelated to Live TV requirements.",
-      "reason": "Not requested by the BuildRequest.",
-      "evidence": [
-        "frontend/src/pages/SearchResultsPage.tsx"
-      ]
-    }
-  ],
-  "confidence": 0.63,
+  "hallucinated_features": [],
+  "confidence": 0.85,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/VideoPlayer.tsx",
+    "frontend/src/App.tsx",
     "frontend/src/components/admin/ClipsManagement.tsx",
     "frontend/src/components/admin/LiveScheduleManagement.tsx",
     "frontend/src/components/admin/MoviesManagement.tsx",
     "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/components/admin/SeriesManagement.tsx",
     "frontend/src/components/admin/VideoManagement.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/LivePage.tsx",
+    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/pages/MoviesPage.tsx",
     "frontend/src/pages/SearchResultsPage.tsx",
+    "frontend/src/pages/SeriesDetailPage.tsx",
+    "frontend/src/pages/TVShowsPage.tsx",
     "project_state.json"
   ]
 }

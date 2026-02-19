@@ -5,9 +5,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Switch } from '../ui/switch';
+import { Checkbox } from '../ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Edit } from 'lucide-react';
+import { Trash2, Upload, Star, Edit, Radio, Tv } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExternalBlob, ContentType } from '../../backend';
 import type { VideoContent } from '../../backend';
@@ -22,6 +22,8 @@ export default function PodcastsManagement() {
   const [description, setDescription] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [isOriginal, setIsOriginal] = useState(false);
+  const [eligibleForLive, setEligibleForLive] = useState(true);
+  const [availableAsVOD, setAvailableAsVOD] = useState(true);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -30,7 +32,9 @@ export default function PodcastsManagement() {
   const [editingVideo, setEditingVideo] = useState<VideoContent | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const podcastVideos = videos?.filter(v => !v.isClip && v.contentType === ContentType.podcast) || [];
+  const podcastVideos = videos?.filter(v => 
+    !v.isClip && v.contentType === ContentType.podcast
+  ) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +52,7 @@ export default function PodcastsManagement() {
       });
       const thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes);
 
-      const podcast: VideoContent = {
+      const video: VideoContent = {
         id: `podcast-${Date.now()}`,
         title,
         description,
@@ -58,10 +62,11 @@ export default function PodcastsManagement() {
         isClip: false,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
-        eligibleForLive: false,
+        eligibleForLive,
+        availableAsVOD,
       };
 
-      await addVideo.mutateAsync(podcast);
+      await addVideo.mutateAsync(video);
       toast.success('Podcast uploaded successfully!');
       
       // Reset form
@@ -69,6 +74,8 @@ export default function PodcastsManagement() {
       setDescription('');
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(true);
+      setAvailableAsVOD(true);
       setVideoFile(null);
       setThumbnailFile(null);
       setUploadProgress(0);
@@ -83,6 +90,8 @@ export default function PodcastsManagement() {
     setDescription(video.description);
     setIsPremium(video.isPremium);
     setIsOriginal(video.isOriginal);
+    setEligibleForLive(video.eligibleForLive);
+    setAvailableAsVOD(video.availableAsVOD);
     setVideoFile(null);
     setThumbnailFile(null);
     setEditingVideo(video);
@@ -109,20 +118,19 @@ export default function PodcastsManagement() {
         thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes);
       }
 
-      const updatedPodcast: VideoContent = {
+      const updatedVideo: VideoContent = {
         ...editingVideo,
         title,
         description,
-        contentType: ContentType.podcast,
         isPremium,
         isOriginal,
-        isClip: false,
+        eligibleForLive,
+        availableAsVOD,
         videoUrl: videoBlob,
         thumbnailUrl: thumbnailBlob,
-        eligibleForLive: editingVideo.eligibleForLive,
       };
 
-      await updateVideo.mutateAsync({ videoId: editingVideo.id, video: updatedPodcast });
+      await updateVideo.mutateAsync({ videoId: editingVideo.id, video: updatedVideo });
       toast.success('Podcast updated successfully!');
       
       setEditDialogOpen(false);
@@ -131,6 +139,8 @@ export default function PodcastsManagement() {
       setDescription('');
       setIsPremium(false);
       setIsOriginal(false);
+      setEligibleForLive(true);
+      setAvailableAsVOD(true);
       setVideoFile(null);
       setThumbnailFile(null);
       setUploadProgress(0);
@@ -192,7 +202,7 @@ export default function PodcastsManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="video">Video File</Label>
+                <Label htmlFor="video">Video File *</Label>
                 <Input
                   id="video"
                   type="file"
@@ -204,7 +214,7 @@ export default function PodcastsManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                <Label htmlFor="thumbnail">Thumbnail Image *</Label>
                 <Input
                   id="thumbnail"
                   type="file"
@@ -216,25 +226,49 @@ export default function PodcastsManagement() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="isPremium"
                   checked={isPremium}
-                  onCheckedChange={setIsPremium}
+                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
                 />
                 <Label htmlFor="isPremium" className="cursor-pointer">Premium Content</Label>
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="isOriginal"
                   checked={isOriginal}
-                  onCheckedChange={setIsOriginal}
+                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
                 />
                 <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
+                />
+                <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV scheduling
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
+                />
+                <Label htmlFor="availableAsVOD" className="cursor-pointer flex items-center gap-1">
+                  <Tv className="h-4 w-4 text-primary" />
+                  Available as standalone VOD
                 </Label>
               </div>
             </div>
@@ -286,15 +320,29 @@ export default function PodcastsManagement() {
                     <h3 className="font-semibold flex items-center gap-2">
                       {video.title}
                       {video.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
+                      {video.eligibleForLive && (
+                        <span title="Eligible for Live TV">
+                          <Radio className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
+                      {video.availableAsVOD && (
+                        <span title="Available as VOD">
+                          <Tv className="h-4 w-4 text-primary" />
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground">{video.description}</p>
                     <div className="flex gap-2 mt-1">
                       {video.isPremium && (
                         <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">Premium</span>
                       )}
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                        Podcast
-                      </span>
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Podcast</span>
+                      {video.eligibleForLive && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
+                      )}
+                      {video.availableAsVOD && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">VOD</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -355,7 +403,7 @@ export default function PodcastsManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-video">Video File (leave empty to keep current)</Label>
+                <Label htmlFor="edit-video">Replace Video (Optional)</Label>
                 <Input
                   id="edit-video"
                   type="file"
@@ -365,7 +413,7 @@ export default function PodcastsManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-thumbnail">Thumbnail (leave empty to keep current)</Label>
+                <Label htmlFor="edit-thumbnail">Replace Thumbnail (Optional)</Label>
                 <Input
                   id="edit-thumbnail"
                   type="file"
@@ -375,25 +423,49 @@ export default function PodcastsManagement() {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="edit-isPremium"
                   checked={isPremium}
-                  onCheckedChange={setIsPremium}
+                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
                 />
-                <Label htmlFor="edit-isPremium">Premium Content</Label>
+                <Label htmlFor="edit-isPremium" className="cursor-pointer">Premium Content</Label>
               </div>
 
               <div className="flex items-center gap-2">
-                <Switch
+                <Checkbox
                   id="edit-isOriginal"
                   checked={isOriginal}
-                  onCheckedChange={setIsOriginal}
+                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
                 />
-                <Label htmlFor="edit-isOriginal" className="flex items-center gap-1">
+                <Label htmlFor="edit-isOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
                   Mark as Original
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-eligibleForLive"
+                  checked={eligibleForLive}
+                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
+                />
+                <Label htmlFor="edit-eligibleForLive" className="cursor-pointer flex items-center gap-1">
+                  <Radio className="h-4 w-4 text-primary" />
+                  Eligible for Live TV scheduling
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-availableAsVOD"
+                  checked={availableAsVOD}
+                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
+                />
+                <Label htmlFor="edit-availableAsVOD" className="cursor-pointer flex items-center gap-1">
+                  <Tv className="h-4 w-4 text-primary" />
+                  Available as standalone VOD
                 </Label>
               </div>
             </div>
@@ -404,26 +476,28 @@ export default function PodcastsManagement() {
                   <span>Uploading...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-secondary rounded-full h-2">
+                <div className="w-full bg-black/60 rounded-full h-2">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
+                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
+                className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateVideo.isPending}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary"
               >
                 {updateVideo.isPending ? 'Updating...' : 'Update Podcast'}
               </Button>

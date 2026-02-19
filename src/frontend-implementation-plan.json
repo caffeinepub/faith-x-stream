@@ -1,101 +1,138 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Live TV seek locking, scheduled unskippable ad breaks, and Live-eligible video flag (frontend)",
+  "title": "Add dual availability toggles and auto-generate clips from uploaded videos",
   "requirements": [
     {
-      "id": "REQ-17",
-      "summary": "Disable forward seeking and forward-skip controls for Live TV playback while preserving current VOD seeking behavior.",
+      "id": "REQ-22",
+      "summary": "Update MoviesManagement to include dual availability toggles for eligibleForLive and availableAsVOD",
       "acceptanceCriteria": [
-        "When VideoPlayer is rendered with isLiveTV=true, the scrubber/seek UI cannot be used to jump forward beyond the current live position for the program.",
-        "When isLiveTV=true, the 10-second forward skip control is not available and keyboard/mouse interactions cannot advance playback beyond the computed live position.",
-        "When isLiveTV=false, seeking and skip controls continue to work as they do today."
+        "MoviesManagement upload form shows both checkboxes",
+        "MoviesManagement edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/components/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Add Live TV forward-seek prevention: compute a moving live-edge (based on initial liveSeekSeconds and elapsed wall time), clamp any seek attempts to <= live-edge, hide/disable the +10s skip control for isLiveTV, and prevent keyboard/mouse interactions from moving playback beyond live-edge. Ensure behavior remains unchanged for non-Live (isLiveTV=false) playback."
-        }
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "summary": "Trigger scheduled Live TV ad breaks at configured timestamps and make ad playback unskippable for non-premium viewers, resuming main content at the correct live position after ads.",
-      "acceptanceCriteria": [
-        "For Live TV playback (isLiveTV=true) and non-premium viewers, when the current program reaches each scheduled ad timestamp, the player automatically switches to ad playback.",
-        "While an ad is playing, the user cannot seek/scrub or skip forward; attempts to change playback position do not bypass the ad.",
-        "After the ad finishes, playback returns to the correct Live TV program position (resume the main content at the correct timestamp, not at 0).",
-        "Premium users do not see these scheduled Live TV ads (consistent with existing free-only ad behavior)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/VideoPlayer.tsx",
-          "operation": "modify",
-          "description": "Extend Live TV playback to support scheduled ad breaks from the current program schedule entry (ScheduledContent.adLocations): when main content time reaches each ad location position, switch to ad playback using the configured ad media URLs; enforce unskippable behavior during ads (no scrubbing/skip controls); after ad ends, resume main content at the correct live-aligned timestamp (not 0) and continue respecting the moving live-edge."
-        },
-        {
-          "path": "frontend/src/pages/LivePage.tsx",
-          "operation": "modify",
-          "description": "Wire scheduled ad locations for the currently airing program into VideoPlayer when isLiveTV=true and the viewer is non-premium; ensure Premium users do not receive scheduled Live TV ad break configuration from the page."
-        }
-      ]
-    },
-    {
-      "id": "REQ-19",
-      "summary": "Expose and enforce a Live TV eligibility flag for uploaded/edited videos in admin UIs and limit Live scheduling choices to eligible videos.",
-      "acceptanceCriteria": [
-        "Backend VideoContent includes a persisted field representing Live TV eligibility (e.g., Live-eligible vs VOD-only), and add/update operations preserve it.",
-        "Admin video upload/edit UIs expose a clear toggle/select to set this Live TV eligibility value using English user-facing text.",
-        "LiveScheduleManagement only offers Live-eligible videos in the “Choose a video” selector for scheduling (or clearly labels and blocks ineligible items from being scheduled).",
-        "Existing videos without an explicit eligibility value remain valid after upgrade (migration applied only if needed) and default behavior is consistent and documented in code."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/VideoManagement.tsx",
-          "operation": "modify",
-          "description": "Add an English-labeled admin control (e.g., switch) for VideoContent.eligibleForLive on upload and edit flows; include eligibleForLive in the VideoContent object passed to add/update mutations and initialize edit dialog state from the existing value."
-        },
         {
           "path": "frontend/src/components/admin/MoviesManagement.tsx",
           "operation": "modify",
-          "description": "Add an English-labeled admin control for eligibleForLive in the movie upload/edit UI and ensure the value is included in add/update operations for movie-type VideoContent."
-        },
-        {
-          "path": "frontend/src/components/admin/ClipsManagement.tsx",
-          "operation": "modify",
-          "description": "Add an English-labeled admin control for eligibleForLive in the clip upload/edit UI and ensure the value is included in add/update operations for clip-type VideoContent."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a React Query hook that fetches Live-eligible videos using the existing backend capability getEligibleVideosForLive(), and cache/invalidate consistently with other video queries."
-        },
-        {
-          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
-          "operation": "modify",
-          "description": "Enforce Live eligibility in the scheduling UI by sourcing the “Choose a video” list from the new getEligibleVideosForLive hook (or by filtering all videos by eligibleForLive), preventing scheduling of VOD-only items."
+          "description": "Add two checkbox fields to the upload form and edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new uploads. Update the addVideo and updateVideo mutations to include both boolean flags. Ensure the edit dialog pre-populates both checkbox states from the selected video's current values."
         }
       ]
     },
     {
-      "id": "REQ-20",
-      "summary": "Add admin UI to configure scheduled ad break timestamps and associated ad media for each scheduled Live TV program, persisted into ScheduledContent.adLocations and used by playback.",
+      "id": "REQ-23",
+      "summary": "Update PodcastsManagement to include dual availability toggles for eligibleForLive and availableAsVOD",
       "acceptanceCriteria": [
-        "LiveScheduleManagement provides a way to add/remove one or more ad break entries for a scheduled program, including a timestamp/position value and associated ad media selection.",
-        "The configured ad breaks are saved into the existing LiveChannel.schedule entries (ScheduledContent.adLocations) and are used by LivePage/VideoPlayer to trigger scheduled ad playback.",
-        "All new admin UI text is in English."
+        "PodcastsManagement upload form shows both checkboxes",
+        "PodcastsManagement edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
+          "operation": "modify",
+          "description": "Add two checkbox fields to the upload form and edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new uploads. Update the addVideo and updateVideo mutations to include both boolean flags. Ensure the edit dialog pre-populates both checkbox states from the selected video's current values."
+        }
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "summary": "Update SeriesManagement episode forms to include dual availability toggles for eligibleForLive and availableAsVOD",
+      "acceptanceCriteria": [
+        "Episode creation form in SeriesManagement shows both checkboxes",
+        "Episode edit dialog shows both checkboxes with current values",
+        "Both toggles can be changed independently during edit",
+        "Update mutation sends both flags to backend"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/SeriesManagement.tsx",
+          "operation": "modify",
+          "description": "Add two checkbox fields to the episode creation form and episode edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new episodes. Update the episode creation and update logic within addSeries and updateSeries mutations to include both boolean flags for each episode. Ensure the episode edit dialog pre-populates both checkbox states from the selected episode's current values."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Filter VOD pages to only display content where availableAsVOD is true",
+      "acceptanceCriteria": [
+        "MoviesPage only displays movies with availableAsVOD=true",
+        "TVShowsPage only displays series with at least one episode where availableAsVOD=true",
+        "SeriesDetailPage only shows episodes where availableAsVOD=true",
+        "Live-only content (availableAsVOD=false) is hidden from these pages"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/MoviesPage.tsx",
+          "operation": "modify",
+          "description": "Filter the movies array before rendering to only include videos where availableAsVOD is true. Update the filtering logic in the component to check video.availableAsVOD === true alongside the existing contentType filter."
+        },
+        {
+          "path": "frontend/src/pages/TVShowsPage.tsx",
+          "operation": "modify",
+          "description": "Filter the series array to only include series that have at least one episode with availableAsVOD=true. Implement a filtering function that checks if series.seasons contains any season with episodes where availableAsVOD is true before displaying the series card."
+        },
+        {
+          "path": "frontend/src/pages/SeriesDetailPage.tsx",
+          "operation": "modify",
+          "description": "Filter episodes within each season to only display episodes where availableAsVOD is true. Update the episode rendering logic to exclude episodes with availableAsVOD=false from the season's episode list. Maintain the season structure but hide unavailable episodes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "summary": "Enforce eligibleForLive filtering in LiveScheduleManagement to prevent VOD-only content from being scheduled",
+      "acceptanceCriteria": [
+        "LiveScheduleManagement filters available videos to only show eligibleForLive=true content",
+        "Attempting to schedule a video with eligibleForLive=false is prevented or shows a validation error",
+        "Existing scheduled programs continue to work"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
           "operation": "modify",
-          "description": "Extend each scheduled program row with an ad-break editor: allow admins to add/remove adLocations entries with a position (timestamp/seconds into program) and an associated ad media selection sourced from existing ad media; persist changes by updating the selected channel schedule via the existing updateLiveChannel mutation. Ensure all new UI text is English."
+          "description": "Filter the available videos list in the scheduling UI to only show videos where eligibleForLive is true. Update the video selection dropdown or list to apply a filter checking video.eligibleForLive === true. Add validation logic that prevents adding programs to the schedule if eligibleForLive is false, displaying a user-friendly error message if attempted."
+        }
+      ]
+    },
+    {
+      "id": "REQ-29",
+      "summary": "Update ClipsManagement to display auto-generated clips and allow caption editing",
+      "acceptanceCriteria": [
+        "ClipsManagement displays all clips including auto-generated ones",
+        "Each clip row shows its title, caption, and source video title if available",
+        "Admins can edit clip captions in the edit dialog",
+        "Editing a clip does not remove its sourceVideoId link"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
+          "operation": "modify",
+          "description": "Update the clips table/grid to display the clipCaption field if present, and show the source video title by looking up the sourceVideoId in the available videos list. Add a column or row section that displays 'Source: [video title]' when sourceVideoId is populated. Update the edit dialog to include a text input for clipCaption that allows admins to edit the caption. Ensure the update mutation preserves the sourceVideoId field when saving changes. Add visual distinction (e.g., badge or icon) to indicate auto-generated clips versus manually uploaded ones."
+        }
+      ]
+    },
+    {
+      "id": "REQ-30",
+      "summary": "Ensure Podcasts section remains a separate tab in AdminPage with dedicated management interface",
+      "acceptanceCriteria": [
+        "AdminPage includes a 'Podcasts' tab separate from Movies and other sections",
+        "Selecting the Podcasts tab renders PodcastsManagement component",
+        "PodcastsManagement upload form defaults contentType to Podcast",
+        "PodcastsManagement manage list only displays videos with contentType=Podcast"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Verify that the Podcasts tab exists as a separate tab in the admin interface. If not present, add a 'Podcasts' tab to the tab navigation that renders the PodcastsManagement component when selected. Ensure the tab order places Podcasts as a distinct section separate from Movies, Clips, Series, and other management sections."
         },
         {
-          "path": "frontend/src/pages/LivePage.tsx",
+          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
           "operation": "modify",
-          "description": "Ensure the currently airing program’s configured ScheduledContent.adLocations are surfaced to VideoPlayer for Live ad triggering (and remain consistent with saved schedule updates)."
+          "description": "Verify that the upload form defaults contentType to 'podcast' and the manage list filters to only display videos where contentType equals 'podcast'. If these filters are not in place, update the getAllVideos query result to filter by contentType='podcast' before rendering the management table, and ensure new uploads set contentType to 'podcast' by default."
         }
       ]
     }

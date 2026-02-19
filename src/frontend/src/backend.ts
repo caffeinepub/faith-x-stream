@@ -107,6 +107,8 @@ export interface VideoContent {
     thumbnailUrl: ExternalBlob;
     contentType: ContentType;
     isPremium: boolean;
+    availableAsVOD: boolean;
+    sourceVideoId?: string;
     isOriginal: boolean;
     description: string;
     isClip: boolean;
@@ -116,6 +118,7 @@ export interface VideoContent {
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
+    clipCaption?: string;
 }
 export interface SearchResult {
     id: string;
@@ -1544,6 +1547,8 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     thumbnailUrl: _ExternalBlob;
     contentType: _ContentType;
     isPremium: boolean;
+    availableAsVOD: boolean;
+    sourceVideoId: [] | [string];
     isOriginal: boolean;
     description: string;
     isClip: boolean;
@@ -1553,6 +1558,7 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     videoUrl: _ExternalBlob;
     roles: [] | [string];
     releaseYear: [] | [bigint];
+    clipCaption: [] | [string];
 }): Promise<{
     id: string;
     title: string;
@@ -1560,6 +1566,8 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     thumbnailUrl: ExternalBlob;
     contentType: ContentType;
     isPremium: boolean;
+    availableAsVOD: boolean;
+    sourceVideoId?: string;
     isOriginal: boolean;
     description: string;
     isClip: boolean;
@@ -1569,6 +1577,7 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
+    clipCaption?: string;
 }> {
     return {
         id: value.id,
@@ -1577,6 +1586,8 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
         thumbnailUrl: await from_candid_ExternalBlob_n49(_uploadFile, _downloadFile, value.thumbnailUrl),
         contentType: from_candid_ContentType_n60(_uploadFile, _downloadFile, value.contentType),
         isPremium: value.isPremium,
+        availableAsVOD: value.availableAsVOD,
+        sourceVideoId: record_opt_to_undefined(from_candid_opt_n44(_uploadFile, _downloadFile, value.sourceVideoId)),
         isOriginal: value.isOriginal,
         description: value.description,
         isClip: value.isClip,
@@ -1585,7 +1596,8 @@ async function from_candid_record_n59(_uploadFile: (file: ExternalBlob) => Promi
         eligibleForLive: value.eligibleForLive,
         videoUrl: await from_candid_ExternalBlob_n49(_uploadFile, _downloadFile, value.videoUrl),
         roles: record_opt_to_undefined(from_candid_opt_n44(_uploadFile, _downloadFile, value.roles)),
-        releaseYear: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.releaseYear))
+        releaseYear: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.releaseYear)),
+        clipCaption: record_opt_to_undefined(from_candid_opt_n44(_uploadFile, _downloadFile, value.clipCaption))
     };
 }
 async function from_candid_record_n64(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -2258,6 +2270,8 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     thumbnailUrl: ExternalBlob;
     contentType: ContentType;
     isPremium: boolean;
+    availableAsVOD: boolean;
+    sourceVideoId?: string;
     isOriginal: boolean;
     description: string;
     isClip: boolean;
@@ -2267,6 +2281,7 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     videoUrl: ExternalBlob;
     roles?: string;
     releaseYear?: bigint;
+    clipCaption?: string;
 }): Promise<{
     id: string;
     title: string;
@@ -2274,6 +2289,8 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     thumbnailUrl: _ExternalBlob;
     contentType: _ContentType;
     isPremium: boolean;
+    availableAsVOD: boolean;
+    sourceVideoId: [] | [string];
     isOriginal: boolean;
     description: string;
     isClip: boolean;
@@ -2283,6 +2300,7 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
     videoUrl: _ExternalBlob;
     roles: [] | [string];
     releaseYear: [] | [bigint];
+    clipCaption: [] | [string];
 }> {
     return {
         id: value.id,
@@ -2291,6 +2309,8 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
         thumbnailUrl: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.thumbnailUrl),
         contentType: to_candid_ContentType_n29(_uploadFile, _downloadFile, value.contentType),
         isPremium: value.isPremium,
+        availableAsVOD: value.availableAsVOD,
+        sourceVideoId: value.sourceVideoId ? candid_some(value.sourceVideoId) : candid_none(),
         isOriginal: value.isOriginal,
         description: value.description,
         isClip: value.isClip,
@@ -2299,7 +2319,8 @@ async function to_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise
         eligibleForLive: value.eligibleForLive,
         videoUrl: await to_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.videoUrl),
         roles: value.roles ? candid_some(value.roles) : candid_none(),
-        releaseYear: value.releaseYear ? candid_some(value.releaseYear) : candid_none()
+        releaseYear: value.releaseYear ? candid_some(value.releaseYear) : candid_none(),
+        clipCaption: value.clipCaption ? candid_some(value.clipCaption) : candid_none()
     };
 }
 function to_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

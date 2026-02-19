@@ -1,69 +1,117 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T21:00:22.267Z",
+  "generatedAt": "2026-02-18T23:58:58.529Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 10,
+    "implemented": 7,
     "items": [
       {
-        "id": "REQ-17",
-        "summary": "Prevent users from seeking forward during Live TV playback only (regular and guest users), while keeping normal seeking behavior for non-Live (VOD) playback.",
+        "id": "REQ-21",
+        "summary": "Add two independent toggles to the backend Video type: 'eligibleForLive' (already exists) and a new 'availableAsVOD' boolean field that controls whether content appears as standalone VOD in Movies/Podcasts/TV Shows sections.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-22",
+        "summary": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/VideoPlayer.tsx"
+          "frontend/src/components/admin/MoviesManagement.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/VideoPlayer.tsx"
+          "frontend/src/components/admin/MoviesManagement.tsx"
         ]
       },
       {
-        "id": "REQ-18",
-        "summary": "Implement Live TV ad breaks that auto-insert at scheduled timestamps during the currently airing program, and make those ads unskippable (no seeking/scrubbing/skip-forward) for regular and guest users.",
+        "id": "REQ-23",
+        "summary": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/VideoPlayer.tsx",
-          "frontend/src/pages/LivePage.tsx"
+          "frontend/src/components/admin/PodcastsManagement.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/VideoPlayer.tsx",
-          "frontend/src/pages/LivePage.tsx"
+          "frontend/src/components/admin/PodcastsManagement.tsx"
         ]
       },
       {
-        "id": "REQ-19",
-        "summary": "Add an admin-selectable flag on uploaded/edited videos to mark whether the content is eligible to be scheduled into Live TV channels versus being standalone VOD-only, and enforce that eligibility in Live scheduling UI.",
+        "id": "REQ-24",
+        "summary": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/VideoManagement.tsx",
-          "frontend/src/components/admin/MoviesManagement.tsx",
-          "frontend/src/components/admin/ClipsManagement.tsx",
-          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/admin/SeriesManagement.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/SeriesManagement.tsx"
+        ]
+      },
+      {
+        "id": "REQ-25",
+        "summary": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/MoviesPage.tsx",
+          "frontend/src/pages/TVShowsPage.tsx",
+          "frontend/src/pages/SeriesDetailPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/MoviesPage.tsx",
+          "frontend/src/pages/TVShowsPage.tsx",
+          "frontend/src/pages/SeriesDetailPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-26",
+        "summary": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/components/admin/LiveScheduleManagement.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/VideoManagement.tsx",
-          "frontend/src/components/admin/MoviesManagement.tsx",
-          "frontend/src/components/admin/ClipsManagement.tsx",
-          "frontend/src/hooks/useQueries.ts",
           "frontend/src/components/admin/LiveScheduleManagement.tsx"
         ]
       },
       {
-        "id": "REQ-20",
-        "summary": "Allow admins to configure scheduled ad break timestamps for Live TV programs in the Live schedule so that scheduled timestamps can be managed without code changes.",
+        "id": "REQ-27",
+        "summary": "Implement auto-generation of clip entries in the backend when a video is uploaded or updated: for each uploaded video (Movies/Podcasts/TV Shows episodes), automatically create linked clip records that reference the source video, use the same video file URL, share the same title as the source content, but include a generated caption field with a descriptive variation.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-28",
+        "summary": "Extend the backend Video type to include an optional sourceVideoId field that links auto-generated clips back to their original video, enabling traceability and potential playback-range metadata for clips.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-29",
+        "summary": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/LiveScheduleManagement.tsx",
-          "frontend/src/pages/LivePage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/LiveScheduleManagement.tsx",
-          "frontend/src/pages/LivePage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx"
+        ]
+      },
+      {
+        "id": "REQ-30",
+        "summary": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/AdminPage.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/AdminPage.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx"
         ]
       }
     ]
@@ -72,22 +120,26 @@
     "backend/main.mo",
     "backend/migration.mo",
     "build-request.json",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/VideoPlayer.tsx",
     "frontend/src/components/admin/ClipsManagement.tsx",
     "frontend/src/components/admin/LiveScheduleManagement.tsx",
     "frontend/src/components/admin/MoviesManagement.tsx",
     "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/components/admin/SeriesManagement.tsx",
     "frontend/src/components/admin/VideoManagement.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/LivePage.tsx",
+    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/pages/MoviesPage.tsx",
     "frontend/src/pages/SearchResultsPage.tsx",
+    "frontend/src/pages/SeriesDetailPage.tsx",
+    "frontend/src/pages/TVShowsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
