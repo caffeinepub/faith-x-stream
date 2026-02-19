@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 19,
   "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
@@ -10,7 +10,9 @@
     "Live TV playback should disable forward seeking/scrubbing while preserving linear schedule-based playback behavior.",
     "Ad system should support server/client-defined scheduled insertion points and enforce unskippable playback during ads for guest and authenticated users.",
     "Content availability is controlled by two independent toggles: 'Eligible for Live TV scheduling' and 'Available as standalone VOD'; content can be Live-only, VOD-only, or both.",
-    "System should auto-generate clips/short-form content entries when videos are uploaded (Movies/Podcasts/TV Shows), using the same name but different captions, and maintain linkage to source content."
+    "System should auto-generate clips/short-form content entries when videos are uploaded (Movies/Podcasts/TV Shows), using the same name but different captions, and maintain linkage to source content.",
+    "Videos section in admin panel should serve as a catch-all content category for items that don't fit Movies/TV Shows/Podcasts/Clips, and should support auto-clip generation like other content types.",
+    "Home page should include a TikTok/YouTube Shorts-style vertical scrolling feed for clips/short-form content that displays both auto-generated and manually uploaded clips in an engaging, swipeable format."
   ],
   "known_issues": [
     "Autoplay is freezing and not playing.",
@@ -212,6 +214,110 @@
         "REQ-30"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-seriesmanagement-component-to-enable-inline-editing-of-seasons-directly-from-the-tv-shows-management-tab-allowing-admins-to-edit-season-title-season-number-and-thumbnail-without-navigating-to-a-separate-view",
+      "title": "Update SeriesManagement component to enable inline editing of seasons directly from the TV Shows management tab, allowing admins to edit season title, season number, and thumbnail without navigating to a separate view.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-seriesmanagement-component-to-enable-inline-editing-of-episodes-directly-from-the-tv-shows-management-tab-allowing-admins-to-edit-episode-title-description-episode-number-season-number-video-file-thumbnail-and-the-eligibleforlive-availableasvod-toggles",
+      "title": "Update SeriesManagement component to enable inline editing of episodes directly from the TV Shows management tab, allowing admins to edit episode title, description, episode number, season number, video file, thumbnail, and the eligibleForLive/availableAsVOD toggles.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-videos-section-remains-in-adminpage-as-a-dedicated-tab-serving-as-a-catch-all-category-for-content-that-does-not-fit-movies-tv-shows-podcasts-or-stand-alone-clips",
+      "title": "Ensure the Videos section remains in AdminPage as a dedicated tab, serving as a catch-all category for content that does not fit Movies, TV Shows, Podcasts, or stand-alone Clips.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-vertical-scrolling-clips-shorts-feed-section-to-the-homepage-that-displays-both-auto-generated-and-manually-uploaded-clips-in-a-tiktok-youtube-shorts-style-interface-positioned-after-the-featured-hero-section-and-before-other-content-carousels",
+      "title": "Add a vertical scrolling clips/shorts feed section to the HomePage that displays both auto-generated and manually uploaded clips in a TikTok/YouTube Shorts-style interface, positioned after the featured hero section and before other content carousels",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-vertical-swipe-scroll-navigation-for-the-clips-feed-that-allows-users-to-move-between-clips-with-touch-gestures-on-mobile-and-scroll-wheel-on-desktop-with-auto-pause-play-behavior-when-clips-enter-leave-the-viewport",
+      "title": "Implement vertical swipe/scroll navigation for the clips feed that allows users to move between clips with touch gestures on mobile and scroll wheel on desktop, with auto-pause/play behavior when clips enter/leave the viewport",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-style-the-clips-feed-section-with-a-full-width-or-prominent-layout-that-gives-it-visual-weight-on-the-home-page-using-the-existing-red-black-theme-and-add-a-section-header-like-shorts-or-clips-with-optional-view-all-navigation-to-clipspage",
+      "title": "Style the clips feed section with a full-width or prominent layout that gives it visual weight on the home page, using the existing red/black theme, and add a section header like 'Shorts' or 'Clips' with optional view-all navigation to ClipsPage",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-new-livetvsyncplayer-component-separate-from-the-existing-videoplayer-that-fetches-server-side-synchronization-data-every-5-10-seconds-and-seeks-the-video-element-to-match-the-server-calculated-position-keep-existing-videoplayer-unchanged-for-vod-content",
+      "title": "Build a new LiveTVSyncPlayer component (separate from the existing VideoPlayer) that fetches server-side synchronization data every 5-10 seconds and seeks the video element to match the server-calculated position. Keep existing VideoPlayer unchanged for VOD content.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-drift-detection-and-correction-in-livetvsyncplayer-compare-the-video-element-s-currenttime-with-the-server-calculated-position-and-if-drift-exceeds-a-threshold-e-g-2-3-seconds-seek-the-player-to-the-correct-position-handle-edge-cases-like-buffering-delays-and-network-latency",
+      "title": "Implement drift detection and correction in LiveTVSyncPlayer: compare the video element's currentTime with the server-calculated position, and if drift exceeds a threshold (e.g., 2-3 seconds), seek the player to the correct position. Handle edge cases like buffering delays and network latency.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-livepage-to-use-the-new-livetvsyncplayer-component-for-channel-playback-instead-of-the-existing-videoplayer-when-playing-live-tv-channels-preserve-all-existing-livepage-functionality-channel-selection-epg-grid-channel-surfing-while-routing-live-tv-playback-through-the-synchronized-player",
+      "title": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of the existing VideoPlayer when playing Live TV channels. Preserve all existing LivePage functionality (channel selection, EPG grid, channel surfing) while routing Live TV playback through the synchronized player.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-handle-program-transitions-in-livetvsyncplayer-when-server-indicates-the-current-program-has-changed-different-program-id-returned-automatically-switch-to-the-new-program-s-video-url-and-seek-to-the-calculated-position-within-that-program-ensuring-seamless-transitions-without-user-intervention",
+      "title": "Handle program transitions in LiveTVSyncPlayer: when server indicates the current program has changed (different program ID returned), automatically switch to the new program's video URL and seek to the calculated position within that program, ensuring seamless transitions without user intervention.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-livetvsyncplayer-correctly-handles-looping-scenarios-when-the-server-indicates-looping-is-active-schedule-has-ended-and-is-repeating-display-a-visual-indicator-optional-and-continue-synchronized-playback-within-the-looped-program-without-disrupting-the-viewing-experience",
+      "title": "Ensure LiveTVSyncPlayer correctly handles looping scenarios: when the server indicates looping is active (schedule has ended and is repeating), display a visual indicator (optional) and continue synchronized playback within the looped program without disrupting the viewing experience.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-initial-sync-on-channel-join-when-a-viewer-selects-a-channel-immediately-fetch-sync-data-and-seek-to-the-current-server-calculated-position-before-starting-playback-ensuring-they-join-at-the-correct-moment-rather-than-starting-from-the-beginning-of-the-program",
+      "title": "Implement initial sync on channel join: when a viewer selects a channel, immediately fetch sync data and seek to the current server-calculated position before starting playback, ensuring they join at the correct moment rather than starting from the beginning of the program.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-existing-live-tv-features-in-livetvsyncplayer-maintain-ad-insertion-at-scheduled-timestamps-disable-seeking-forward-for-regular-guest-users-and-ensure-unskippable-ad-behavior-continues-to-work-with-the-new-synchronized-playback-system",
+      "title": "Preserve existing Live TV features in LiveTVSyncPlayer: maintain ad insertion at scheduled timestamps, disable seeking forward for regular/guest users, and ensure unskippable ad behavior continues to work with the new synchronized playback system.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -338,6 +444,74 @@
       "summary": "Extend the backend Video type to include an optional sourceVideoId field that links auto-generated clips back to their original video, enabling traceability and potential playback-range metadata for clips.",
       "reqIds": [
         "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Add inline editing for seasons and episodes in TV Shows management tab (edit title, description, episode number, season number, video file, thumbnails, Live TV/VOD toggles)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Keep Videos section in admin dashboard as a catch-all category for content that doesn't fit Movies/TV Shows/Podcasts/Clips, with clip generation support",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Enable clip generation from Videos section content, ensuring that auto-generated clips can be created from videos uploaded to the catch-all Videos category in the same way they are generated from Movies, Podcasts, and TV Shows.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Add a TikTok/YouTube Shorts-style vertical scrolling feed for clips/short-form content on the home page, displaying both auto-generated and manually uploaded clips",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Implement synchronized Live TV playback so all viewers watching the same channel see the exact same moment at the same time (join at current playback position, not from start)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Enable automatic program looping when schedule ends (loop back to start unless additional programs are added to continue)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Build enhanced Live TV playback system on top of existing architecture with server-side time tracking for frame-accurate synchronization across all clients",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Implement server-side time tracking in the backend to calculate the exact playback position for each Live TV channel based on the current server time and the channel's schedule. For each channel, compute where in the current program playback should be (elapsed time since program start) and return this computed position along with current program metadata when frontend clients request channel state.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "Add a backend endpoint or extend existing channel queries to return real-time synchronization data including: current program ID, current program start timestamp, server current time, computed playback position within the program, and whether the program is looping. Ensure this data is calculated fresh on each request to maintain accuracy.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Implement automatic program looping logic in the backend schedule calculation: when the current time exceeds all scheduled programs for a channel, loop back to the first program and calculate position within the looped playback. If new programs are added to the schedule, continue sequentially instead of looping.",
+      "reqIds": [
+        "REQ-40"
       ],
       "status": "pending"
     }

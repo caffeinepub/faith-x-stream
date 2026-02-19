@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useIsCallerAdmin } from '../hooks/useQueries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Shield, Video, Scissors, Tv, Radio, Building2, DollarSign, BarChart3, CreditCard, Podcast } from 'lucide-react';
+import { Shield, Video, Scissors, Tv, Radio, Building2, DollarSign, BarChart3, CreditCard, Podcast, Film } from 'lucide-react';
+import VideoManagement from '../components/admin/VideoManagement';
 import MoviesManagement from '../components/admin/MoviesManagement';
 import PodcastsManagement from '../components/admin/PodcastsManagement';
 import ClipsManagement from '../components/admin/ClipsManagement';
@@ -57,14 +58,18 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-5 lg:grid-cols-10 gap-2 h-auto p-2 bg-gradient-to-r from-black/80 to-primary/10">
+          <TabsList className="grid grid-cols-5 lg:grid-cols-11 gap-2 h-auto p-2 bg-gradient-to-r from-black/80 to-primary/10">
             <TabsTrigger value="movies" className="flex items-center gap-2">
-              <Video className="h-4 w-4" />
+              <Film className="h-4 w-4" />
               <span className="hidden sm:inline">Movies</span>
             </TabsTrigger>
             <TabsTrigger value="podcasts" className="flex items-center gap-2">
               <Podcast className="h-4 w-4" />
               <span className="hidden sm:inline">Podcasts</span>
+            </TabsTrigger>
+            <TabsTrigger value="videos" className="flex items-center gap-2">
+              <Video className="h-4 w-4" />
+              <span className="hidden sm:inline">Videos</span>
             </TabsTrigger>
             <TabsTrigger value="clips" className="flex items-center gap-2">
               <Scissors className="h-4 w-4" />
@@ -106,6 +111,10 @@ export default function AdminPage() {
 
           <TabsContent value="podcasts">
             <PodcastsManagement />
+          </TabsContent>
+
+          <TabsContent value="videos">
+            <VideoManagement />
           </TabsContent>
 
           <TabsContent value="clips">

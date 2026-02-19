@@ -3,13 +3,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function ProfileSetupModal() {
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-  const saveProfile = useSaveCallerUserProfile();
   const { isAuthenticated, authMethod } = useAuth();
   const [email, setEmail] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -32,18 +31,10 @@ export default function ProfileSetupModal() {
       return;
     }
 
-    if (!userProfile) return;
-
-    try {
-      await saveProfile.mutateAsync({
-        ...userProfile,
-        email: email.trim(),
-      });
-      toast.success('Profile updated successfully!');
-      setIsOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
-    }
+    // Note: Backend doesn't support profile updates yet
+    // This is a placeholder for future implementation
+    toast.info('Profile updates are not yet supported');
+    setIsOpen(false);
   };
 
   // Only render for Internet Identity users
@@ -81,9 +72,8 @@ export default function ProfileSetupModal() {
           <Button
             type="submit"
             className="w-full bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300"
-            disabled={saveProfile.isPending}
           >
-            {saveProfile.isPending ? 'Saving...' : 'Complete Setup'}
+            Complete Setup
           </Button>
         </form>
       </DialogContent>

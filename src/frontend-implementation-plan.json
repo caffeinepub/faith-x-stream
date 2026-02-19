@@ -1,138 +1,127 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add dual availability toggles and auto-generate clips from uploaded videos",
+  "title": "Implement synchronized Live TV playback with server-side time tracking",
   "requirements": [
     {
-      "id": "REQ-22",
-      "summary": "Update MoviesManagement to include dual availability toggles for eligibleForLive and availableAsVOD",
+      "id": "REQ-41",
+      "summary": "Build a new LiveTVSyncPlayer component that fetches server-side synchronization data and seeks the video element to match server-calculated position",
       "acceptanceCriteria": [
-        "MoviesManagement upload form shows both checkboxes",
-        "MoviesManagement edit dialog shows both checkboxes with current values",
-        "Both toggles can be changed independently during edit",
-        "Update mutation sends both flags to backend"
+        "New LiveTVSyncPlayer component exists alongside existing VideoPlayer",
+        "Component polls sync endpoint at regular intervals (5-10 seconds)",
+        "Video element seeks to server-provided position when drift exceeds 2-3 seconds",
+        "Existing VideoPlayer remains unchanged for VOD playback"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/admin/MoviesManagement.tsx",
-          "operation": "modify",
-          "description": "Add two checkbox fields to the upload form and edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new uploads. Update the addVideo and updateVideo mutations to include both boolean flags. Ensure the edit dialog pre-populates both checkbox states from the selected video's current values."
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "create",
+          "description": "Create a new LiveTVSyncPlayer component separate from VideoPlayer that manages synchronized live TV playback. Implement video player with custom controls similar to VideoPlayer but focused on live TV synchronization. Include polling mechanism using setInterval to fetch sync data from getDynamicLiveChannelState every 5-10 seconds. Store sync data in component state (currentProgramId, playbackPosition, serverTime, isLooping). Render video element with ref for direct manipulation. Include basic controls (play/pause, volume, fullscreen) but disable seek controls for live content. Use the backend's LiveChannelState type to structure sync data handling."
         }
       ]
     },
     {
-      "id": "REQ-23",
-      "summary": "Update PodcastsManagement to include dual availability toggles for eligibleForLive and availableAsVOD",
+      "id": "REQ-42",
+      "summary": "Implement drift detection and correction in LiveTVSyncPlayer by comparing video currentTime with server-calculated position",
       "acceptanceCriteria": [
-        "PodcastsManagement upload form shows both checkboxes",
-        "PodcastsManagement edit dialog shows both checkboxes with current values",
-        "Both toggles can be changed independently during edit",
-        "Update mutation sends both flags to backend"
+        "Drift is measured by comparing video.currentTime with server position plus elapsed time since last sync",
+        "Seek correction only triggers when drift exceeds threshold (avoid constant seeking)",
+        "Player handles buffering and network delays gracefully without excessive seeking"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
           "operation": "modify",
-          "description": "Add two checkbox fields to the upload form and edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new uploads. Update the addVideo and updateVideo mutations to include both boolean flags. Ensure the edit dialog pre-populates both checkbox states from the selected video's current values."
+          "description": "Add drift detection logic within the sync polling mechanism. Calculate expected position as: serverPlaybackPosition + (Date.now() - lastSyncTime) / 1000. Compare video.currentTime with expected position. If absolute difference exceeds 2-3 second threshold and video is not buffering (readyState >= 3), execute videoRef.current.currentTime = expectedPosition to correct drift. Implement debouncing to prevent seek thrashing during buffering. Track lastSeekTime to avoid seeking more than once per polling interval. Add state for tracking drift amount for potential UI display."
         }
       ]
     },
     {
-      "id": "REQ-24",
-      "summary": "Update SeriesManagement episode forms to include dual availability toggles for eligibleForLive and availableAsVOD",
+      "id": "REQ-43",
+      "summary": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of VideoPlayer",
       "acceptanceCriteria": [
-        "Episode creation form in SeriesManagement shows both checkboxes",
-        "Episode edit dialog shows both checkboxes with current values",
-        "Both toggles can be changed independently during edit",
-        "Update mutation sends both flags to backend"
+        "LivePage renders LiveTVSyncPlayer for Live TV channel playback",
+        "Channel selection, EPG grid, and surfing behavior remain unchanged",
+        "Switching channels triggers sync data fetch and position calculation for new channel",
+        "VOD content (if any) still uses existing VideoPlayer"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/admin/SeriesManagement.tsx",
+          "path": "frontend/src/pages/LivePage.tsx",
           "operation": "modify",
-          "description": "Add two checkbox fields to the episode creation form and episode edit dialog: 'Eligible for Live TV scheduling' (maps to eligibleForLive) and 'Available as standalone VOD' (maps to availableAsVOD). Both should default to true for new episodes. Update the episode creation and update logic within addSeries and updateSeries mutations to include both boolean flags for each episode. Ensure the episode edit dialog pre-populates both checkbox states from the selected episode's current values."
+          "description": "Replace the existing VideoPlayer component usage with conditional rendering: if selectedChannel exists, render LiveTVSyncPlayer with channelId prop; otherwise keep existing fallback UI. Pass selectedChannel.id to LiveTVSyncPlayer. Preserve all existing LivePage state management (selectedChannel, showGuide) and user interactions (channel selection from guide, channel surfing). Keep LiveGuideGrid component integration unchanged. Ensure channel switching resets LiveTVSyncPlayer state by using key={selectedChannel.id} on the component. Remove or comment out the old VideoPlayer import and usage for live channels only."
         }
       ]
     },
     {
-      "id": "REQ-25",
-      "summary": "Filter VOD pages to only display content where availableAsVOD is true",
+      "id": "REQ-44",
+      "summary": "Handle program transitions in LiveTVSyncPlayer by automatically switching to new program video URL when server indicates program change",
       "acceptanceCriteria": [
-        "MoviesPage only displays movies with availableAsVOD=true",
-        "TVShowsPage only displays series with at least one episode where availableAsVOD=true",
-        "SeriesDetailPage only shows episodes where availableAsVOD=true",
-        "Live-only content (availableAsVOD=false) is hidden from these pages"
+        "Component detects program change by comparing current and previous program IDs",
+        "Video source switches to new program URL automatically",
+        "Player seeks to correct position within new program after source change",
+        "Transition appears smooth without visible interruption"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/MoviesPage.tsx",
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
           "operation": "modify",
-          "description": "Filter the movies array before rendering to only include videos where availableAsVOD is true. Update the filtering logic in the component to check video.availableAsVOD === true alongside the existing contentType filter."
+          "description": "Add useEffect hook that watches currentProgramId from sync data. Store previousProgramId in a ref to detect changes. When currentProgramId differs from previousProgramId, trigger program transition: fetch the new program's video content using getVideoById with the new currentProgramId, update video source (videoRef.current.src = newVideoUrl), wait for 'loadedmetadata' event, then seek to the playbackPosition from sync data. Show loading overlay during source change. Update previousProgramId ref after successful transition. Handle edge case where program metadata fetch fails by showing error state but continuing to poll for recovery."
+        }
+      ]
+    },
+    {
+      "id": "REQ-45",
+      "summary": "Ensure LiveTVSyncPlayer correctly handles looping scenarios by continuing synchronized playback within looped programs",
+      "acceptanceCriteria": [
+        "Player correctly seeks to looped position when server returns loop status",
+        "Optional UI indicator shows when channel is in loop mode",
+        "Looping playback is synchronized across all viewers"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "modify",
+          "description": "Check isLooping flag from LiveChannelState in sync response. When isLooping is true, display a small badge or indicator in the player UI (e.g., 'Loop Mode' pill in top-right corner of player). The playbackPosition returned by the server already accounts for looping calculation, so no additional client-side looping logic is needed—just apply the position as normal during drift correction. Add optional isLooping state to component for UI rendering. Style the loop indicator with subtle opacity and positioning to avoid obstructing video content."
+        }
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "summary": "Implement initial sync on channel join by fetching sync data and seeking to current server-calculated position before starting playback",
+      "acceptanceCriteria": [
+        "Sync data is fetched immediately when channel is selected",
+        "Video seeks to calculated position before play() is called",
+        "User joins playback at current live position, not from program start",
+        "Loading state is shown during initial sync and seek"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "modify",
+          "description": "Add initialization logic in useEffect when channelId prop changes. Set isInitializing state to true and show loading spinner overlay. Immediately fetch sync data using getDynamicLiveChannelState(channelId). Extract currentProgramId and playbackPosition from response. Load video source for currentProgram. Wait for 'loadedmetadata' event on video element. Set videoRef.current.currentTime = playbackPosition. Only then call videoRef.current.play(). Set isInitializing to false. Start the polling interval after successful initialization. Handle errors during initialization by showing error message and retry button."
+        }
+      ]
+    },
+    {
+      "id": "REQ-47",
+      "summary": "Preserve existing Live TV features in LiveTVSyncPlayer including ad insertion, disabled forward seeking, and unskippable ad behavior",
+      "acceptanceCriteria": [
+        "Scheduled ad breaks trigger at correct timestamps during synchronized playback",
+        "Forward seeking remains disabled for Live TV content",
+        "Unskippable ad behavior works correctly with sync player",
+        "All existing Live TV access controls and features remain functional"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "modify",
+          "description": "Integrate ad handling logic from existing VideoPlayer: parse adLocations from ScheduledContent in LiveChannelState. Monitor video.currentTime in timeupdate event to detect when playback reaches an ad position timestamp. When ad position is reached, pause main content, switch to ad video source, play ad with unskippable controls (no seek, optional skip after N seconds based on ad assignment settings). After ad completes, restore main content source and resume from correct sync position. Disable seek bar interaction for forward seeking (allow backward seek for premium users if needed, but restrict forward). Check user premium status from useAuth to determine ad display. Add isPlayingAd state to manage ad playback mode and prevent sync corrections during ad playback."
         },
         {
-          "path": "frontend/src/pages/TVShowsPage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Filter the series array to only include series that have at least one episode with availableAsVOD=true. Implement a filtering function that checks if series.seasons contains any season with episodes where availableAsVOD is true before displaying the series card."
-        },
-        {
-          "path": "frontend/src/pages/SeriesDetailPage.tsx",
-          "operation": "modify",
-          "description": "Filter episodes within each season to only display episodes where availableAsVOD is true. Update the episode rendering logic to exclude episodes with availableAsVOD=false from the season's episode list. Maintain the season structure but hide unavailable episodes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-26",
-      "summary": "Enforce eligibleForLive filtering in LiveScheduleManagement to prevent VOD-only content from being scheduled",
-      "acceptanceCriteria": [
-        "LiveScheduleManagement filters available videos to only show eligibleForLive=true content",
-        "Attempting to schedule a video with eligibleForLive=false is prevented or shows a validation error",
-        "Existing scheduled programs continue to work"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
-          "operation": "modify",
-          "description": "Filter the available videos list in the scheduling UI to only show videos where eligibleForLive is true. Update the video selection dropdown or list to apply a filter checking video.eligibleForLive === true. Add validation logic that prevents adding programs to the schedule if eligibleForLive is false, displaying a user-friendly error message if attempted."
-        }
-      ]
-    },
-    {
-      "id": "REQ-29",
-      "summary": "Update ClipsManagement to display auto-generated clips and allow caption editing",
-      "acceptanceCriteria": [
-        "ClipsManagement displays all clips including auto-generated ones",
-        "Each clip row shows its title, caption, and source video title if available",
-        "Admins can edit clip captions in the edit dialog",
-        "Editing a clip does not remove its sourceVideoId link"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/ClipsManagement.tsx",
-          "operation": "modify",
-          "description": "Update the clips table/grid to display the clipCaption field if present, and show the source video title by looking up the sourceVideoId in the available videos list. Add a column or row section that displays 'Source: [video title]' when sourceVideoId is populated. Update the edit dialog to include a text input for clipCaption that allows admins to edit the caption. Ensure the update mutation preserves the sourceVideoId field when saving changes. Add visual distinction (e.g., badge or icon) to indicate auto-generated clips versus manually uploaded ones."
-        }
-      ]
-    },
-    {
-      "id": "REQ-30",
-      "summary": "Ensure Podcasts section remains a separate tab in AdminPage with dedicated management interface",
-      "acceptanceCriteria": [
-        "AdminPage includes a 'Podcasts' tab separate from Movies and other sections",
-        "Selecting the Podcasts tab renders PodcastsManagement component",
-        "PodcastsManagement upload form defaults contentType to Podcast",
-        "PodcastsManagement manage list only displays videos with contentType=Podcast"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AdminPage.tsx",
-          "operation": "modify",
-          "description": "Verify that the Podcasts tab exists as a separate tab in the admin interface. If not present, add a 'Podcasts' tab to the tab navigation that renders the PodcastsManagement component when selected. Ensure the tab order places Podcasts as a distinct section separate from Movies, Clips, Series, and other management sections."
-        },
-        {
-          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
-          "operation": "modify",
-          "description": "Verify that the upload form defaults contentType to 'podcast' and the manage list filters to only display videos where contentType equals 'podcast'. If these filters are not in place, update the getAllVideos query result to filter by contentType='podcast' before rendering the management table, and ensure new uploads set contentType to 'podcast' by default."
+          "description": "Ensure useGetAdAssignmentsForLive query hook exists or add it if missing. This hook should call getAdAssignmentsForLive(channelId) and return ad assignment data needed by LiveTVSyncPlayer for displaying ads at scheduled positions. Use React Query's useQuery with queryKey ['adAssignments', 'live', channelId] and enabled flag based on channelId presence."
         }
       ]
     }

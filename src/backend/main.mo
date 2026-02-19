@@ -1,21 +1,19 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Runtime "mo:core/Runtime";
 import AccessControl "authorization/access-control";
 import Principal "mo:core/Principal";
-import Nat "mo:core/Nat";
+import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Stripe "stripe/stripe";
 import OutCall "http-outcalls/outcall";
+import Runtime "mo:core/Runtime";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import Bool "mo:core/Bool";
+import Nat "mo:core/Nat";
 import Array "mo:core/Array";
-import Migration "migration";
-import List "mo:core/List";
+import Time "mo:core/Time";
 
-// Set migration to run on upgrade
-(with migration = Migration.run)
 actor {
   public type ContentType = {
     #documentary;
@@ -247,11 +245,8 @@ actor {
         assignment.scope == "live" and Bool.equal(assignment.showOnFreeOnly, false)
       }
     );
-
     filteredAssignments.values().toArray();
   };
-
-  // ===== ACCESS CONTROL FUNCTIONS =====
 
   public shared ({ caller }) func initializeAccessControl() : async () {
     AccessControl.initialize(accessControlState, caller);
@@ -265,7 +260,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access regular user status");
     };
-    
+
     let currentUser = getActiveRegularUser();
     switch (currentUser) {
       case (null) {
@@ -323,11 +318,7 @@ actor {
     AccessControl.isAdmin(accessControlState, caller);
   };
 
-  // ===== USER AUTHENTICATION FUNCTIONS =====
-  // These functions must allow anonymous callers to register/login
-
   public shared ({ caller }) func register(input : RegisterInput) : async () {
-    // No authorization check - anonymous users must be able to register
     switch (userCredentials.get(input.email)) {
       case (null) {
         let credentials : UserCredentials = {
@@ -357,7 +348,6 @@ actor {
   };
 
   public shared ({ caller }) func login(email : Text, password : Text) : async Bool {
-    // No authorization check - anonymous users must be able to login
     switch (userCredentials.get(email)) {
       case (null) {
         Runtime.trap("Invalid email or password");
@@ -379,7 +369,6 @@ actor {
   };
 
   public query ({ caller }) func getCallerLoginStatus() : async LoginStatus {
-    // No authorization check - anyone can check their login status
     getLoginStatus();
   };
 
@@ -391,75 +380,106 @@ actor {
     };
   };
 
-  // ===== USER PROFILE FUNCTIONS =====
+  // ===== LIVE TV SYNC =====
 
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
-    };
+  public type LiveChannelState = {
+    channel : LiveChannel;
+    currentProgram : ?ScheduledContent;
+    currentProgramId : ?Text;
+    currentProgramTitle : ?Text;
+    currentProgramStartTimestamp : ?Int;
+    programStartTime : ?Int;
+    currentTime : ?Int;
+    playbackPosition : ?Int;
+    isLooping : ?Bool;
+    isProgramPlaying : ?Bool;
+    isContentAvailable : ?Bool;
+    availableAsVOD : ?Bool;
+    isCommercialBreak : ?Bool;
+  };
 
-    if (AccessControl.isAdmin(accessControlState, caller)) {
-      switch (users.get(caller)) {
-        case (null) {
-          ?{
-            name = "Admin";
-            email = "admin@faithxstream.com";
-            isPremium = true;
-            hasPrioritySupport = true;
+  public query func getDynamicLiveChannelState(channelId : Text) : async LiveChannelState {
+    let currentTime = Int.abs(Time.now() / 1000000);
+
+    switch (liveChannels.get(channelId)) {
+      case (null) {
+        Runtime.trap("Live channel not found");
+      };
+      case (?channel) {
+        let schedule = channel.schedule;
+        let totalPrograms = schedule.size();
+        var startProgramIndex : ?Nat = null;
+
+        if (totalPrograms == 0) {
+          return {
+            channel;
+            currentProgram = null;
+            currentProgramId = null;
+            currentProgramTitle = null;
+            currentProgramStartTimestamp = null;
+            programStartTime = null;
+            currentTime = ?currentTime;
+            playbackPosition = null;
+            isLooping = ?false;
+            isProgramPlaying = ?false;
+            isContentAvailable = ?false;
+            availableAsVOD = null;
+            isCommercialBreak = ?false;
           };
         };
-        case (?profile) {
-          ?{
-            name = profile.name;
-            email = profile.email;
-            isPremium = true;
-            hasPrioritySupport = true;
+
+        var cycleCount = 0;
+        var found = false;
+
+        while (not found and cycleCount < 2) {
+          for (index in Nat.range(0, totalPrograms)) {
+            if (not found) {
+              let current = cycleCount;
+              let currentStartTime = current * totalPrograms;
+              let programIndex = index + currentStartTime;
+              startProgramIndex := ?programIndex;
+              let program = channel.schedule[index];
+              if (
+                currentTime >= program.startTime
+                and currentTime < program.endTime
+              ) {
+                found := true;
+                startProgramIndex := ?programIndex;
+              };
+            };
           };
+          cycleCount += 1;
+        };
+
+        let currentProgramIndex = switch (startProgramIndex) {
+          case (null) { 0 };
+          case (?index) { index % totalPrograms };
+        };
+        let currentProgram = channel.schedule[currentProgramIndex];
+        let programStartTime = currentProgram.startTime + (cycleCount - 1) * totalPrograms;
+        let playbackPosition = currentTime - programStartTime;
+
+        let currentProgramId = ?currentProgram.contentId;
+        let currentProgramStartTimestamp = ?programStartTime;
+
+        {
+          channel;
+          currentProgram = ?currentProgram;
+          currentProgramId;
+          currentProgramTitle = currentProgramId;
+          currentProgramStartTimestamp;
+          programStartTime = ?programStartTime;
+          currentTime = ?currentTime;
+          playbackPosition = ?playbackPosition;
+          isLooping = ?(cycleCount > 1);
+          isProgramPlaying = ?false;
+          isContentAvailable = ?true;
+          availableAsVOD = null;
+          isCommercialBreak = ?false;
         };
       };
-    } else {
-      users.get(caller);
     };
   };
-
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-
-    if (AccessControl.isAdmin(accessControlState, user)) {
-      switch (users.get(user)) {
-        case (null) {
-          ?{
-            name = "Admin";
-            email = "admin@faithxstream.com";
-            isPremium = true;
-            hasPrioritySupport = true;
-          };
-        };
-        case (?profile) {
-          ?{
-            name = profile.name;
-            email = profile.email;
-            isPremium = true;
-            hasPrioritySupport = true;
-          };
-        };
-      };
-    } else {
-      users.get(user);
-    };
-  };
-
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    users.add(caller, profile);
-  };
-
-  // ===== CONTENT QUERY FUNCTIONS (PUBLIC) =====
-  // No authorization required - public content browsing
 
   public query func getAllVideos() : async [VideoContent] {
     videos.values().toArray();
@@ -548,7 +568,6 @@ actor {
   // ===== STRIPE CONFIGURATION (ADMIN ONLY) =====
 
   public query func isStripeConfigured() : async Bool {
-    // No authorization check - anyone can check if Stripe is configured
     stripeConfig != null;
   };
 
@@ -597,7 +616,6 @@ actor {
   };
 
   public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
-    // No authorization check - required for HTTP outcalls
     OutCall.transform(input);
   };
 
@@ -651,9 +669,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
-
     videos.add(video.id, video);
-
     let clips = createClipsForVideo(video);
     for (clip in clips.values()) {
       videos.add(clip.id, clip);
@@ -664,9 +680,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
-
     videos.add(videoId, video);
-
     let clips = updateClipsForVideo(video);
     for (clip in clips.values()) {
       videos.add(clip.id, clip);
@@ -809,16 +823,12 @@ actor {
   };
 
   public query func getAdAssignments() : async [AdAssignment] {
-    // No authorization check - public data for ad serving
     adAssignments.values().toArray();
   };
 
   public query func getAdMedia() : async [AdMedia] {
-    // No authorization check - public data for ad serving
     adMedia.values().toArray();
   };
-
-  // ===== WATCH HISTORY  (USER ONLY) =====
 
   public shared ({ caller }) func addToWatchHistory(contentId : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -846,12 +856,10 @@ actor {
   // ===== ANALYTICS (TRACKING ALLOWS GUESTS, VIEWING ADMIN ONLY) =====
 
   public shared ({ caller }) func incrementViews() : async () {
-    // No authorization check - allow guests to increment views for public content
     totalViews += 1;
   };
 
   public shared ({ caller }) func incrementAdImpressions() : async () {
-    // No authorization check - allow guests to increment ad impressions
     adImpressions += 1;
   };
 
@@ -873,7 +881,6 @@ actor {
   // ===== SEARCH (PUBLIC) =====
 
   public query func search(searchQuery : Text) : async [SearchResult] {
-    // No authorization check - public search functionality
     var results : [SearchResult] = [];
 
     for ((id, video) in videos.entries()) {

@@ -6,56 +6,35 @@ import VideoCard from '../components/VideoCard';
 import SeriesCard from '../components/SeriesCard';
 import { Building2, Film, Tv, Video } from 'lucide-react';
 import { Skeleton } from '../components/ui/skeleton';
-import { useEffect, useState } from 'react';
-import type { Brand, VideoContent, TVSeries } from '../backend';
+import { useMemo } from 'react';
 
 export default function BrandDetailPage() {
   const { brandId } = useParams({ from: '/networks/$brandId' });
   const navigate = useNavigate();
-  const getBrandById = useGetBrandById();
-  const getChannelsByBrand = useGetChannelsByBrand();
+  const { data: brand, isLoading: brandLoading } = useGetBrandById(brandId);
+  const { data: channelsData, isLoading: channelsLoading } = useGetChannelsByBrand(brandId);
   const { data: allVideos } = useGetAllVideos();
   const { data: allSeries } = useGetAllSeries();
-  
-  const [brand, setBrand] = useState<Brand | null>(null);
-  const [brandContent, setBrandContent] = useState<{
-    films: VideoContent[];
-    series: TVSeries[];
-    clips: VideoContent[];
-  }>({ films: [], series: [], clips: [] });
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchBrandData = async () => {
-      try {
-        setIsLoading(true);
-        const brandData = await getBrandById.mutateAsync(brandId);
-        setBrand(brandData);
+  const brandContent = useMemo(() => {
+    if (!channelsData || !allVideos || !allSeries) {
+      return { films: [], series: [], clips: [] };
+    }
 
-        if (brandData && allVideos && allSeries) {
-          const channelsData = await getChannelsByBrand.mutateAsync(brandId);
-          
-          const films = allVideos.filter(v => 
-            !v.isClip && channelsData.films.includes(v.id)
-          );
-          const clips = allVideos.filter(v => 
-            v.isClip && channelsData.clips.includes(v.id)
-          );
-          const seriesData = allSeries.filter(s => 
-            channelsData.series.includes(s.id)
-          );
+    const films = allVideos.filter(v => 
+      !v.isClip && channelsData.films.includes(v.id)
+    );
+    const clips = allVideos.filter(v => 
+      v.isClip && channelsData.clips.includes(v.id)
+    );
+    const seriesData = allSeries.filter(s => 
+      channelsData.series.includes(s.id)
+    );
 
-          setBrandContent({ films, series: seriesData, clips });
-        }
-      } catch (error) {
-        console.error('Failed to fetch brand:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    return { films, series: seriesData, clips };
+  }, [channelsData, allVideos, allSeries]);
 
-    fetchBrandData();
-  }, [brandId, allVideos, allSeries]);
+  const isLoading = brandLoading || channelsLoading;
 
   if (isLoading) {
     return (

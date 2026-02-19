@@ -32,13 +32,17 @@ export default function SeriesManagement() {
   const [selectedSeries, setSelectedSeries] = useState<TVSeries | null>(null);
   const [seasonDialogOpen, setSeasonDialogOpen] = useState(false);
   const [episodeDialogOpen, setEpisodeDialogOpen] = useState(false);
+  const [editSeasonDialogOpen, setEditSeasonDialogOpen] = useState(false);
   const [editEpisodeDialogOpen, setEditEpisodeDialogOpen] = useState(false);
   
   const [seasonNumber, setSeasonNumber] = useState('');
   const [seasonTitle, setSeasonTitle] = useState('');
   const [seasonIsOriginal, setSeasonIsOriginal] = useState(false);
+  const [seasonThumbnailFile, setSeasonThumbnailFile] = useState<File | null>(null);
 
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
+  
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [episodeTitle, setEpisodeTitle] = useState('');
   const [episodeDescription, setEpisodeDescription] = useState('');
@@ -49,6 +53,7 @@ export default function SeriesManagement() {
   const [episodeVideoFile, setEpisodeVideoFile] = useState<File | null>(null);
   const [episodeThumbnailFile, setEpisodeThumbnailFile] = useState<File | null>(null);
   const [episodeContentType, setEpisodeContentType] = useState<ContentType>(ContentType.tvSeries);
+  const [targetSeasonNumber, setTargetSeasonNumber] = useState('');
 
   const [editingEpisode, setEditingEpisode] = useState<Episode | null>(null);
 
@@ -102,7 +107,18 @@ export default function SeriesManagement() {
     setSeasonNumber('');
     setSeasonTitle('');
     setSeasonIsOriginal(false);
+    setSeasonThumbnailFile(null);
     setSeasonDialogOpen(true);
+  };
+
+  const openEditSeasonDialog = (series: TVSeries, season: Season) => {
+    setSelectedSeries(series);
+    setEditingSeason(season);
+    setSeasonNumber(String(season.seasonNumber));
+    setSeasonTitle(season.title);
+    setSeasonIsOriginal(season.isOriginal);
+    setSeasonThumbnailFile(null);
+    setEditSeasonDialogOpen(true);
   };
 
   const handleAddSeason = async (e: React.FormEvent) => {
@@ -130,8 +146,45 @@ export default function SeriesManagement() {
       setSeasonNumber('');
       setSeasonTitle('');
       setSeasonIsOriginal(false);
+      setSeasonThumbnailFile(null);
     } catch (error) {
       toast.error('Failed to add season');
+      console.error(error);
+    }
+  };
+
+  const handleUpdateSeason = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSeries || !editingSeason) return;
+
+    try {
+      const updatedSeason: Season = {
+        ...editingSeason,
+        seasonNumber: BigInt(seasonNumber),
+        title: seasonTitle,
+        isOriginal: seasonIsOriginal,
+      };
+
+      const updatedSeasons = selectedSeries.seasons.map(s => 
+        s.id === editingSeason.id ? updatedSeason : s
+      );
+
+      const updatedSeries: TVSeries = {
+        ...selectedSeries,
+        seasons: updatedSeasons,
+      };
+
+      await updateSeries.mutateAsync({ seriesId: selectedSeries.id, series: updatedSeries });
+      toast.success('Season updated successfully!');
+      
+      setEditSeasonDialogOpen(false);
+      setEditingSeason(null);
+      setSeasonNumber('');
+      setSeasonTitle('');
+      setSeasonIsOriginal(false);
+      setSeasonThumbnailFile(null);
+    } catch (error) {
+      toast.error('Failed to update season');
       console.error(error);
     }
   };
@@ -149,6 +202,7 @@ export default function SeriesManagement() {
     setEpisodeVideoFile(null);
     setEpisodeThumbnailFile(null);
     setEpisodeContentType(ContentType.tvSeries);
+    setTargetSeasonNumber(String(season.seasonNumber));
     setEpisodeDialogOpen(true);
   };
 
@@ -217,6 +271,7 @@ export default function SeriesManagement() {
     setEpisodeIsFirstEpisode(episode.isFirstEpisode);
     setEpisodeIsOriginal(episode.isOriginal);
     setEpisodeContentType(episode.contentType);
+    setTargetSeasonNumber(String(season.seasonNumber));
     setEpisodeVideoFile(null);
     setEpisodeThumbnailFile(null);
     setEditEpisodeDialogOpen(true);
@@ -256,11 +311,38 @@ export default function SeriesManagement() {
         thumbnailUrl: thumbnailBlob,
       };
 
-      const updatedSeasons = selectedSeries.seasons.map(s => 
-        s.id === selectedSeason.id 
-          ? { ...s, episodes: s.episodes.map(ep => ep.id === editingEpisode.id ? updatedEpisode : ep) }
-          : s
-      );
+      // Check if episode needs to be moved to a different season
+      const targetSeasonNum = BigInt(targetSeasonNumber);
+      const currentSeasonNum = selectedSeason.seasonNumber;
+
+      let updatedSeasons: Season[];
+
+      if (targetSeasonNum !== currentSeasonNum) {
+        // Moving episode to different season
+        const targetSeason = selectedSeries.seasons.find(s => s.seasonNumber === targetSeasonNum);
+        if (!targetSeason) {
+          toast.error('Target season not found');
+          return;
+        }
+
+        updatedSeasons = selectedSeries.seasons.map(s => {
+          if (s.id === selectedSeason.id) {
+            // Remove from current season
+            return { ...s, episodes: s.episodes.filter(ep => ep.id !== editingEpisode.id) };
+          } else if (s.id === targetSeason.id) {
+            // Add to target season
+            return { ...s, episodes: [...s.episodes, { ...updatedEpisode, seasonId: targetSeason.id }] };
+          }
+          return s;
+        });
+      } else {
+        // Update in same season
+        updatedSeasons = selectedSeries.seasons.map(s => 
+          s.id === selectedSeason.id 
+            ? { ...s, episodes: s.episodes.map(ep => ep.id === editingEpisode.id ? updatedEpisode : ep) }
+            : s
+        );
+      }
 
       const updatedSeries: TVSeries = {
         ...selectedSeries,
@@ -457,25 +539,35 @@ export default function SeriesManagement() {
                             Season {String(season.seasonNumber)}: {season.title}
                             {season.isOriginal && <Star className="h-3 w-3 text-secondary fill-secondary" />}
                           </h4>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEpisodeDialog(series, season)}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Episode
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditSeasonDialog(series, season)}
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEpisodeDialog(series, season)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Episode
+                            </Button>
+                          </div>
                         </div>
                         {season.episodes.length > 0 && (
                           <div className="space-y-1 pl-4">
                             {season.episodes.map((episode) => (
                               <div key={episode.id} className="flex items-center justify-between text-sm p-2 rounded bg-black/40">
                                 <span className="flex items-center gap-2">
-                                  Ep {String(episode.episodeNumber)}: {episode.title}
-                                  {episode.isOriginal && <Star className="h-3 w-3 text-secondary fill-secondary" />}
+                                  E{String(episode.episodeNumber)}: {episode.title}
                                   {episode.isPremium && (
                                     <span className="text-xs bg-secondary/20 text-secondary px-1.5 py-0.5 rounded">Premium</span>
                                   )}
+                                  {episode.isOriginal && <Star className="h-3 w-3 text-secondary fill-secondary" />}
                                 </span>
                                 <Button
                                   variant="ghost"
@@ -494,7 +586,7 @@ export default function SeriesManagement() {
                 )}
               </div>
             ))}
-            {(!allSeries || allSeries.length === 0) && (
+            {allSeries?.length === 0 && (
               <p className="text-center text-muted-foreground py-8">No series created yet</p>
             )}
           </div>
@@ -503,9 +595,9 @@ export default function SeriesManagement() {
 
       {/* Add Season Dialog */}
       <Dialog open={seasonDialogOpen} onOpenChange={setSeasonDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Season to {selectedSeries?.title}</DialogTitle>
+            <DialogTitle>Add New Season</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddSeason} className="space-y-4">
             <div className="space-y-2">
@@ -516,6 +608,8 @@ export default function SeriesManagement() {
                 value={seasonNumber}
                 onChange={(e) => setSeasonNumber(e.target.value)}
                 required
+                min="1"
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
@@ -526,6 +620,8 @@ export default function SeriesManagement() {
                 value={seasonTitle}
                 onChange={(e) => setSeasonTitle(e.target.value)}
                 required
+                placeholder="e.g., The Beginning"
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
@@ -541,21 +637,68 @@ export default function SeriesManagement() {
               </Label>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setSeasonDialogOpen(false)}
-                className="flex-1"
-              >
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setSeasonDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={updateSeries.isPending}
-                className="flex-1 bg-gradient-to-r from-primary to-secondary"
-              >
-                Add Season
+              <Button type="submit" disabled={updateSeries.isPending}>
+                {updateSeries.isPending ? 'Adding...' : 'Add Season'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Season Dialog */}
+      <Dialog open={editSeasonDialogOpen} onOpenChange={setEditSeasonDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Season</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateSeason} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editSeasonNumber">Season Number</Label>
+              <Input
+                id="editSeasonNumber"
+                type="number"
+                value={seasonNumber}
+                onChange={(e) => setSeasonNumber(e.target.value)}
+                required
+                min="1"
+                className="bg-black/60 border-primary/40"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editSeasonTitle">Season Title</Label>
+              <Input
+                id="editSeasonTitle"
+                value={seasonTitle}
+                onChange={(e) => setSeasonTitle(e.target.value)}
+                required
+                placeholder="e.g., The Beginning"
+                className="bg-black/60 border-primary/40"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="editSeasonIsOriginal"
+                checked={seasonIsOriginal}
+                onCheckedChange={(checked) => setSeasonIsOriginal(checked as boolean)}
+              />
+              <Label htmlFor="editSeasonIsOriginal" className="cursor-pointer flex items-center gap-1">
+                <Star className="h-4 w-4 text-secondary" />
+                Mark as Original
+              </Label>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEditSeasonDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateSeries.isPending}>
+                {updateSeries.isPending ? 'Updating...' : 'Update Season'}
               </Button>
             </div>
           </form>
@@ -566,7 +709,7 @@ export default function SeriesManagement() {
       <Dialog open={episodeDialogOpen} onOpenChange={setEpisodeDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Episode to Season {selectedSeason ? String(selectedSeason.seasonNumber) : ''}</DialogTitle>
+            <DialogTitle>Add New Episode</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddEpisode} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -578,6 +721,8 @@ export default function SeriesManagement() {
                   value={episodeNumber}
                   onChange={(e) => setEpisodeNumber(e.target.value)}
                   required
+                  min="1"
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
 
@@ -589,6 +734,8 @@ export default function SeriesManagement() {
                   value={episodeRuntime}
                   onChange={(e) => setEpisodeRuntime(e.target.value)}
                   required
+                  min="1"
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
             </div>
@@ -600,6 +747,7 @@ export default function SeriesManagement() {
                 value={episodeTitle}
                 onChange={(e) => setEpisodeTitle(e.target.value)}
                 required
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
@@ -611,18 +759,18 @@ export default function SeriesManagement() {
                 onChange={(e) => setEpisodeDescription(e.target.value)}
                 required
                 rows={3}
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="episodeContentType">Content Type</Label>
               <Select value={episodeContentType} onValueChange={(value) => setEpisodeContentType(value as ContentType)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-black/60 border-primary/40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ContentType.tvSeries}>TV Series</SelectItem>
-                  <SelectItem value={ContentType.series}>Series</SelectItem>
                   <SelectItem value={ContentType.documentary}>Documentary</SelectItem>
                   <SelectItem value={ContentType.educational}>Educational</SelectItem>
                 </SelectContent>
@@ -638,6 +786,7 @@ export default function SeriesManagement() {
                   accept="video/*"
                   onChange={(e) => setEpisodeVideoFile(e.target.files?.[0] || null)}
                   required
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
 
@@ -649,18 +798,19 @@ export default function SeriesManagement() {
                   accept="image/*"
                   onChange={(e) => setEpisodeThumbnailFile(e.target.files?.[0] || null)}
                   required
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="episodeIsPremium"
                   checked={episodeIsPremium}
                   onCheckedChange={(checked) => setEpisodeIsPremium(checked as boolean)}
                 />
-                <Label htmlFor="episodeIsPremium" className="cursor-pointer">Premium Content</Label>
+                <Label htmlFor="episodeIsPremium" className="cursor-pointer">Premium</Label>
               </div>
 
               <div className="flex items-center gap-2">
@@ -669,7 +819,7 @@ export default function SeriesManagement() {
                   checked={episodeIsFirstEpisode}
                   onCheckedChange={(checked) => setEpisodeIsFirstEpisode(checked as boolean)}
                 />
-                <Label htmlFor="episodeIsFirstEpisode" className="cursor-pointer">First Episode (Free Preview)</Label>
+                <Label htmlFor="episodeIsFirstEpisode" className="cursor-pointer">First Episode</Label>
               </div>
 
               <div className="flex items-center gap-2">
@@ -680,7 +830,7 @@ export default function SeriesManagement() {
                 />
                 <Label htmlFor="episodeIsOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
-                  Mark as Original
+                  Original
                 </Label>
               </div>
             </div>
@@ -700,21 +850,12 @@ export default function SeriesManagement() {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEpisodeDialogOpen(false)}
-                className="flex-1"
-              >
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEpisodeDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={updateSeries.isPending}
-                className="flex-1 bg-gradient-to-r from-primary to-secondary"
-              >
-                Add Episode
+              <Button type="submit" disabled={updateSeries.isPending}>
+                {updateSeries.isPending ? 'Adding...' : 'Add Episode'}
               </Button>
             </div>
           </form>
@@ -730,58 +871,79 @@ export default function SeriesManagement() {
           <form onSubmit={handleUpdateEpisode} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-episodeNumber">Episode Number</Label>
+                <Label htmlFor="editEpisodeNumber">Episode Number</Label>
                 <Input
-                  id="edit-episodeNumber"
+                  id="editEpisodeNumber"
                   type="number"
                   value={episodeNumber}
                   onChange={(e) => setEpisodeNumber(e.target.value)}
                   required
+                  min="1"
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-episodeRuntime">Runtime (minutes)</Label>
-                <Input
-                  id="edit-episodeRuntime"
-                  type="number"
-                  value={episodeRuntime}
-                  onChange={(e) => setEpisodeRuntime(e.target.value)}
-                  required
-                />
+                <Label htmlFor="targetSeasonNumber">Season Number</Label>
+                <Select value={targetSeasonNumber} onValueChange={setTargetSeasonNumber}>
+                  <SelectTrigger className="bg-black/60 border-primary/40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedSeries?.seasons.map((s) => (
+                      <SelectItem key={s.id} value={String(s.seasonNumber)}>
+                        Season {String(s.seasonNumber)}: {s.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-episodeTitle">Episode Title</Label>
+              <Label htmlFor="editEpisodeRuntime">Runtime (minutes)</Label>
               <Input
-                id="edit-episodeTitle"
-                value={episodeTitle}
-                onChange={(e) => setEpisodeTitle(e.target.value)}
+                id="editEpisodeRuntime"
+                type="number"
+                value={episodeRuntime}
+                onChange={(e) => setEpisodeRuntime(e.target.value)}
                 required
+                min="1"
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-episodeDescription">Description</Label>
+              <Label htmlFor="editEpisodeTitle">Episode Title</Label>
+              <Input
+                id="editEpisodeTitle"
+                value={episodeTitle}
+                onChange={(e) => setEpisodeTitle(e.target.value)}
+                required
+                className="bg-black/60 border-primary/40"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editEpisodeDescription">Description</Label>
               <Textarea
-                id="edit-episodeDescription"
+                id="editEpisodeDescription"
                 value={episodeDescription}
                 onChange={(e) => setEpisodeDescription(e.target.value)}
                 required
                 rows={3}
+                className="bg-black/60 border-primary/40"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-episodeContentType">Content Type</Label>
+              <Label htmlFor="editEpisodeContentType">Content Type</Label>
               <Select value={episodeContentType} onValueChange={(value) => setEpisodeContentType(value as ContentType)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-black/60 border-primary/40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ContentType.tvSeries}>TV Series</SelectItem>
-                  <SelectItem value={ContentType.series}>Series</SelectItem>
                   <SelectItem value={ContentType.documentary}>Documentary</SelectItem>
                   <SelectItem value={ContentType.educational}>Educational</SelectItem>
                 </SelectContent>
@@ -790,54 +952,56 @@ export default function SeriesManagement() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-episodeVideo">Replace Video (Optional)</Label>
+                <Label htmlFor="editEpisodeVideo">Video File (leave empty to keep current)</Label>
                 <Input
-                  id="edit-episodeVideo"
+                  id="editEpisodeVideo"
                   type="file"
                   accept="video/*"
                   onChange={(e) => setEpisodeVideoFile(e.target.files?.[0] || null)}
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-episodeThumbnail">Replace Thumbnail (Optional)</Label>
+                <Label htmlFor="editEpisodeThumbnail">Thumbnail (leave empty to keep current)</Label>
                 <Input
-                  id="edit-episodeThumbnail"
+                  id="editEpisodeThumbnail"
                   type="file"
                   accept="image/*"
                   onChange={(e) => setEpisodeThumbnailFile(e.target.files?.[0] || null)}
+                  className="bg-black/60 border-primary/40"
                 />
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="edit-episodeIsPremium"
+                  id="editEpisodeIsPremium"
                   checked={episodeIsPremium}
                   onCheckedChange={(checked) => setEpisodeIsPremium(checked as boolean)}
                 />
-                <Label htmlFor="edit-episodeIsPremium" className="cursor-pointer">Premium Content</Label>
+                <Label htmlFor="editEpisodeIsPremium" className="cursor-pointer">Premium</Label>
               </div>
 
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="edit-episodeIsFirstEpisode"
+                  id="editEpisodeIsFirstEpisode"
                   checked={episodeIsFirstEpisode}
                   onCheckedChange={(checked) => setEpisodeIsFirstEpisode(checked as boolean)}
                 />
-                <Label htmlFor="edit-episodeIsFirstEpisode" className="cursor-pointer">First Episode (Free Preview)</Label>
+                <Label htmlFor="editEpisodeIsFirstEpisode" className="cursor-pointer">First Episode</Label>
               </div>
 
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="edit-episodeIsOriginal"
+                  id="editEpisodeIsOriginal"
                   checked={episodeIsOriginal}
                   onCheckedChange={(checked) => setEpisodeIsOriginal(checked as boolean)}
                 />
-                <Label htmlFor="edit-episodeIsOriginal" className="cursor-pointer flex items-center gap-1">
+                <Label htmlFor="editEpisodeIsOriginal" className="cursor-pointer flex items-center gap-1">
                   <Star className="h-4 w-4 text-secondary" />
-                  Mark as Original
+                  Original
                 </Label>
               </div>
             </div>
@@ -857,21 +1021,12 @@ export default function SeriesManagement() {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditEpisodeDialogOpen(false)}
-                className="flex-1"
-              >
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEditEpisodeDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={updateSeries.isPending}
-                className="flex-1 bg-gradient-to-r from-primary to-secondary"
-              >
-                Update Episode
+              <Button type="submit" disabled={updateSeries.isPending}>
+                {updateSeries.isPending ? 'Updating...' : 'Update Episode'}
               </Button>
             </div>
           </form>

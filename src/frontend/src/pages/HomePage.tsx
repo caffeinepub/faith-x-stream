@@ -1,9 +1,10 @@
 import { useGetAllVideos, useGetAllSeries, useGetAllBrands, useGetAllAdMedia } from '../hooks/useQueries';
 import VideoCard from '../components/VideoCard';
 import SeriesCard from '../components/SeriesCard';
+import ClipsShortsFeed from '../components/ClipsShortsFeed';
 import { Skeleton } from '../components/ui/skeleton';
-import { Building2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import { Building2, ChevronLeft, ChevronRight, Film } from 'lucide-react';
+import { useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useState, useRef } from 'react';
 import { Badge } from '../components/ui/badge';
 import type { VideoContent, TVSeries, AdMedia } from '../backend';
@@ -290,6 +291,26 @@ export default function HomePage() {
           )}
         </div>
       )}
+
+      {/* Clips/Shorts Section */}
+      <section className="relative">
+        <div className="container px-4 md:px-8 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+              <Film className="h-8 w-8 text-[#cc0000]" />
+              SHORTS
+            </h2>
+            <Link
+              to="/clips"
+              className="text-[#cc0000] hover:text-[#ff0000] font-semibold transition-colors duration-300 flex items-center gap-2"
+            >
+              View All
+              <ChevronRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+        <ClipsShortsFeed />
+      </section>
 
       <div className="container px-4 md:px-8 space-y-12">
         {recommendedVideos.length > 0 && (

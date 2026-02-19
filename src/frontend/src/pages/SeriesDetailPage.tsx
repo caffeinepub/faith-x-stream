@@ -1,32 +1,14 @@
-import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetSeriesById } from '../hooks/useQueries';
 import { Button } from '../components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { Play, Star, ArrowLeft } from 'lucide-react';
-import type { TVSeries } from '../backend';
+import { Skeleton } from '../components/ui/skeleton';
 
 export default function SeriesDetailPage() {
   const { seriesId } = useParams({ from: '/series/$seriesId' });
   const navigate = useNavigate();
-  const getSeriesById = useGetSeriesById();
-  const [series, setSeries] = useState<TVSeries | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSeries = async () => {
-      try {
-        const result = await getSeriesById.mutateAsync(seriesId);
-        setSeries(result);
-      } catch (error) {
-        console.error('Failed to fetch series:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSeries();
-  }, [seriesId]);
+  const { data: series, isLoading } = useGetSeriesById(seriesId);
 
   const handlePlayEpisode = (seriesId: string, seasonId: string, episodeId: string) => {
     navigate({ to: '/watch-episode/$seriesId/$seasonId/$episodeId', params: { seriesId, seasonId, episodeId } });
@@ -34,8 +16,13 @@ export default function SeriesDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Loading series...</p>
+      <div className="min-h-screen">
+        <Skeleton className="w-full h-[60vh] mb-8" />
+        <div className="max-w-7xl mx-auto px-8">
+          <Skeleton className="h-12 w-64 mb-6" />
+          <Skeleton className="h-32 w-full mb-4" />
+          <Skeleton className="h-32 w-full mb-4" />
+        </div>
       </div>
     );
   }

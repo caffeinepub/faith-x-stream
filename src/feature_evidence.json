@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-moviesmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
-      "featureTitle": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
+      "featureId": "feature-build-a-new-livetvsyncplayer-component-separate-from-the-existing-videoplayer-that-fetches-server-side-synchronization-data-every-5-10-seconds-and-seeks-the-video-element-to-match-the-server-calculated-position-keep-existing-videoplayer-unchanged-for-vod-content",
+      "featureTitle": "Build a new LiveTVSyncPlayer component (separate from the existing VideoPlayer) that fetches server-side synchronization data every 5-10 seconds and seeks the video element to match the server-calculated position. Keep existing VideoPlayer unchanged for VOD content.",
       "files": [
-        "frontend/src/components/admin/MoviesManagement.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -19,15 +19,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-22"
+        "REQ-41"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-podcastsmanagement-upload-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-uploads",
-      "featureTitle": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
+      "featureId": "feature-implement-drift-detection-and-correction-in-livetvsyncplayer-compare-the-video-element-s-currenttime-with-the-server-calculated-position-and-if-drift-exceeds-a-threshold-e-g-2-3-seconds-seek-the-player-to-the-correct-position-handle-edge-cases-like-buffering-delays-and-network-latency",
+      "featureTitle": "Implement drift detection and correction in LiveTVSyncPlayer: compare the video element's currentTime with the server-calculated position, and if drift exceeds a threshold (e.g., 2-3 seconds), seek the player to the correct position. Handle edge cases like buffering delays and network latency.",
       "files": [
-        "frontend/src/components/admin/PodcastsManagement.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -41,15 +41,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-23"
+        "REQ-42"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-seriesmanagement-episode-creation-and-edit-forms-to-include-two-separate-checkboxes-eligible-for-live-tv-scheduling-and-available-as-standalone-vod-both-defaulting-to-true-for-new-episodes",
-      "featureTitle": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
+      "featureId": "feature-update-livepage-to-use-the-new-livetvsyncplayer-component-for-channel-playback-instead-of-the-existing-videoplayer-when-playing-live-tv-channels-preserve-all-existing-livepage-functionality-channel-selection-epg-grid-channel-surfing-while-routing-live-tv-playback-through-the-synchronized-player",
+      "featureTitle": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of the existing VideoPlayer when playing Live TV channels. Preserve all existing LivePage functionality (channel selection, EPG grid, channel surfing) while routing Live TV playback through the synchronized player.",
       "files": [
-        "frontend/src/components/admin/SeriesManagement.tsx"
+        "frontend/src/pages/LivePage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -63,17 +63,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-24"
+        "REQ-43"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-filter-content-displayed-on-moviespage-podcastspage-if-exists-tvshowspage-and-seriesdetailpage-to-only-show-content-where-availableasvod-is-true-ensuring-live-only-content-does-not-appear-in-standalone-vod-sections",
-      "featureTitle": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
+      "featureId": "feature-handle-program-transitions-in-livetvsyncplayer-when-server-indicates-the-current-program-has-changed-different-program-id-returned-automatically-switch-to-the-new-program-s-video-url-and-seek-to-the-calculated-position-within-that-program-ensuring-seamless-transitions-without-user-intervention",
+      "featureTitle": "Handle program transitions in LiveTVSyncPlayer: when server indicates the current program has changed (different program ID returned), automatically switch to the new program's video URL and seek to the calculated position within that program, ensuring seamless transitions without user intervention.",
       "files": [
-        "frontend/src/pages/MoviesPage.tsx",
-        "frontend/src/pages/SeriesDetailPage.tsx",
-        "frontend/src/pages/TVShowsPage.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -87,15 +85,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-25"
+        "REQ-44"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-enforce-eligibleforlive-flag-in-liveschedulemanagement-so-that-only-videos-with-eligibleforlive-true-can-be-added-to-live-channel-schedules-preventing-vod-only-content-from-being-scheduled",
-      "featureTitle": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
+      "featureId": "feature-ensure-livetvsyncplayer-correctly-handles-looping-scenarios-when-the-server-indicates-looping-is-active-schedule-has-ended-and-is-repeating-display-a-visual-indicator-optional-and-continue-synchronized-playback-within-the-looped-program-without-disrupting-the-viewing-experience",
+      "featureTitle": "Ensure LiveTVSyncPlayer correctly handles looping scenarios: when the server indicates looping is active (schedule has ended and is repeating), display a visual indicator (optional) and continue synchronized playback within the looped program without disrupting the viewing experience.",
       "files": [
-        "frontend/src/components/admin/LiveScheduleManagement.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -109,15 +107,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-26"
+        "REQ-45"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-clipsmanagement-to-display-both-manually-uploaded-clips-and-auto-generated-clips-showing-the-source-video-title-and-a-caption-for-each-clip-and-allow-admins-to-edit-clip-captions-and-metadata-without-breaking-the-link-to-the-source-video",
-      "featureTitle": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
+      "featureId": "feature-implement-initial-sync-on-channel-join-when-a-viewer-selects-a-channel-immediately-fetch-sync-data-and-seek-to-the-current-server-calculated-position-before-starting-playback-ensuring-they-join-at-the-correct-moment-rather-than-starting-from-the-beginning-of-the-program",
+      "featureTitle": "Implement initial sync on channel join: when a viewer selects a channel, immediately fetch sync data and seek to the current server-calculated position before starting playback, ensuring they join at the correct moment rather than starting from the beginning of the program.",
       "files": [
-        "frontend/src/components/admin/ClipsManagement.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -131,16 +129,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-29"
+        "REQ-46"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-podcasts-section-in-adminpage-remains-a-separate-dedicated-tab-with-its-own-upload-management-interface-podcastsmanagement-that-defaults-contenttype-to-podcast-and-filters-the-manage-list-to-only-show-podcast-type-videos",
-      "featureTitle": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+      "featureId": "feature-preserve-existing-live-tv-features-in-livetvsyncplayer-maintain-ad-insertion-at-scheduled-timestamps-disable-seeking-forward-for-regular-guest-users-and-ensure-unskippable-ad-behavior-continues-to-work-with-the-new-synchronized-playback-system",
+      "featureTitle": "Preserve existing Live TV features in LiveTVSyncPlayer: maintain ad insertion at scheduled timestamps, disable seeking forward for regular/guest users, and ensure unskippable ad behavior continues to work with the new synchronized playback system.",
       "files": [
-        "frontend/src/components/admin/PodcastsManagement.tsx",
-        "frontend/src/pages/AdminPage.tsx"
+        "frontend/src/components/LiveTVSyncPlayer.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@3.0.0",
@@ -154,7 +152,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-30"
+        "REQ-47"
       ],
       "confidence": "high"
     }

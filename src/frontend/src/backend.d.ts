@@ -162,6 +162,21 @@ export interface CategoryStats {
     premiumViews: bigint;
     category: string;
 }
+export interface LiveChannelState {
+    currentProgram?: ScheduledContent;
+    isCommercialBreak?: boolean;
+    currentProgramTitle?: string;
+    isProgramPlaying?: boolean;
+    isLooping?: boolean;
+    availableAsVOD?: boolean;
+    currentTime?: bigint;
+    currentProgramStartTimestamp?: bigint;
+    programStartTime?: bigint;
+    channel: LiveChannel;
+    currentProgramId?: string;
+    isContentAvailable?: boolean;
+    playbackPosition?: bigint;
+}
 export interface AdLocation {
     adUrls: Array<ExternalBlob>;
     position: bigint;
@@ -272,7 +287,6 @@ export interface backendInterface {
     getBrandById(brandId: string): Promise<Brand | null>;
     getCallerLoginStatus(): Promise<LoginStatus>;
     getCallerRegularUserStatus(): Promise<RegularUserStatus>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getChannelsByBrand(brandId: string): Promise<{
         films: Array<string>;
@@ -282,12 +296,12 @@ export interface backendInterface {
         series: Array<string>;
         liveChannels: Array<string>;
     }>;
+    getDynamicLiveChannelState(channelId: string): Promise<LiveChannelState>;
     getEligibleVideosForLive(): Promise<Array<VideoContent>>;
     getLiveChannels(): Promise<Array<LiveChannel>>;
     getLiveChannelsByBrand(_brandId: string): Promise<Array<LiveChannel>>;
     getSeriesById(seriesId: string): Promise<TVSeries | null>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVideoById(videoId: string): Promise<VideoContent | null>;
     getWatchHistory(): Promise<Array<string>>;
     incrementAdImpressions(): Promise<void>;
@@ -297,7 +311,6 @@ export interface backendInterface {
     isStripeConfigured(): Promise<boolean>;
     login(email: string, password: string): Promise<boolean>;
     register(input: RegisterInput): Promise<void>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
     search(searchQuery: string): Promise<Array<SearchResult>>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;

@@ -1,35 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetAllLiveChannels, useGetAllVideos } from '../hooks/useQueries';
 import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Radio, Grid3x3, ChevronUp, ChevronDown } from 'lucide-react';
-import VideoPlayer from '../components/VideoPlayer';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Radio, Grid3x3 } from 'lucide-react';
+import LiveTVSyncPlayer from '../components/LiveTVSyncPlayer';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useGetAllAdMedia, useGetAllAdAssignments } from '../hooks/useQueries';
-import type { AdMedia, AdLocation } from '../backend';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 import LiveGuideGrid from '../components/live/LiveGuideGrid';
 import { useSessionStorageState } from '../hooks/useSessionStorageState';
 import { useSearch } from '@tanstack/react-router';
-import { getCurrentProgram, getNextProgram, getCurrentProgramWithOffset } from '../utils/epg';
+import { getNextProgram } from '../utils/epg';
 
 export default function LivePage() {
   const { data: channels, isLoading: channelsLoading } = useGetAllLiveChannels();
   const { data: videos, isLoading: videosLoading } = useGetAllVideos();
-  const { data: adMedia } = useGetAllAdMedia();
-  const { data: adAssignments } = useGetAllAdAssignments();
   const { identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
   const search = useSearch({ from: '/live' });
   const [selectedChannel, setSelectedChannel] = useSessionStorageState<string | null>('live-selected-channel', null);
-  const [currentProgram, setCurrentProgram] = useState<any>(null);
-  const [programKey, setProgramKey] = useState(0);
-  const [liveSeekToken, setLiveSeekToken] = useState(0);
-  const [initialSeekSeconds, setInitialSeekSeconds] = useState(0);
-  const [liveAdLocations, setLiveAdLocations] = useState<AdLocation[]>([]);
   const [mode, setMode] = useState<'watch' | 'guide'>((search as any)?.mode === 'guide' ? 'guide' : 'watch');
-  const lastProgramIdRef = useRef<string | null>(null);
 
   const isPremiumUser = !!identity && !!userProfile?.isPremium;
 
@@ -39,49 +29,6 @@ export default function LivePage() {
       setSelectedChannel(channels[0].id);
     }
   }, [channels, selectedChannel, setSelectedChannel]);
-
-  // Poll for current program
-  useEffect(() => {
-    if (!selectedChannel || !channels || !videos) return;
-
-    const updateCurrentProgram = () => {
-      const channel = channels.find(c => c.id === selectedChannel);
-      if (!channel) return;
-
-      const programInfo = getCurrentProgramWithOffset(channel, videos);
-      
-      if (programInfo) {
-        const { schedule, video, offsetSeconds } = programInfo;
-        
-        // Only update if the program ID has changed
-        if (schedule.contentId !== lastProgramIdRef.current) {
-          lastProgramIdRef.current = schedule.contentId;
-          setCurrentProgram({ program: schedule, video });
-          setInitialSeekSeconds(offsetSeconds);
-          setLiveSeekToken(prev => prev + 1);
-          setProgramKey(prev => prev + 1);
-          
-          // Set ad locations for this program
-          if (schedule.adLocations && schedule.adLocations.length > 0) {
-            setLiveAdLocations(schedule.adLocations);
-          } else {
-            setLiveAdLocations([]);
-          }
-        }
-      } else {
-        if (lastProgramIdRef.current !== null) {
-          lastProgramIdRef.current = null;
-          setCurrentProgram(null);
-          setLiveAdLocations([]);
-        }
-      }
-    };
-
-    updateCurrentProgram();
-    const interval = setInterval(updateCurrentProgram, 5000);
-
-    return () => clearInterval(interval);
-  }, [selectedChannel, channels, videos]);
 
   const selectedChannelData = channels?.find(c => c.id === selectedChannel);
 
@@ -162,26 +109,17 @@ export default function LivePage() {
 
             {/* Video Player */}
             <div className="lg:col-span-3">
-              {currentProgram ? (
+              {selectedChannel ? (
                 <div className="space-y-4">
                   <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                    <VideoPlayer
-                      key={programKey}
-                      videoUrl={currentProgram.video.videoUrl.getDirectURL()}
-                      title={currentProgram.video.title}
-                      isPremiumUser={isPremiumUser}
-                      isLiveTV={true}
-                      liveSeekSeconds={initialSeekSeconds}
-                      liveSeekToken={liveSeekToken}
-                      liveAdLocations={!isPremiumUser ? liveAdLocations : []}
-                    />
+                    <LiveTVSyncPlayer key={selectedChannel} channelId={selectedChannel} />
                   </div>
 
                   <div className="gradient-card border-2 border-primary/30 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h2 className="text-2xl font-bold mb-2">{currentProgram.video.title}</h2>
-                        <p className="text-muted-foreground">{currentProgram.video.description}</p>
+                        <h2 className="text-2xl font-bold mb-2">{selectedChannelData?.name}</h2>
+                        <p className="text-muted-foreground">Synchronized Live TV</p>
                       </div>
                       <Badge variant="destructive" className="bg-red-600">
                         LIVE
@@ -189,7 +127,7 @@ export default function LivePage() {
                     </div>
 
                     {(() => {
-                      const nextProgram = getNextProgram(selectedChannelData!, videos || []);
+                      const nextProgram = selectedChannelData ? getNextProgram(selectedChannelData, videos || []) : null;
                       return nextProgram ? (
                         <div className="mt-4 pt-4 border-t border-primary/20">
                           <p className="text-sm text-muted-foreground mb-2">Up Next:</p>
@@ -203,8 +141,8 @@ export default function LivePage() {
                 <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Radio className="h-16 w-16 mx-auto mb-4 text-primary animate-pulse" />
-                    <p className="text-xl font-semibold">No Program Currently Airing</p>
-                    <p className="text-muted-foreground mt-2">Check the TV Guide for upcoming shows</p>
+                    <p className="text-xl font-semibold">Select a Channel</p>
+                    <p className="text-muted-foreground mt-2">Choose a channel from the list to start watching</p>
                   </div>
                 </div>
               )}

@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-18T23:58:58.529Z",
+  "generatedAt": "2026-02-19T23:21:09.819Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,135 +11,124 @@
     "implemented": 7,
     "items": [
       {
-        "id": "REQ-21",
-        "summary": "Add two independent toggles to the backend Video type: 'eligibleForLive' (already exists) and a new 'availableAsVOD' boolean field that controls whether content appears as standalone VOD in Movies/Podcasts/TV Shows sections.",
+        "id": "REQ-38",
+        "summary": "Implement server-side time tracking in the backend to calculate the exact playback position for each Live TV channel based on the current server time and the channel's schedule. For each channel, compute where in the current program playback should be (elapsed time since program start) and return this computed position along with current program metadata when frontend clients request channel state.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-22",
-        "summary": "Update MoviesManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/MoviesManagement.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/MoviesManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-23",
-        "summary": "Update PodcastsManagement upload and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new uploads.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/PodcastsManagement.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/PodcastsManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-24",
-        "summary": "Update SeriesManagement episode creation and edit forms to include two separate checkboxes: 'Eligible for Live TV scheduling' and 'Available as standalone VOD', both defaulting to true for new episodes.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/SeriesManagement.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/SeriesManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-25",
-        "summary": "Filter content displayed on MoviesPage, PodcastsPage (if exists), TVShowsPage, and SeriesDetailPage to only show content where availableAsVOD is true, ensuring Live-only content does not appear in standalone VOD sections.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/MoviesPage.tsx",
-          "frontend/src/pages/TVShowsPage.tsx",
-          "frontend/src/pages/SeriesDetailPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/MoviesPage.tsx",
-          "frontend/src/pages/TVShowsPage.tsx",
-          "frontend/src/pages/SeriesDetailPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-26",
-        "summary": "Enforce eligibleForLive flag in LiveScheduleManagement so that only videos with eligibleForLive=true can be added to live channel schedules, preventing VOD-only content from being scheduled.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/LiveScheduleManagement.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/LiveScheduleManagement.tsx"
-        ]
-      },
-      {
-        "id": "REQ-27",
-        "summary": "Implement auto-generation of clip entries in the backend when a video is uploaded or updated: for each uploaded video (Movies/Podcasts/TV Shows episodes), automatically create linked clip records that reference the source video, use the same video file URL, share the same title as the source content, but include a generated caption field with a descriptive variation.",
+        "id": "REQ-39",
+        "summary": "Add a backend endpoint or extend existing channel queries to return real-time synchronization data including: current program ID, current program start timestamp, server current time, computed playback position within the program, and whether the program is looping. Ensure this data is calculated fresh on each request to maintain accuracy.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-28",
-        "summary": "Extend the backend Video type to include an optional sourceVideoId field that links auto-generated clips back to their original video, enabling traceability and potential playback-range metadata for clips.",
+        "id": "REQ-40",
+        "summary": "Implement automatic program looping logic in the backend schedule calculation: when the current time exceeds all scheduled programs for a channel, loop back to the first program and calculate position within the looped playback. If new programs are added to the schedule, continue sequentially instead of looping.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-29",
-        "summary": "Update ClipsManagement to display both manually uploaded clips and auto-generated clips, showing the source video title and a caption for each clip, and allow admins to edit clip captions and metadata without breaking the link to the source video.",
+        "id": "REQ-41",
+        "summary": "Build a new LiveTVSyncPlayer component (separate from the existing VideoPlayer) that fetches server-side synchronization data every 5-10 seconds and seeks the video element to match the server-calculated position. Keep existing VideoPlayer unchanged for VOD content.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/admin/ClipsManagement.tsx"
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/admin/ClipsManagement.tsx"
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
         ]
       },
       {
-        "id": "REQ-30",
-        "summary": "Ensure the Podcasts section in AdminPage remains a separate, dedicated tab with its own upload/management interface (PodcastsManagement) that defaults contentType to Podcast and filters the manage list to only show Podcast-type videos.",
+        "id": "REQ-42",
+        "summary": "Implement drift detection and correction in LiveTVSyncPlayer: compare the video element's currentTime with the server-calculated position, and if drift exceeds a threshold (e.g., 2-3 seconds), seek the player to the correct position. Handle edge cases like buffering delays and network latency.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/PodcastsManagement.tsx"
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/PodcastsManagement.tsx"
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-43",
+        "summary": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of the existing VideoPlayer when playing Live TV channels. Preserve all existing LivePage functionality (channel selection, EPG grid, channel surfing) while routing Live TV playback through the synchronized player.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/LivePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/LivePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-44",
+        "summary": "Handle program transitions in LiveTVSyncPlayer: when server indicates the current program has changed (different program ID returned), automatically switch to the new program's video URL and seek to the calculated position within that program, ensuring seamless transitions without user intervention.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-45",
+        "summary": "Ensure LiveTVSyncPlayer correctly handles looping scenarios: when the server indicates looping is active (schedule has ended and is repeating), display a visual indicator (optional) and continue synchronized playback within the looped program without disrupting the viewing experience.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-46",
+        "summary": "Implement initial sync on channel join: when a viewer selects a channel, immediately fetch sync data and seek to the current server-calculated position before starting playback, ensuring they join at the correct moment rather than starting from the beginning of the program.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
+        ]
+      },
+      {
+        "id": "REQ-47",
+        "summary": "Preserve existing Live TV features in LiveTVSyncPlayer: maintain ad insertion at scheduled timestamps, disable seeking forward for regular/guest users, and ensure unskippable ad behavior continues to work with the new synchronized playback system.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/admin/ClipsManagement.tsx",
-    "frontend/src/components/admin/LiveScheduleManagement.tsx",
-    "frontend/src/components/admin/MoviesManagement.tsx",
-    "frontend/src/components/admin/PodcastsManagement.tsx",
-    "frontend/src/components/admin/SeriesManagement.tsx",
-    "frontend/src/components/admin/VideoManagement.tsx",
+    "frontend/src/components/LiveTVSyncPlayer.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/pages/AdminPage.tsx",
-    "frontend/src/pages/MoviesPage.tsx",
-    "frontend/src/pages/SearchResultsPage.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/BrandDetailPage.tsx",
+    "frontend/src/pages/LivePage.tsx",
     "frontend/src/pages/SeriesDetailPage.tsx",
-    "frontend/src/pages/TVShowsPage.tsx",
+    "frontend/src/pages/UpgradePage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

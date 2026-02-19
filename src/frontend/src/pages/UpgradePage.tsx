@@ -40,168 +40,145 @@ export default function UpgradePage() {
     }
 
     setIsProcessing(true);
+
     try {
       const premiumItem: ShoppingItem = {
         productName: 'FAITH X-Stream Premium',
-        productDescription: 'Monthly premium subscription with unlimited access to all content, ad-free viewing, HD/4K quality, and priority support',
-        priceInCents: BigInt(999), // $9.99
-        currency: 'USD',
+        productDescription: 'Monthly premium subscription with unlimited access',
+        priceInCents: BigInt(999),
+        currency: 'usd',
         quantity: BigInt(1),
       };
 
-      const session = await createCheckout.mutateAsync([premiumItem]);
-      
-      // Redirect to Stripe checkout
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      const successUrl = `${baseUrl}/payment-success`;
+      const cancelUrl = `${baseUrl}/payment-failure`;
+
+      const session = await createCheckout.mutateAsync({
+        items: [premiumItem],
+        successUrl,
+        cancelUrl,
+      });
+
+      if (!session?.url) {
+        throw new Error('Stripe session missing url');
+      }
+
       window.location.href = session.url;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
-      toast.error('Failed to start checkout. Please try again.');
+      toast.error(error.message || 'Failed to start checkout process');
       setIsProcessing(false);
     }
   };
 
-  // Show loading while checking admin status
-  if (adminLoading) {
+  if (configLoading || adminLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-[oklch(0.15_0.05_0)] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[oklch(0.45_0.2_0)]" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Don't render if admin (will redirect)
-  if (isAdminWithPremium) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-[oklch(0.15_0.05_0)]">
-      <div className="container px-4 md:px-8 py-8 md:py-12 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-black via-[#1a0000] to-black">
+      <div className="container mx-auto px-4 py-12">
         <Button
           variant="ghost"
           onClick={() => navigate({ to: '/' })}
-          className="mb-6 hover:bg-accent transition-all duration-200 hover:scale-105 active:scale-95"
+          className="mb-8"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Home
         </Button>
 
-        <div className="text-center mb-8 md:mb-12 space-y-4 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] mb-4 animate-scale-in">
-            <Crown className="h-10 w-10 md:h-12 md:w-12 text-white" />
-          </div>
-          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-[oklch(0.55_0.2_40)] via-[oklch(0.50_0.22_20)] to-[oklch(0.45_0.2_0)] bg-clip-text text-transparent">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-[#cc0000] to-[#ff6666] bg-clip-text text-transparent">
             Upgrade to Premium
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Unlock the full FAITH X‑Stream experience with unlimited access to all content
+          <p className="text-xl text-white/70">
+            Unlock the full FAITH X-Stream experience
           </p>
         </div>
 
-        <div className="grid gap-6 md:gap-8 md:grid-cols-2 mb-8 md:mb-12">
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Free Plan */}
-          <Card className="border-border/50 hover:border-border transition-all duration-300 animate-slide-in-left">
+          <Card className="bg-gradient-to-br from-[#1a0000] to-[#330000] border-2 border-[#660000]">
             <CardHeader>
-              <CardTitle className="text-xl md:text-2xl">Free</CardTitle>
-              <CardDescription>Basic access to selected content</CardDescription>
-              <div className="pt-4">
-                <span className="text-3xl md:text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                Free
+              </CardTitle>
+              <CardDescription className="text-white/70">
+                Basic access to content
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="text-3xl font-bold text-white">$0<span className="text-lg text-white/70">/month</span></div>
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Limited content library</span>
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <span className="text-white/80">Limited content library</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Standard definition streaming</span>
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <span className="text-white/80">Standard definition streaming</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Ad-supported viewing</span>
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <span className="text-white/80">Ad-supported viewing</span>
                 </li>
               </ul>
-              <Button variant="outline" className="w-full" disabled>
-                Current Plan
-              </Button>
             </CardContent>
           </Card>
 
           {/* Premium Plan */}
-          <Card className="border-[oklch(0.45_0.2_0)] bg-gradient-to-br from-card to-[oklch(0.15_0.05_0)] shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-in-right relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-gradient-to-r from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] text-white px-4 py-1 text-xs font-semibold rounded-bl-lg">
+          <Card className="bg-gradient-to-br from-[#330000] to-[#660000] border-2 border-[#cc0000] relative overflow-hidden">
+            <Badge className="absolute top-4 right-4 bg-[#cc0000] text-white">
               RECOMMENDED
-            </div>
+            </Badge>
             <CardHeader>
-              <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
-                <Crown className="h-6 w-6 text-[oklch(0.45_0.2_0)]" />
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Crown className="h-6 w-6 text-[#cc0000]" />
                 Premium
               </CardTitle>
-              <CardDescription>Full access to everything</CardDescription>
-              <div className="pt-4">
-                <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] bg-clip-text text-transparent">
-                  $9.99
-                </span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
+              <CardDescription className="text-white/70">
+                Full access to everything
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="text-3xl font-bold text-white">$9.99<span className="text-lg text-white/70">/month</span></div>
               <ul className="space-y-3">
                 {features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-[oklch(0.45_0.2_0)] mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{feature.text}</span>
+                    <feature.icon className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                    <span className="text-white">{feature.text}</span>
                   </li>
                 ))}
               </ul>
               <Button
-                className="w-full bg-gradient-to-r from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] hover:from-[oklch(0.60_0.22_40)] hover:to-[oklch(0.50_0.22_0)] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 onClick={handleUpgrade}
-                disabled={isProcessing || configLoading || !isStripeConfigured}
+                disabled={isProcessing || !isStripeConfigured}
+                className="w-full bg-gradient-to-r from-[#cc0000] to-[#ff0000] hover:from-[#990000] hover:to-[#cc0000] text-white font-bold py-6 text-lg transition-all duration-300"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <Crown className="h-4 w-4 mr-2" />
+                    <Crown className="h-5 w-5 mr-2" />
                     Upgrade Now
                   </>
                 )}
               </Button>
-              {!isStripeConfigured && !configLoading && (
-                <p className="text-xs text-center text-muted-foreground">
-                  Payment system configuration in progress
+              {!isStripeConfigured && (
+                <p className="text-sm text-center text-yellow-500">
+                  Payment system is being configured. Please check back soon.
                 </p>
               )}
             </CardContent>
           </Card>
-        </div>
-
-        {/* Features Grid */}
-        <div className="mt-8 md:mt-12">
-          <h2 className="text-xl md:text-2xl font-bold text-center mb-6 md:mb-8">What You'll Get with Premium</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                className="border-border/50 hover:border-[oklch(0.45_0.2_0)] transition-all duration-300 hover:scale-105 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardContent className="pt-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] mb-4">
-                    <feature.icon className="h-6 w-6 md:h-7 md:w-7 text-white" />
-                  </div>
-                  <p className="text-sm font-medium">{feature.text}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </div>
     </div>
