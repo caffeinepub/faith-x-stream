@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 19,
+  "projectStateVersion": 23,
   "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
@@ -19,9 +19,9 @@
     "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
     "Updating videos fails with 'Failed to update'.",
     "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule.",
-    "Users are unable to log in at all (login/authentication appears broken)."
+    "After successful login, the UI still shows the login button instead of profile/admin links, preventing access to profile page and admin panel/dashboard."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-fix-the-videoplayer-autoplay-ad-playback-logic-so-autoplay-no-longer-freezes-and-playback-reliably-starts-scope-ensure-autoplay-can-start-muted-to-comply-with-browser-policies-and-does-not-get-stuck-in-a-paused-frozen-state-fix-ad-switching-so-that-when-an-ad-ends-the-player-returns-to-the-correct-main-content-timestamp-store-and-restore-a-dedicated-contenttimebeforead-instead-of-using-the-ad-s-currenttime-ensure-duration-currenttime-state-used-for-midroll-scheduling-is-based-on-the-main-content-not-overwritten-by-ad-playback-ensure-live-tv-playback-islivetv-true-does-not-trigger-preroll-midroll-ad-behavior-that-breaks-playback",
@@ -318,6 +318,70 @@
         "REQ-47"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-header-component-to-immediately-reflect-authenticated-state-after-successful-login-by-re-rendering-when-auth-state-changes-showing-profile-dropdown-and-admin-link-instead-of-login-button-for-authenticated-users",
+      "title": "Update Header component to immediately reflect authenticated state after successful login by re-rendering when auth state changes, showing profile dropdown and admin link instead of login button for authenticated users",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-useauth-hook-to-properly-propagate-authentication-state-changes-to-all-consuming-components-immediately-after-login-completes-ensuring-isauthenticated-flag-updates-synchronously",
+      "title": "Fix useAuth hook to properly propagate authentication state changes to all consuming components immediately after login completes, ensuring isAuthenticated flag updates synchronously",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-login-to-ensure-profile-data-and-role-information-admin-premium-are-available-for-navigation-rendering",
+      "title": "Invalidate and refetch user profile queries immediately after successful login to ensure profile data and role information (admin/premium) are available for navigation rendering",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-actor-initialization-completes-before-rendering-authenticated-ui-components-so-that-profile-queries-and-admin-checks-do-not-fail-due-to-undefined-actor",
+      "title": "Ensure actor initialization completes before rendering authenticated UI components so that profile queries and admin checks do not fail due to undefined actor",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-header-component-to-immediately-re-render-and-reflect-authenticated-state-when-internet-identity-login-completes-replacing-the-login-button-with-profile-dropdown-and-admin-link-for-authenticated-users",
+      "title": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes, replacing the 'Login' button with profile dropdown and admin link for authenticated users",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-useinternetidentity-hook-and-useauth-context-to-synchronously-propagate-authentication-state-changes-to-all-consuming-components-including-header-when-internet-identity-login-succeeds",
+      "title": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components (including Header) when Internet Identity login succeeds",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-internet-identity-login-completes-to-ensure-profile-data-and-role-information-admin-premium-status-are-available-for-header-rendering-and-navigation-guards",
+      "title": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information (admin/premium status) are available for Header rendering and navigation guards",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-actor-initialization-completes-successfully-after-internet-identity-login-before-header-and-other-authenticated-components-attempt-to-render-preventing-undefined-actor-errors-in-profile-queries",
+      "title": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -512,6 +576,20 @@
       "summary": "Implement automatic program looping logic in the backend schedule calculation: when the current time exceeds all scheduled programs for a channel, loop back to the first program and calculate position within the looped playback. If new programs are added to the schedule, continue sequentially instead of looping.",
       "reqIds": [
         "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Fix UI state synchronization after login so authenticated users see profile/admin links instead of login button in navigation and can access profile and admin panel immediately after successful login",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Fix LoginPage redirect logic to navigate users to home page after successful login without causing navigation during render or redirect loops",
+      "reqIds": [
+        "REQ-51"
       ],
       "status": "pending"
     }

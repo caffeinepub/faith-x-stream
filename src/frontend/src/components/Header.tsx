@@ -8,20 +8,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Input } from './ui/input';
+import { useActor } from '../hooks/useActor';
 
 export default function Header() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { isAuthenticated, logout, authStatus } = useAuth();
+  const { actor, isFetching: actorFetching } = useActor();
   const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
-  const { data: isAdmin } = useIsCallerAdmin();
+  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Only show loading state when actively authenticating, not during initialization
-  const isAuthenticating = authStatus === 'authenticating';
+  // Show loading while actor is initializing OR while profile/admin data is loading after authentication
+  const isLoadingUserData = actorFetching || (isAuthenticated && (profileLoading || adminLoading));
 
   const handleLogout = async () => {
     await logout();
@@ -108,7 +110,13 @@ export default function Header() {
             </button>
           </form>
 
-          {isAuthenticated && userProfile && !profileLoading ? (
+          {/* Show loading state while fetching user data after authentication */}
+          {isLoadingUserData ? (
+            <div className="flex items-center gap-2 px-4 py-2">
+              <div className="w-6 h-6 border-2 border-[#cc0000] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-white/70">Loading...</span>
+            </div>
+          ) : isAuthenticated && userProfile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -148,13 +156,11 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button
+            <Button 
               onClick={handleLogin}
-              disabled={isAuthenticating}
-              size="sm"
-              className="bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300 shadow-md hover:shadow-lg rounded-full px-6"
+              className="bg-gradient-to-r from-[#cc0000] to-[#990000] hover:from-[#990000] hover:to-[#660000] text-white font-bold px-8 py-2.5 rounded-full shadow-lg shadow-[#cc0000]/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#330000]"
             >
-              {isAuthenticating ? 'Logging in...' : 'Login'}
+              Login
             </Button>
           )}
         </div>
@@ -162,18 +168,14 @@ export default function Header() {
         {/* Mobile Menu */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild className="md:hidden">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="hover:bg-[#660000] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#330000] text-white"
-            >
+            <Button variant="ghost" size="icon" className="text-white hover:bg-[#660000]">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] bg-[#1a0000] border-l-2 border-[#660000]">
-            <nav className="flex flex-col gap-4 mt-8">
+          <SheetContent side="right" className="w-[300px] bg-gradient-to-b from-[#1a0000] to-[#000000] border-l-2 border-[#660000]">
+            <div className="flex flex-col gap-6 mt-8">
               {/* Mobile Search */}
-              <form onSubmit={handleSearch} className="relative mb-2">
+              <form onSubmit={handleSearch} className="relative">
                 <Input
                   type="text"
                   placeholder="Search..."
@@ -189,70 +191,87 @@ export default function Header() {
                 </button>
               </form>
 
-              {navItems.map((item) => {
-                const isActive = item.search 
-                  ? currentPath === item.path && (routerState.location.search as any)?.mode === item.search.mode
-                  : currentPath === item.path;
-                
-                return (
-                  <Link
-                    key={`${item.path}-${item.search?.mode || 'default'}`}
-                    to={item.path}
-                    search={item.search as any}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`px-4 py-3 rounded-full text-sm font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000] ${
-                      isActive
-                        ? 'bg-[#cc0000] text-white shadow-md'
-                        : 'text-white/80 hover:text-white hover:bg-[#660000]'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-              {isAuthenticated && userProfile && !profileLoading && (
-                <>
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-full text-sm font-bold text-white/80 hover:text-white hover:bg-[#660000] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000]"
-                  >
-                    My Profile
-                  </Link>
-                  {isAdmin && (
+              {/* Mobile Navigation */}
+              <nav className="flex flex-col gap-2">
+                {navItems.map((item) => {
+                  const isActive = item.search 
+                    ? currentPath === item.path && (routerState.location.search as any)?.mode === item.search.mode
+                    : currentPath === item.path;
+                  
+                  return (
                     <Link
-                      to="/admin"
+                      key={`${item.path}-${item.search?.mode || 'default'}`}
+                      to={item.path}
+                      search={item.search as any}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="px-4 py-3 rounded-full text-sm font-bold text-white/80 hover:text-white hover:bg-[#660000] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#cc0000] focus:ring-offset-2 focus:ring-offset-[#1a0000]"
+                      className={`px-4 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                        isActive
+                          ? 'bg-[#cc0000] text-white shadow-lg'
+                          : 'text-white/80 hover:text-white hover:bg-[#660000]'
+                      }`}
                     >
-                      Admin Panel
+                      {item.label}
                     </Link>
-                  )}
-                  <Button
+                  );
+                })}
+              </nav>
+
+              {/* Mobile Auth Actions */}
+              <div className="border-t border-[#660000] pt-6">
+                {isLoadingUserData ? (
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <div className="w-6 h-6 border-2 border-[#cc0000] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-white/70">Loading...</span>
+                  </div>
+                ) : isAuthenticated && userProfile ? (
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => {
+                        navigate({ to: '/profile' });
+                        setMobileMenuOpen(false);
+                      }}
+                      variant="ghost"
+                      className="justify-start text-white hover:bg-[#660000]"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      My Profile
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        onClick={() => {
+                          navigate({ to: '/admin' });
+                          setMobileMenuOpen(false);
+                        }}
+                        variant="ghost"
+                        className="justify-start text-white hover:bg-[#660000]"
+                      >
+                        Admin Panel
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      variant="ghost"
+                      className="justify-start text-[#ff6666] hover:bg-[#660000]"
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
                     onClick={() => {
+                      handleLogin();
                       setMobileMenuOpen(false);
-                      handleLogout();
                     }}
-                    variant="ghost"
-                    className="px-4 py-3 rounded-full text-sm font-bold text-[#ff6666] hover:text-white hover:bg-[#660000] transition-all duration-300 justify-start"
+                    className="w-full bg-gradient-to-r from-[#cc0000] to-[#990000] hover:from-[#990000] hover:to-[#660000] text-white font-bold"
                   >
-                    Logout
+                    Login
                   </Button>
-                </>
-              )}
-              {!isAuthenticated && (
-                <Button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleLogin();
-                  }}
-                  disabled={isAuthenticating}
-                  className="bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300 shadow-md rounded-full"
-                >
-                  {isAuthenticating ? 'Logging in...' : 'Login'}
-                </Button>
-              )}
-            </nav>
+                )}
+              </div>
+            </div>
           </SheetContent>
         </Sheet>
       </div>

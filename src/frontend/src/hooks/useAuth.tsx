@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useInternetIdentity } from './useInternetIdentity';
 import { useActor } from './useActor';
+import { useQueryClient } from '@tanstack/react-query';
 import type { RegisterInput } from '../backend';
 
 export type AuthMethod = 'internet-identity' | 'email-password' | null;
@@ -89,6 +90,7 @@ function normalizeError(error: unknown): Error {
 export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNode }>) {
   const { identity, login: iiLogin, clear: iiClear, loginStatus: iiStatus } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
+  const queryClient = useQueryClient();
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('initializing');
   const [authError, setAuthError] = useState<Error | undefined>(undefined);
@@ -115,6 +117,9 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
                 setEmailAuthActive(true);
                 setAuthMethod('email-password');
                 setAuthStatus('success');
+                // Invalidate queries to fetch fresh user data
+                await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+                await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
               } else {
                 // Session invalid, clear it
                 localStorage.removeItem('emailAuth');
@@ -141,45 +146,49 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
     };
 
     restoreSession();
-  }, [actor, sessionRestored, actorFetching]);
+  }, [actor, sessionRestored, actorFetching, queryClient]);
 
   // Update auth method when II authentication changes
   useEffect(() => {
-    if (isIIAuthenticated) {
+    if (isIIAuthenticated && sessionRestored) {
       setAuthMethod('internet-identity');
       setAuthStatus('success');
       // Clear email auth if II is used
       localStorage.removeItem('emailAuth');
       setEmailAuthActive(false);
-    } else if (!emailAuthActive && sessionRestored) {
+      // Invalidate queries immediately to fetch fresh user data
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
+    } else if (!emailAuthActive && sessionRestored && !isIIAuthenticated) {
       setAuthMethod(null);
       // Only set to idle if we're not in the middle of authenticating
       if (authStatus !== 'authenticating') {
         setAuthStatus('idle');
       }
     }
-  }, [isIIAuthenticated, emailAuthActive, authStatus, sessionRestored]);
+  }, [isIIAuthenticated, emailAuthActive, authStatus, sessionRestored, queryClient]);
 
   // Track Internet Identity login status changes
   useEffect(() => {
-    if (authMethod === 'internet-identity' || iiStatus === 'logging-in') {
-      if (iiStatus === 'logging-in') {
-        setAuthStatus('authenticating');
-      } else if (iiStatus === 'success' && isIIAuthenticated) {
-        setAuthMethod('internet-identity');
-        setAuthStatus('success');
-        setAuthError(undefined);
-      } else if (iiStatus === 'loginError') {
-        setAuthStatus('error');
-        setAuthError(new Error('Internet Identity login failed. Please try again.'));
-        setAuthMethod(null);
-      } else if (iiStatus === 'idle' && !isIIAuthenticated && authStatus === 'authenticating') {
-        // Login was cancelled or failed
-        setAuthStatus('idle');
-        setAuthMethod(null);
-      }
+    if (iiStatus === 'logging-in') {
+      setAuthStatus('authenticating');
+    } else if (iiStatus === 'success' && isIIAuthenticated && sessionRestored) {
+      setAuthMethod('internet-identity');
+      setAuthStatus('success');
+      setAuthError(undefined);
+      // Invalidate queries immediately after II login
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
+    } else if (iiStatus === 'loginError') {
+      setAuthStatus('error');
+      setAuthError(new Error('Internet Identity login failed. Please try again.'));
+      setAuthMethod(null);
+    } else if (iiStatus === 'idle' && !isIIAuthenticated && authStatus === 'authenticating') {
+      // Login was cancelled or failed
+      setAuthStatus('idle');
+      setAuthMethod(null);
     }
-  }, [iiStatus, isIIAuthenticated, authMethod, authStatus]);
+  }, [iiStatus, isIIAuthenticated, authStatus, sessionRestored, queryClient]);
 
   const loginWithEmail = useCallback(async (email: string, password: string) => {
     // Wait for actor to be ready (with timeout)
@@ -211,6 +220,10 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
         setEmailAuthActive(true);
         setAuthMethod('email-password');
         setAuthStatus('success');
+        
+        // Invalidate and refetch user profile queries immediately
+        await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+        await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
       } else {
         throw new Error('Invalid email or password');
       }
@@ -222,7 +235,7 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
       setEmailAuthActive(false);
       throw normalizedError;
     }
-  }, [actor, actorFetching]);
+  }, [actor, actorFetching, queryClient]);
 
   const registerWithEmail = useCallback(async (input: RegisterInput) => {
     // Wait for actor to be ready (with timeout)
@@ -272,7 +285,9 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
     setAuthMethod(null);
     setAuthStatus('idle');
     setAuthError(undefined);
-  }, [authMethod, iiClear]);
+    // Clear all cached queries on logout
+    queryClient.clear();
+  }, [authMethod, iiClear, queryClient]);
 
   const isAuthenticated = isIIAuthenticated || emailAuthActive;
 

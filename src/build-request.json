@@ -1,207 +1,87 @@
 {
   "kind": "build_request",
-  "title": "Implement synchronized Live TV playback with server-side time tracking",
-  "projectName": "FAITH X-Stream",
+  "title": "Fix Header UI state after Internet Identity login",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-38",
-      "text": "Implement server-side time tracking in the backend to calculate the exact playback position for each Live TV channel based on the current server time and the channel's schedule. For each channel, compute where in the current program playback should be (elapsed time since program start) and return this computed position along with current program metadata when frontend clients request channel state.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "all viewers should be watching the same channel and see the exact same moment of the program at the same time",
-          "yes they join at the mark where its left off"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend calculates current playback position based on server time minus program start time",
-        "Position calculation accounts for program duration and handles looping when no additional programs exist",
-        "API endpoint returns current program info with exact playback position for each channel"
-      ]
-    },
-    {
-      "id": "REQ-39",
-      "text": "Add a backend endpoint or extend existing channel queries to return real-time synchronization data including: current program ID, current program start timestamp, server current time, computed playback position within the program, and whether the program is looping. Ensure this data is calculated fresh on each request to maintain accuracy.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "all viewers should be watching the same channel and see the exact same moment of the program at the same time"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Endpoint returns server timestamp to allow client-side time sync verification",
-        "Response includes current program metadata with computed playback offset",
-        "Looping status is included when program schedule reaches the end"
-      ]
-    },
-    {
-      "id": "REQ-40",
-      "text": "Implement automatic program looping logic in the backend schedule calculation: when the current time exceeds all scheduled programs for a channel, loop back to the first program and calculate position within the looped playback. If new programs are added to the schedule, continue sequentially instead of looping.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "Yes it can loop back unless I add other programs then it continues playing with the new or other programs"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When schedule ends, playback loops to the first program",
-        "Loop position is calculated correctly based on elapsed time since schedule start",
-        "Adding new programs to schedule stops looping and continues sequentially"
-      ]
-    },
-    {
-      "id": "REQ-41",
-      "text": "Build a new LiveTVSyncPlayer component (separate from the existing VideoPlayer) that fetches server-side synchronization data every 5-10 seconds and seeks the video element to match the server-calculated position. Keep existing VideoPlayer unchanged for VOD content.",
+      "id": "REQ-53",
+      "text": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes, replacing the 'Login' button with profile dropdown and admin link for authenticated users",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-latest"
         ],
         "quotes": [
-          "keep the existing but build and enhance on top of that a completely new playback system"
+          "internet identity which it logged in, because I noticed a difference, its just I can't access my profile/admin panel because the button \"login\" is still there instead of whatever is supposed to be there after logging in."
         ]
       },
       "acceptanceCriteria": [
-        "New LiveTVSyncPlayer component exists alongside existing VideoPlayer",
-        "Component polls sync endpoint at regular intervals (5-10 seconds)",
-        "Video element seeks to server-provided position when drift exceeds 2-3 seconds",
-        "Existing VideoPlayer remains unchanged for VOD playback"
+        "After successful Internet Identity login, Header shows profile dropdown instead of 'Login' button",
+        "Admin link appears in Header for admin users after Internet Identity login",
+        "Header updates without requiring page reload or manual navigation",
+        "Profile and admin panel become accessible immediately after login completes"
       ]
     },
     {
-      "id": "REQ-42",
-      "text": "Implement drift detection and correction in LiveTVSyncPlayer: compare the video element's currentTime with the server-calculated position, and if drift exceeds a threshold (e.g., 2-3 seconds), seek the player to the correct position. Handle edge cases like buffering delays and network latency.",
+      "id": "REQ-54",
+      "text": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components (including Header) when Internet Identity login succeeds",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "all viewers should be watching the same channel and see the exact same moment of the program at the same time"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Drift is measured by comparing video.currentTime with server position plus elapsed time since last sync",
-        "Seek correction only triggers when drift exceeds threshold (avoid constant seeking)",
-        "Player handles buffering and network delays gracefully without excessive seeking"
+        "Authentication state updates propagate synchronously after Internet Identity login",
+        "All components consuming auth context (Header, protected routes) receive updated state immediately",
+        "isAuthenticated flag reflects true state without delay after successful login",
+        "No race conditions between auth state update and component re-renders"
       ]
     },
     {
-      "id": "REQ-43",
-      "text": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of the existing VideoPlayer when playing Live TV channels. Preserve all existing LivePage functionality (channel selection, EPG grid, channel surfing) while routing Live TV playback through the synchronized player.",
+      "id": "REQ-55",
+      "text": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information (admin/premium status) are available for Header rendering and navigation guards",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "build and enhance on top of that a completely new playback system"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "LivePage renders LiveTVSyncPlayer for Live TV channel playback",
-        "Channel selection, EPG grid, and surfing behavior remain unchanged",
-        "Switching channels triggers sync data fetch and position calculation for new channel",
-        "VOD content (if any) still uses existing VideoPlayer"
+        "Profile query invalidation triggers immediately after Internet Identity authentication succeeds",
+        "User role data (admin status) is fetched and available before Header attempts to render role-specific UI",
+        "Query refetch completes before navigation or protected component rendering",
+        "No undefined or stale profile data causes incorrect UI states in Header"
       ]
     },
     {
-      "id": "REQ-44",
-      "text": "Handle program transitions in LiveTVSyncPlayer: when server indicates the current program has changed (different program ID returned), automatically switch to the new program's video URL and seek to the calculated position within that program, ensuring seamless transitions without user intervention.",
+      "id": "REQ-56",
+      "text": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "it continues playing with the new or other programs"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Component detects program change by comparing current and previous program IDs",
-        "Video source switches to new program URL automatically",
-        "Player seeks to correct position within new program after source change",
-        "Transition appears smooth without visible interruption"
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "text": "Ensure LiveTVSyncPlayer correctly handles looping scenarios: when the server indicates looping is active (schedule has ended and is repeating), display a visual indicator (optional) and continue synchronized playback within the looped program without disrupting the viewing experience.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "Yes it can loop back unless I add other programs then it continues playing"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Player correctly seeks to looped position when server returns loop status",
-        "Optional UI indicator shows when channel is in loop mode",
-        "Looping playback is synchronized across all viewers"
-      ]
-    },
-    {
-      "id": "REQ-46",
-      "text": "Implement initial sync on channel join: when a viewer selects a channel, immediately fetch sync data and seek to the current server-calculated position before starting playback, ensuring they join at the correct moment rather than starting from the beginning of the program.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "yes they join at the mark where its left off"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Sync data is fetched immediately when channel is selected",
-        "Video seeks to calculated position before play() is called",
-        "User joins playback at current live position, not from program start",
-        "Loading state is shown during initial sync and seek"
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "text": "Preserve existing Live TV features in LiveTVSyncPlayer: maintain ad insertion at scheduled timestamps, disable seeking forward for regular/guest users, and ensure unskippable ad behavior continues to work with the new synchronized playback system.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "keep the existing but build and enhance on top of that a completely new playback system"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Scheduled ad breaks trigger at correct timestamps during synchronized playback",
-        "Forward seeking remains disabled for Live TV content",
-        "Unskippable ad behavior works correctly with sync player",
-        "All existing Live TV access controls and features remain functional"
+        "Actor instance is fully initialized with Internet Identity principal before profile queries execute",
+        "Header waits for actor availability before attempting to fetch user profile data",
+        "No 'actor is undefined' errors occur during post-login UI rendering",
+        "Protected routes and admin checks have valid actor instance available"
       ]
     }
   ],
   "constraints": [
-    "Do not modify the existing VideoPlayer component; build a new LiveTVSyncPlayer component",
-    "Maintain backward compatibility with existing VOD playback flows",
-    "Keep single-actor backend architecture",
-    "Preserve all existing Live TV features (EPG grid, channel surfing, ad insertion, seeking restrictions)"
+    "Do not modify useInternetIdentity.ts or useActor.ts (immutable paths)",
+    "Preserve existing email/password authentication flows",
+    "Keep Internet Identity login button on Login page functional",
+    "Maintain backward compatibility with existing authentication state consumers"
   ],
   "nonGoals": [
-    "Changing the existing VideoPlayer used for VOD content",
-    "Adding peer-to-peer synchronization or WebRTC features",
-    "Implementing sub-second frame-perfect sync (2-3 second threshold is acceptable)",
-    "Creating a separate microservice for time synchronization"
+    "Changing the visual design or layout of Header component",
+    "Modifying backend authentication or access control logic",
+    "Adding new authentication methods beyond Internet Identity and email/password",
+    "Refactoring unrelated authentication flows"
   ],
   "imageRequirements": {
     "required": [],

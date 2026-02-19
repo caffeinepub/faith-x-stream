@@ -1,127 +1,83 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Implement synchronized Live TV playback with server-side time tracking",
+  "title": "Fix Header UI state after Internet Identity login",
   "requirements": [
     {
-      "id": "REQ-41",
-      "summary": "Build a new LiveTVSyncPlayer component that fetches server-side synchronization data and seeks the video element to match server-calculated position",
+      "id": "REQ-53",
+      "summary": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes",
       "acceptanceCriteria": [
-        "New LiveTVSyncPlayer component exists alongside existing VideoPlayer",
-        "Component polls sync endpoint at regular intervals (5-10 seconds)",
-        "Video element seeks to server-provided position when drift exceeds 2-3 seconds",
-        "Existing VideoPlayer remains unchanged for VOD playback"
+        "After successful Internet Identity login, Header shows profile dropdown instead of 'Login' button",
+        "Admin link appears in Header for admin users after Internet Identity login",
+        "Header updates without requiring page reload or manual navigation",
+        "Profile and admin panel become accessible immediately after login completes"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
-          "operation": "create",
-          "description": "Create a new LiveTVSyncPlayer component separate from VideoPlayer that manages synchronized live TV playback. Implement video player with custom controls similar to VideoPlayer but focused on live TV synchronization. Include polling mechanism using setInterval to fetch sync data from getDynamicLiveChannelState every 5-10 seconds. Store sync data in component state (currentProgramId, playbackPosition, serverTime, isLooping). Render video element with ref for direct manipulation. Include basic controls (play/pause, volume, fullscreen) but disable seek controls for live content. Use the backend's LiveChannelState type to structure sync data handling."
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Refactor Header to properly track and respond to Internet Identity authentication state changes. Replace the current authentication state logic to directly consume identity from useInternetIdentity hook instead of relying on useAuth, ensuring immediate re-renders when identity changes. Update the conditional rendering logic to synchronously display profile dropdown and admin link based on the current identity and user role. Remove any stale state dependencies that delay UI updates after login completes."
         }
       ]
     },
     {
-      "id": "REQ-42",
-      "summary": "Implement drift detection and correction in LiveTVSyncPlayer by comparing video currentTime with server-calculated position",
+      "id": "REQ-54",
+      "summary": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components",
       "acceptanceCriteria": [
-        "Drift is measured by comparing video.currentTime with server position plus elapsed time since last sync",
-        "Seek correction only triggers when drift exceeds threshold (avoid constant seeking)",
-        "Player handles buffering and network delays gracefully without excessive seeking"
+        "Authentication state updates propagate synchronously after Internet Identity login",
+        "All components consuming auth context (Header, protected routes) receive updated state immediately",
+        "isAuthenticated flag reflects true state without delay after successful login",
+        "No race conditions between auth state update and component re-renders"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "path": "frontend/src/hooks/useAuth.tsx",
           "operation": "modify",
-          "description": "Add drift detection logic within the sync polling mechanism. Calculate expected position as: serverPlaybackPosition + (Date.now() - lastSyncTime) / 1000. Compare video.currentTime with expected position. If absolute difference exceeds 2-3 second threshold and video is not buffering (readyState >= 3), execute videoRef.current.currentTime = expectedPosition to correct drift. Implement debouncing to prevent seek thrashing during buffering. Track lastSeekTime to avoid seeking more than once per polling interval. Add state for tracking drift amount for potential UI display."
+          "description": "Refactor AuthProvider to ensure authentication state updates are synchronous and immediately propagate to all consuming components. Review the state update logic in login and authentication restoration flows to eliminate any asynchronous delays or race conditions. Ensure that isAuthenticated flag is set immediately when identity is available from Internet Identity, triggering immediate re-renders in all consuming components including Header. Add explicit dependency tracking to ensure context consumers re-render synchronously when authentication state changes."
         }
       ]
     },
     {
-      "id": "REQ-43",
-      "summary": "Update LivePage to use the new LiveTVSyncPlayer component for channel playback instead of VideoPlayer",
+      "id": "REQ-55",
+      "summary": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information are available",
       "acceptanceCriteria": [
-        "LivePage renders LiveTVSyncPlayer for Live TV channel playback",
-        "Channel selection, EPG grid, and surfing behavior remain unchanged",
-        "Switching channels triggers sync data fetch and position calculation for new channel",
-        "VOD content (if any) still uses existing VideoPlayer"
+        "Profile query invalidation triggers immediately after Internet Identity authentication succeeds",
+        "User role data (admin status) is fetched and available before Header attempts to render role-specific UI",
+        "Query refetch completes before navigation or protected component rendering",
+        "No undefined or stale profile data causes incorrect UI states in Header"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/LivePage.tsx",
+          "path": "frontend/src/hooks/useAuth.tsx",
           "operation": "modify",
-          "description": "Replace the existing VideoPlayer component usage with conditional rendering: if selectedChannel exists, render LiveTVSyncPlayer with channelId prop; otherwise keep existing fallback UI. Pass selectedChannel.id to LiveTVSyncPlayer. Preserve all existing LivePage state management (selectedChannel, showGuide) and user interactions (channel selection from guide, channel surfing). Keep LiveGuideGrid component integration unchanged. Ensure channel switching resets LiveTVSyncPlayer state by using key={selectedChannel.id} on the component. Remove or comment out the old VideoPlayer import and usage for live channels only."
-        }
-      ]
-    },
-    {
-      "id": "REQ-44",
-      "summary": "Handle program transitions in LiveTVSyncPlayer by automatically switching to new program video URL when server indicates program change",
-      "acceptanceCriteria": [
-        "Component detects program change by comparing current and previous program IDs",
-        "Video source switches to new program URL automatically",
-        "Player seeks to correct position within new program after source change",
-        "Transition appears smooth without visible interruption"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
-          "operation": "modify",
-          "description": "Add useEffect hook that watches currentProgramId from sync data. Store previousProgramId in a ref to detect changes. When currentProgramId differs from previousProgramId, trigger program transition: fetch the new program's video content using getVideoById with the new currentProgramId, update video source (videoRef.current.src = newVideoUrl), wait for 'loadedmetadata' event, then seek to the playbackPosition from sync data. Show loading overlay during source change. Update previousProgramId ref after successful transition. Handle edge case where program metadata fetch fails by showing error state but continuing to poll for recovery."
-        }
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "summary": "Ensure LiveTVSyncPlayer correctly handles looping scenarios by continuing synchronized playback within looped programs",
-      "acceptanceCriteria": [
-        "Player correctly seeks to looped position when server returns loop status",
-        "Optional UI indicator shows when channel is in loop mode",
-        "Looping playback is synchronized across all viewers"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
-          "operation": "modify",
-          "description": "Check isLooping flag from LiveChannelState in sync response. When isLooping is true, display a small badge or indicator in the player UI (e.g., 'Loop Mode' pill in top-right corner of player). The playbackPosition returned by the server already accounts for looping calculation, so no additional client-side looping logic is needed—just apply the position as normal during drift correction. Add optional isLooping state to component for UI rendering. Style the loop indicator with subtle opacity and positioning to avoid obstructing video content."
-        }
-      ]
-    },
-    {
-      "id": "REQ-46",
-      "summary": "Implement initial sync on channel join by fetching sync data and seeking to current server-calculated position before starting playback",
-      "acceptanceCriteria": [
-        "Sync data is fetched immediately when channel is selected",
-        "Video seeks to calculated position before play() is called",
-        "User joins playback at current live position, not from program start",
-        "Loading state is shown during initial sync and seek"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
-          "operation": "modify",
-          "description": "Add initialization logic in useEffect when channelId prop changes. Set isInitializing state to true and show loading spinner overlay. Immediately fetch sync data using getDynamicLiveChannelState(channelId). Extract currentProgramId and playbackPosition from response. Load video source for currentProgram. Wait for 'loadedmetadata' event on video element. Set videoRef.current.currentTime = playbackPosition. Only then call videoRef.current.play(). Set isInitializing to false. Start the polling interval after successful initialization. Handle errors during initialization by showing error message and retry button."
-        }
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "summary": "Preserve existing Live TV features in LiveTVSyncPlayer including ad insertion, disabled forward seeking, and unskippable ad behavior",
-      "acceptanceCriteria": [
-        "Scheduled ad breaks trigger at correct timestamps during synchronized playback",
-        "Forward seeking remains disabled for Live TV content",
-        "Unskippable ad behavior works correctly with sync player",
-        "All existing Live TV access controls and features remain functional"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
-          "operation": "modify",
-          "description": "Integrate ad handling logic from existing VideoPlayer: parse adLocations from ScheduledContent in LiveChannelState. Monitor video.currentTime in timeupdate event to detect when playback reaches an ad position timestamp. When ad position is reached, pause main content, switch to ad video source, play ad with unskippable controls (no seek, optional skip after N seconds based on ad assignment settings). After ad completes, restore main content source and resume from correct sync position. Disable seek bar interaction for forward seeking (allow backward seek for premium users if needed, but restrict forward). Check user premium status from useAuth to determine ad display. Add isPlayingAd state to manage ad playback mode and prevent sync corrections during ad playback."
+          "description": "Add query invalidation and refetch logic immediately after successful Internet Identity login. Use useQueryClient to invalidate the 'callerLoginStatus' query key and await the refetch before updating authentication state. Ensure the profile data (including admin role) is fetched and available synchronously before setting isAuthenticated to true, preventing Header from rendering with incomplete user data. Coordinate with useActor to ensure actor is initialized before profile queries execute."
         },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Ensure useGetAdAssignmentsForLive query hook exists or add it if missing. This hook should call getAdAssignmentsForLive(channelId) and return ad assignment data needed by LiveTVSyncPlayer for displaying ads at scheduled positions. Use React Query's useQuery with queryKey ['adAssignments', 'live', channelId] and enabled flag based on channelId presence."
+          "description": "Update useGetCallerLoginStatus hook to properly handle actor availability and loading states. Ensure the query is enabled only when actor is fully initialized and not fetching. Add explicit isLoading state that accounts for both actor fetching and query loading states to prevent premature rendering in Header. Return custom loading state that accurately reflects whether role data is ready for consumption by UI components."
+        }
+      ]
+    },
+    {
+      "id": "REQ-56",
+      "summary": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render",
+      "acceptanceCriteria": [
+        "Actor instance is fully initialized with Internet Identity principal before profile queries execute",
+        "Header waits for actor availability before attempting to fetch user profile data",
+        "No 'actor is undefined' errors occur during post-login UI rendering",
+        "Protected routes and admin checks have valid actor instance available"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Add actor availability checks to Header rendering logic. Consume actorFetching state from useActor hook and display loading state in Header while actor is initializing after Internet Identity login. Prevent profile dropdown and admin link rendering until both actor is available and user role data has been successfully fetched. Show a loading indicator or skeleton UI in the authentication controls area during actor initialization to avoid flashing incorrect UI states."
+        },
+        {
+          "path": "frontend/src/hooks/useAuth.tsx",
+          "operation": "modify",
+          "description": "Coordinate authentication state updates with actor initialization lifecycle. After Internet Identity login succeeds, wait for actor to be fully initialized before invalidating profile queries and updating isAuthenticated state. Add explicit checks to ensure actor instance exists and is not in fetching state before attempting to fetch user profile or role data. This prevents race conditions where Header tries to render authenticated UI before actor is ready to serve profile queries."
         }
       ]
     }
