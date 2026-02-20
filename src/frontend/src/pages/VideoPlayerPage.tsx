@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useGetAllVideos, useGetAllAdMedia, useGetAllAdAssignments, useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
+import { useGetAllVideos, useGetAdMedia, useGetAdAssignments, useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
 import VideoPlayer from '../components/VideoPlayer';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -12,16 +12,18 @@ export default function VideoPlayerPage() {
   const { contentId } = useParams({ from: '/watch/$contentId' });
   const navigate = useNavigate();
   const { data: videos, isLoading } = useGetAllVideos();
-  const { data: adMedia } = useGetAllAdMedia();
-  const { data: adAssignments } = useGetAllAdAssignments();
+  const { data: adMedia } = useGetAdMedia();
+  const { data: adAssignments } = useGetAdAssignments();
   const { identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
   const { data: isAdmin } = useIsCallerAdmin();
 
   const video = videos?.find((v) => v.id === contentId);
+
   const isAuthenticated = !!identity;
   const isPremiumUser = (!!userProfile?.isPremium) || (!!isAdmin);
   const shouldSeeAds = !isPremiumUser;
+  const canWatch = video && (!video.isPremium || isPremiumUser);
 
   // Get ads for this video (only for users who should see ads)
   const videoAds = shouldSeeAds ? adAssignments
@@ -50,12 +52,10 @@ export default function VideoPlayerPage() {
     return (
       <div className="container px-4 md:px-8 py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Video not found</h1>
-        <Button onClick={() => navigate({ to: '/' })}>Go Home</Button>
+        <Button onClick={() => navigate({ to: '/' })}>Go to Home</Button>
       </div>
     );
   }
-
-  const canWatch = !video.isPremium || isPremiumUser;
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,7 +66,7 @@ export default function VideoPlayerPage() {
           className="mb-4 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Back to Home
         </Button>
 
         {canWatch ? (
@@ -82,7 +82,12 @@ export default function VideoPlayerPage() {
             </div>
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-3xl font-bold">{video.title}</h1>
+                <div>
+                  <h1 className="text-3xl font-bold">{video.title}</h1>
+                  <p className="text-muted-foreground">
+                    {video.contentType} {video.releaseYear && `• ${Number(video.releaseYear)}`}
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   {video.isPremium && (
                     <Badge className="bg-gradient-to-r from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] text-white border-0">
@@ -98,17 +103,17 @@ export default function VideoPlayerPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                {video.releaseYear && <span>{video.releaseYear.toString()}</span>}
-                {video.genre && <span>• {video.genre}</span>}
-              </div>
-              <p className="text-muted-foreground max-w-3xl">{video.description}</p>
-              {video.roles && (
-                <div>
-                  <h3 className="font-semibold mb-2">Cast</h3>
-                  <p className="text-sm text-muted-foreground">{video.roles}</p>
+              {video.genre && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{video.genre}</span>
                 </div>
               )}
+              {video.roles && (
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-semibold">Cast:</span> {video.roles}
+                </div>
+              )}
+              <p className="text-muted-foreground max-w-3xl">{video.description}</p>
             </div>
           </>
         ) : (
@@ -117,7 +122,7 @@ export default function VideoPlayerPage() {
               <div className="text-center space-y-4">
                 <Lock className="h-16 w-16 text-muted-foreground mx-auto" />
                 <h2 className="text-2xl font-bold">Premium Content</h2>
-                <p className="text-muted-foreground">Subscribe to watch this content</p>
+                <p className="text-muted-foreground">Subscribe to watch this video</p>
                 <Button
                   onClick={() => navigate({ to: '/upgrade' })}
                   className="bg-gradient-to-r from-[oklch(0.55_0.2_40)] to-[oklch(0.45_0.2_0)] hover:from-[oklch(0.60_0.22_40)] hover:to-[oklch(0.50_0.22_0)] text-white"
@@ -131,7 +136,7 @@ export default function VideoPlayerPage() {
               <Lock className="h-4 w-4" />
               <AlertTitle>Premium Subscription Required</AlertTitle>
               <AlertDescription>
-                This content is only available to premium subscribers. Upgrade now to enjoy unlimited access to all premium content, ad-free viewing, HD & 4K quality, and priority support.
+                This video is only available to premium subscribers. Upgrade now to enjoy unlimited access to all premium content, ad-free viewing, HD & 4K quality, and priority support.
               </AlertDescription>
             </Alert>
           </div>

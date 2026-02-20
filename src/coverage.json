@@ -1,18 +1,83 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-19T23:52:44.506Z",
+  "generatedAt": "2026-02-20T20:38:59.745Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 8,
+    "implemented": 8,
     "items": [
       {
-        "id": "REQ-53",
-        "summary": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes, replacing the 'Login' button with profile dropdown and admin link for authenticated users",
+        "id": "REQ-71",
+        "summary": "Fix authentication state propagation in useAuth context so that after successful login (both Internet Identity and email/password), the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without race conditions or delays",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx"
+        ]
+      },
+      {
+        "id": "REQ-72",
+        "summary": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx"
+        ]
+      },
+      {
+        "id": "REQ-73",
+        "summary": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useAuth.tsx",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-74",
+        "summary": "Remove or refactor any LiveTVSyncPlayer initialization, mounting, or polling logic that interferes with authentication flow, actor creation, or session management, ensuring sync player does not block login or create circular dependencies with auth initialization",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "frontend/src/pages/LivePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "frontend/src/pages/LivePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-75",
+        "summary": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving UI in a stuck loading state",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/LoginPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/LoginPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-76",
+        "summary": "Revert unintended visual changes to Header navigation component to restore expected appearance before recent updates, ensuring navigation links, spacing, styling, and layout match the original design without breaking responsive behavior or accessibility",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/Header.tsx"
@@ -22,40 +87,40 @@
         ]
       },
       {
-        "id": "REQ-54",
-        "summary": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components (including Header) when Internet Identity login succeeds",
+        "id": "REQ-77",
+        "summary": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates, restoring expected visual appearance, layout, and styling while preserving all functional improvements",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useAuth.tsx"
+          "frontend/src/pages/HomePage.tsx",
+          "frontend/src/pages/LivePage.tsx",
+          "frontend/src/pages/AdminPage.tsx",
+          "frontend/src/components/Footer.tsx",
+          "frontend/src/components/HeroSection.tsx",
+          "frontend/src/components/VideoCard.tsx",
+          "frontend/src/components/SeriesCard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useAuth.tsx"
+          "frontend/src/pages/HomePage.tsx",
+          "frontend/src/pages/LivePage.tsx"
         ]
       },
       {
-        "id": "REQ-55",
-        "summary": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information (admin/premium status) are available for Header rendering and navigation guards",
+        "id": "REQ-78",
+        "summary": "Add comprehensive error logging and debugging output throughout authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useAuth.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/Header.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
         ],
         "matchedFiles": [
           "frontend/src/hooks/useAuth.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
-        "id": "REQ-56",
-        "summary": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
-        "status": "implemented",
-        "plannedFiles": [
           "frontend/src/components/Header.tsx",
-          "frontend/src/hooks/useAuth.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/Header.tsx",
-          "frontend/src/hooks/useAuth.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/components/LiveTVSyncPlayer.tsx"
         ]
       }
     ]
@@ -66,8 +131,15 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/Header.tsx",
+    "frontend/src/components/LiveTVSyncPlayer.tsx",
+    "frontend/src/components/admin/ManualAdsManagement.tsx",
     "frontend/src/hooks/useAuth.tsx",
     "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/EpisodePlayerPage.tsx",
+    "frontend/src/pages/HomePage.tsx",
+    "frontend/src/pages/LivePage.tsx",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/VideoPlayerPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -2,75 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-header-component-to-immediately-re-render-and-reflect-authenticated-state-when-internet-identity-login-completes-replacing-the-login-button-with-profile-dropdown-and-admin-link-for-authenticated-users",
-      "featureTitle": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes, replacing the 'Login' button with profile dropdown and admin link for authenticated users",
-      "files": [
-        "frontend/src/components/Header.tsx"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "blob-storage@4.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-53"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-fix-useinternetidentity-hook-and-useauth-context-to-synchronously-propagate-authentication-state-changes-to-all-consuming-components-including-header-when-internet-identity-login-succeeds",
-      "featureTitle": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components (including Header) when Internet Identity login succeeds",
-      "files": [
-        "frontend/src/hooks/useAuth.tsx"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "blob-storage@4.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-54"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-internet-identity-login-completes-to-ensure-profile-data-and-role-information-admin-premium-status-are-available-for-header-rendering-and-navigation-guards",
-      "featureTitle": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information (admin/premium status) are available for Header rendering and navigation guards",
-      "files": [
-        "frontend/src/hooks/useAuth.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "blob-storage@4.0.0",
-        "stripe@3.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-55"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-actor-initialization-completes-successfully-after-internet-identity-login-before-header-and-other-authenticated-components-attempt-to-render-preventing-undefined-actor-errors-in-profile-queries",
-      "featureTitle": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
+      "featureId": "feature-fix-authentication-state-propagation-in-useauth-context-so-that-after-successful-login-both-internet-identity-and-email-password-the-isauthenticated-flag-and-user-state-update-immediately-and-synchronously-across-all-consuming-components-header-protected-routes-profile-queries-without-race-conditions-or-delays",
+      "featureTitle": "Fix authentication state propagation in useAuth context so that after successful login (both Internet Identity and email/password), the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without race conditions or delays",
       "files": [
         "frontend/src/components/Header.tsx",
         "frontend/src/hooks/useAuth.tsx"
@@ -87,7 +20,170 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-56"
+        "REQ-71"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-actor-initialization-completes-successfully-and-is-fully-available-before-any-authenticated-ui-components-header-profile-queries-admin-checks-attempt-to-render-or-execute-queries-preventing-undefined-actor-errors",
+      "featureTitle": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors",
+      "files": [
+        "frontend/src/components/Header.tsx",
+        "frontend/src/hooks/useAuth.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-72"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-login-both-internet-identity-and-email-password-to-ensure-profile-data-including-role-information-admin-premium-status-is-fetched-and-available-triggering-header-re-render-with-correct-profile-dropdown-and-admin-link-2",
+      "featureTitle": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link",
+      "files": [
+        "frontend/src/components/Header.tsx",
+        "frontend/src/hooks/useAuth.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-73"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-or-refactor-any-livetvsyncplayer-initialization-mounting-or-polling-logic-that-interferes-with-authentication-flow-actor-creation-or-session-management-ensuring-sync-player-does-not-block-login-or-create-circular-dependencies-with-auth-initialization",
+      "featureTitle": "Remove or refactor any LiveTVSyncPlayer initialization, mounting, or polling logic that interferes with authentication flow, actor creation, or session management, ensuring sync player does not block login or create circular dependencies with auth initialization",
+      "files": [
+        "frontend/src/components/LiveTVSyncPlayer.tsx",
+        "frontend/src/pages/LivePage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-74"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-loginpage-navigation-and-redirect-logic-to-successfully-navigate-users-to-the-home-page-after-login-without-triggering-navigation-during-render-causing-redirect-loops-or-leaving-ui-in-a-stuck-loading-state",
+      "featureTitle": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving UI in a stuck loading state",
+      "files": [
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-75"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-revert-unintended-visual-changes-to-header-navigation-component-to-restore-expected-appearance-before-recent-updates-ensuring-navigation-links-spacing-styling-and-layout-match-the-original-design-without-breaking-responsive-behavior-or-accessibility",
+      "featureTitle": "Revert unintended visual changes to Header navigation component to restore expected appearance before recent updates, ensuring navigation links, spacing, styling, and layout match the original design without breaking responsive behavior or accessibility",
+      "files": [
+        "frontend/src/components/Header.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-76"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-review-and-revert-any-unintended-ui-changes-across-all-pages-and-components-that-occurred-during-recent-updates-restoring-expected-visual-appearance-layout-and-styling-while-preserving-all-functional-improvements",
+      "featureTitle": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates, restoring expected visual appearance, layout, and styling while preserving all functional improvements",
+      "files": [
+        "frontend/src/pages/HomePage.tsx",
+        "frontend/src/pages/LivePage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-77"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-comprehensive-error-logging-and-debugging-output-throughout-authentication-flow-useauth-useinternetidentity-useactor-to-capture-timing-information-state-transitions-and-exact-failure-points-when-login-fails-or-gets-stuck",
+      "featureTitle": "Add comprehensive error logging and debugging output throughout authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck",
+      "files": [
+        "frontend/src/components/Header.tsx",
+        "frontend/src/components/LiveTVSyncPlayer.tsx",
+        "frontend/src/hooks/useAuth.tsx",
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-78"
       ],
       "confidence": "high"
     }

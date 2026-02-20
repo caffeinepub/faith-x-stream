@@ -1,83 +1,223 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Header UI state after Internet Identity login",
+  "title": "Fix authentication state propagation and revert unintended UI changes",
   "requirements": [
     {
-      "id": "REQ-53",
-      "summary": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes",
+      "id": "REQ-71",
+      "summary": "Fix authentication state propagation in useAuth context to ensure isAuthenticated flag and user state update immediately and synchronously after successful login",
       "acceptanceCriteria": [
-        "After successful Internet Identity login, Header shows profile dropdown instead of 'Login' button",
-        "Admin link appears in Header for admin users after Internet Identity login",
-        "Header updates without requiring page reload or manual navigation",
-        "Profile and admin panel become accessible immediately after login completes"
+        "After successful login via Internet Identity, Header immediately shows profile dropdown and admin link instead of 'Login' button",
+        "After successful login via email/password, Header immediately shows profile dropdown and admin link instead of 'Login' button",
+        "Authentication state change triggers synchronous re-render of all consuming components",
+        "No delays or race conditions between login completion and UI update"
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/hooks/useAuth.tsx",
+          "operation": "modify",
+          "description": "Ensure login and loginWithPassword methods immediately update isAuthenticated state before resolving, triggering synchronous context updates. Remove any async delays or race conditions between identity/actor initialization and state updates. Ensure context value includes fresh isAuthenticated state that consuming components can read immediately after login completes."
+        },
         {
           "path": "frontend/src/components/Header.tsx",
           "operation": "modify",
-          "description": "Refactor Header to properly track and respond to Internet Identity authentication state changes. Replace the current authentication state logic to directly consume identity from useInternetIdentity hook instead of relying on useAuth, ensuring immediate re-renders when identity changes. Update the conditional rendering logic to synchronously display profile dropdown and admin link based on the current identity and user role. Remove any stale state dependencies that delay UI updates after login completes."
+          "description": "Verify Header correctly subscribes to useAuth context and re-renders immediately when isAuthenticated changes. Ensure conditional rendering logic for profile dropdown and admin link triggers synchronously on authentication state change without delays."
         }
       ]
     },
     {
-      "id": "REQ-54",
-      "summary": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components",
+      "id": "REQ-72",
+      "summary": "Ensure actor initialization completes successfully and is fully available before authenticated UI components attempt to render or execute queries",
       "acceptanceCriteria": [
-        "Authentication state updates propagate synchronously after Internet Identity login",
-        "All components consuming auth context (Header, protected routes) receive updated state immediately",
-        "isAuthenticated flag reflects true state without delay after successful login",
-        "No race conditions between auth state update and component re-renders"
+        "Actor is fully initialized before Header renders authenticated UI",
+        "Actor is fully initialized before profile queries execute",
+        "Actor is fully initialized before admin panel access checks run",
+        "No undefined actor errors occur during authentication flow"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useAuth.tsx",
           "operation": "modify",
-          "description": "Refactor AuthProvider to ensure authentication state updates are synchronous and immediately propagate to all consuming components. Review the state update logic in login and authentication restoration flows to eliminate any asynchronous delays or race conditions. Ensure that isAuthenticated flag is set immediately when identity is available from Internet Identity, triggering immediate re-renders in all consuming components including Header. Add explicit dependency tracking to ensure context consumers re-render synchronously when authentication state changes."
+          "description": "Ensure login methods wait for actor initialization to complete before resolving. Add synchronization between identity authentication and actor availability so that isAuthenticated only becomes true when actor is ready. Prevent race conditions where UI attempts to use actor before it's initialized."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Add safety checks to prevent rendering authenticated UI elements (profile dropdown, admin link) until both isAuthenticated is true and actor is available. Use loading states if necessary to prevent undefined actor errors during the transition."
         }
       ]
     },
     {
-      "id": "REQ-55",
-      "summary": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information are available",
+      "id": "REQ-73",
+      "summary": "Invalidate and refetch user profile queries immediately after successful login to ensure profile data including role information is fetched and available",
       "acceptanceCriteria": [
-        "Profile query invalidation triggers immediately after Internet Identity authentication succeeds",
-        "User role data (admin status) is fetched and available before Header attempts to render role-specific UI",
-        "Query refetch completes before navigation or protected component rendering",
-        "No undefined or stale profile data causes incorrect UI states in Header"
+        "Profile queries are invalidated immediately after login completes",
+        "Profile data including admin/premium status is fetched before Header renders",
+        "Header receives fresh profile data including role information",
+        "Admin link appears in Header when user has admin role",
+        "Profile page is accessible immediately after login"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useAuth.tsx",
           "operation": "modify",
-          "description": "Add query invalidation and refetch logic immediately after successful Internet Identity login. Use useQueryClient to invalidate the 'callerLoginStatus' query key and await the refetch before updating authentication state. Ensure the profile data (including admin role) is fetched and available synchronously before setting isAuthenticated to true, preventing Header from rendering with incomplete user data. Coordinate with useActor to ensure actor is initialized before profile queries execute."
+          "description": "Add queryClient.invalidateQueries(['currentUserProfile']) and queryClient.invalidateQueries(['loginStatus']) calls immediately after successful login (both Internet Identity and email/password). Ensure these invalidations trigger before the login promise resolves so that consuming components receive fresh data when they re-render."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Ensure Header uses profile query hooks (useGetCallerLoginStatus or equivalent) to fetch role information and conditionally render admin link based on user role. Verify queries are enabled only when actor is available and isAuthenticated is true."
         },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update useGetCallerLoginStatus hook to properly handle actor availability and loading states. Ensure the query is enabled only when actor is fully initialized and not fetching. Add explicit isLoading state that accounts for both actor fetching and query loading states to prevent premature rendering in Header. Return custom loading state that accurately reflects whether role data is ready for consumption by UI components."
+          "description": "Review useGetCallerLoginStatus and useGetCallerUserProfile hooks to ensure they properly handle actor availability, set enabled flags correctly, and return accurate loading states that prevent premature rendering in Header."
         }
       ]
     },
     {
-      "id": "REQ-56",
-      "summary": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render",
+      "id": "REQ-74",
+      "summary": "Remove or refactor LiveTVSyncPlayer initialization logic that interferes with authentication flow, actor creation, or session management",
       "acceptanceCriteria": [
-        "Actor instance is fully initialized with Internet Identity principal before profile queries execute",
-        "Header waits for actor availability before attempting to fetch user profile data",
-        "No 'actor is undefined' errors occur during post-login UI rendering",
-        "Protected routes and admin checks have valid actor instance available"
+        "LiveTVSyncPlayer does not interfere with login flow",
+        "LiveTVSyncPlayer does not block actor initialization",
+        "LiveTVSyncPlayer does not reset authentication context",
+        "No circular dependencies between LiveTVSyncPlayer and authentication",
+        "Login completes successfully without being stuck in loading state"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "modify",
+          "description": "Review and refactor any initialization, mounting, or polling logic that may interfere with authentication flow. Ensure the component does not call actor methods before actor is initialized. Remove any side effects that could reset authentication context or create circular dependencies. Defer sync polling until both authentication and actor are confirmed ready."
+        },
+        {
+          "path": "frontend/src/pages/LivePage.tsx",
+          "operation": "modify",
+          "description": "Ensure LiveTVSyncPlayer is only rendered after authentication completes and actor is available. Add conditional rendering or loading guards to prevent LiveTVSyncPlayer from mounting prematurely and blocking login flow."
+        }
+      ]
+    },
+    {
+      "id": "REQ-75",
+      "summary": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render or causing redirect loops",
+      "acceptanceCriteria": [
+        "After successful login, user is redirected to home page",
+        "Navigation occurs only in useEffect or event handlers, not during render",
+        "No redirect loops occur after login",
+        "UI does not get stuck in loading state after login",
+        "Redirect completes successfully for both Internet Identity and email/password login"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Refactor navigation logic to ensure redirects occur only in useEffect hooks or event handlers after login completes. Use TanStack Router's navigate function correctly. Add proper guards to prevent redirect loops (check if already authenticated before showing login UI). Ensure UI loading states clear after successful navigation. Remove any navigation calls during render phase."
+        }
+      ]
+    },
+    {
+      "id": "REQ-76",
+      "summary": "Revert unintended visual changes to Header navigation component to restore expected appearance before recent updates",
+      "acceptanceCriteria": [
+        "Header navigation visual appearance matches state before recent authentication fixes",
+        "Navigation links spacing is restored to original",
+        "Navigation styling matches original design",
+        "Layout structure is restored to original",
+        "Responsive behavior works correctly on mobile and desktop",
+        "Accessibility features remain intact"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/Header.tsx",
           "operation": "modify",
-          "description": "Add actor availability checks to Header rendering logic. Consume actorFetching state from useActor hook and display loading state in Header while actor is initializing after Internet Identity login. Prevent profile dropdown and admin link rendering until both actor is available and user role data has been successfully fetched. Show a loading indicator or skeleton UI in the authentication controls area during actor initialization to avoid flashing incorrect UI states."
+          "description": "Review and revert any unintended CSS class changes, inline style modifications, or structural changes to navigation links and layout that occurred during recent authentication fixes. Restore original spacing, styling, and layout structure while preserving functional authentication improvements. Verify responsive behavior and accessibility features remain intact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-77",
+      "summary": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates",
+      "acceptanceCriteria": [
+        "All pages maintain their original visual appearance",
+        "Layout and styling changes from recent updates are reverted where unintended",
+        "Functional improvements from recent updates are preserved",
+        "No visual regressions exist compared to state before recent authentication fixes"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/HomePage.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to layout, styling, or component structure that occurred during recent updates. Restore original appearance while preserving functional improvements."
         },
+        {
+          "path": "frontend/src/pages/LivePage.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to layout, styling, or component structure. Ensure original appearance is restored while keeping functional fixes for authentication and sync player behavior."
+        },
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to admin panel layout, styling, or tab interface. Restore original appearance while preserving authentication access control improvements."
+        },
+        {
+          "path": "frontend/src/components/Footer.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to footer layout, styling, or link presentation. Ensure original appearance is restored."
+        },
+        {
+          "path": "frontend/src/components/HeroSection.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to hero section layout, styling, or action buttons. Restore original appearance."
+        },
+        {
+          "path": "frontend/src/components/VideoCard.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to video card styling, badge positioning, or hover effects. Ensure original appearance is restored."
+        },
+        {
+          "path": "frontend/src/components/SeriesCard.tsx",
+          "operation": "modify",
+          "description": "Review and revert any unintended visual changes to series card styling, badge positioning, or layout. Restore original appearance."
+        }
+      ]
+    },
+    {
+      "id": "REQ-78",
+      "summary": "Add comprehensive error logging and debugging output throughout authentication flow to capture timing information, state transitions, and exact failure points",
+      "acceptanceCriteria": [
+        "Console logs show authentication state transitions",
+        "Console logs show timing information for each authentication step",
+        "Console logs identify exact failure points when login fails",
+        "Console logs show actor initialization status",
+        "Console logs show profile query execution status",
+        "Error messages are clear and actionable for debugging"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useAuth.tsx",
           "operation": "modify",
-          "description": "Coordinate authentication state updates with actor initialization lifecycle. After Internet Identity login succeeds, wait for actor to be fully initialized before invalidating profile queries and updating isAuthenticated state. Add explicit checks to ensure actor instance exists and is not in fetching state before attempting to fetch user profile or role data. This prevents race conditions where Header tries to render authenticated UI before actor is ready to serve profile queries."
+          "description": "Add console.log statements throughout authentication flow to track: (1) login method entry with timestamp, (2) identity acquisition status, (3) actor initialization status, (4) isAuthenticated state changes with timing, (5) query invalidation execution, (6) login completion with total elapsed time. Add detailed error logging with stack traces for all catch blocks. Use console.group/groupEnd for organized log sections."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Add console.log statements to track: (1) authentication state from context, (2) actor availability status, (3) profile query status and data, (4) conditional rendering decisions for profile dropdown and admin link. Log re-renders with authentication state values."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add console.log statements in profile query hooks to track: (1) query enablement status, (2) actor availability, (3) query execution start/completion with timing, (4) data fetched or errors encountered. Use clear prefixes like '[ProfileQuery]' for easy filtering."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Add console.log statements to track: (1) form submission events, (2) login method calls with parameters (excluding sensitive data), (3) navigation decisions and timing, (4) loading state transitions. Log any errors during login or navigation with actionable context."
+        },
+        {
+          "path": "frontend/src/components/LiveTVSyncPlayer.tsx",
+          "operation": "modify",
+          "description": "Add console.log statements to track: (1) component mount/unmount, (2) actor usage attempts, (3) sync polling cycles, (4) any interactions with authentication context. Use clear markers to identify when this component may be interfering with auth flow."
         }
       ]
     }

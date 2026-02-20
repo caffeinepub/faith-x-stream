@@ -1,165 +1,122 @@
 import { useState, useEffect } from 'react';
 import { useGetAllLiveChannels, useGetAllVideos } from '../hooks/useQueries';
-import { Skeleton } from '../components/ui/skeleton';
-import { Badge } from '../components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Radio, Grid3x3 } from 'lucide-react';
 import LiveTVSyncPlayer from '../components/LiveTVSyncPlayer';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useQueries';
 import LiveGuideGrid from '../components/live/LiveGuideGrid';
-import { useSessionStorageState } from '../hooks/useSessionStorageState';
-import { useSearch } from '@tanstack/react-router';
-import { getNextProgram } from '../utils/epg';
+import { Button } from '../components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useActor } from '../hooks/useActor';
 
 export default function LivePage() {
+  const { authStatus } = useAuth();
+  const { actor, isFetching: actorFetching } = useActor();
   const { data: channels, isLoading: channelsLoading } = useGetAllLiveChannels();
   const { data: videos, isLoading: videosLoading } = useGetAllVideos();
-  const { identity } = useInternetIdentity();
-  const { data: userProfile } = useGetCallerUserProfile();
-  const search = useSearch({ from: '/live' });
-  const [selectedChannel, setSelectedChannel] = useSessionStorageState<string | null>('live-selected-channel', null);
-  const [mode, setMode] = useState<'watch' | 'guide'>((search as any)?.mode === 'guide' ? 'guide' : 'watch');
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [currentProgramId, setCurrentProgramId] = useState<string | null>(null);
 
-  const isPremiumUser = !!identity && !!userProfile?.isPremium;
+  console.log('[LivePage] Render state:', { authStatus, actorFetching, actor: !!actor, channelsLoading, videosLoading });
 
-  // Auto-select first channel on load if no saved channel
+  // Auto-select first channel when channels load
   useEffect(() => {
-    if (channels && channels.length > 0 && !selectedChannel) {
-      setSelectedChannel(channels[0].id);
+    if (channels && channels.length > 0 && !selectedChannelId) {
+      console.log('[LivePage] Auto-selecting first channel:', channels[0].id);
+      setSelectedChannelId(channels[0].id);
     }
-  }, [channels, selectedChannel, setSelectedChannel]);
+  }, [channels, selectedChannelId]);
 
-  const selectedChannelData = channels?.find(c => c.id === selectedChannel);
+  const handleProgramChange = (programId: string | null) => {
+    console.log('[LivePage] Program changed:', programId);
+    setCurrentProgramId(programId);
+  };
+
+  // Show loading while auth is initializing or actor is not ready
+  if (authStatus === 'initializing' || actorFetching || !actor) {
+    console.log('[LivePage] Waiting for initialization...');
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+            <p className="text-white">Initializing...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (channelsLoading || videosLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
-        <Skeleton className="h-12 w-64 mb-8" />
-        <Skeleton className="h-96 w-full" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+            <p className="text-white">Loading channels...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!channels || channels.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black p-8">
-        <div className="text-center py-16">
-          <Radio className="h-16 w-16 mx-auto mb-4 text-primary" />
-          <h2 className="text-2xl font-bold mb-2">No Live Channels Available</h2>
-          <p className="text-muted-foreground">Check back later for live programming</p>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold text-white mb-8">Live TV</h1>
+        <p className="text-gray-400">No live channels available at this time.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Radio className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Live TV</h1>
-          </div>
-          
-          <Tabs value={mode} onValueChange={(v) => setMode(v as 'watch' | 'guide')} className="w-auto">
-            <TabsList>
-              <TabsTrigger value="watch" className="gap-2">
-                <Radio className="h-4 w-4" />
-                Watch
-              </TabsTrigger>
-              <TabsTrigger value="guide" className="gap-2">
-                <Grid3x3 className="h-4 w-4" />
-                TV Guide
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold text-white mb-8">Live TV</h1>
+
+      {/* Channel Selection */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {channels.map((channel) => (
+          <Button
+            key={channel.id}
+            variant={selectedChannelId === channel.id ? 'default' : 'outline'}
+            onClick={() => {
+              console.log('[LivePage] Channel selected:', channel.id);
+              setSelectedChannelId(channel.id);
+            }}
+            className={
+              selectedChannelId === channel.id
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'
+            }
+          >
+            {channel.name}
+          </Button>
+        ))}
+      </div>
+
+      {/* Live TV Player - only render when actor is ready */}
+      {selectedChannelId && actor && !actorFetching && (
+        <div className="mb-8">
+          <LiveTVSyncPlayer
+            channelId={selectedChannelId}
+            onProgramChange={handleProgramChange}
+          />
         </div>
+      )}
 
-        {mode === 'watch' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Channel List */}
-            <div className="lg:col-span-1">
-              <div className="gradient-card border-2 border-primary/30 rounded-lg p-4 space-y-2 max-h-[600px] overflow-y-auto">
-                <h2 className="text-lg font-semibold mb-4">Channels</h2>
-                {channels.map((channel) => (
-                  <button
-                    key={channel.id}
-                    onClick={() => setSelectedChannel(channel.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
-                      selectedChannel === channel.id
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                        : 'bg-black/40 hover:bg-black/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {channel.logo && (
-                        <img
-                          src={channel.logo.getDirectURL()}
-                          alt={channel.name}
-                          className="w-8 h-8 object-contain rounded"
-                        />
-                      )}
-                      <span className="font-medium">{channel.name}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Video Player */}
-            <div className="lg:col-span-3">
-              {selectedChannel ? (
-                <div className="space-y-4">
-                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                    <LiveTVSyncPlayer key={selectedChannel} channelId={selectedChannel} />
-                  </div>
-
-                  <div className="gradient-card border-2 border-primary/30 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h2 className="text-2xl font-bold mb-2">{selectedChannelData?.name}</h2>
-                        <p className="text-muted-foreground">Synchronized Live TV</p>
-                      </div>
-                      <Badge variant="destructive" className="bg-red-600">
-                        LIVE
-                      </Badge>
-                    </div>
-
-                    {(() => {
-                      const nextProgram = selectedChannelData ? getNextProgram(selectedChannelData, videos || []) : null;
-                      return nextProgram ? (
-                        <div className="mt-4 pt-4 border-t border-primary/20">
-                          <p className="text-sm text-muted-foreground mb-2">Up Next:</p>
-                          <p className="font-semibold">{nextProgram.title}</p>
-                        </div>
-                      ) : null;
-                    })()}
-                  </div>
-                </div>
-              ) : (
-                <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Radio className="h-16 w-16 mx-auto mb-4 text-primary animate-pulse" />
-                    <p className="text-xl font-semibold">Select a Channel</p>
-                    <p className="text-muted-foreground mt-2">Choose a channel from the list to start watching</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
+      {/* EPG Grid */}
+      {selectedChannelId && videos && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-white mb-4">TV Guide</h2>
           <LiveGuideGrid
             channels={channels}
-            videos={videos || []}
-            selectedChannel={selectedChannel}
+            videos={videos}
+            selectedChannel={selectedChannelId}
             onChannelSelect={(channelId) => {
-              setSelectedChannel(channelId);
-              setMode('watch');
+              console.log('[LivePage] EPG channel selected:', channelId);
+              setSelectedChannelId(channelId);
             }}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

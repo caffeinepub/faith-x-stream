@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useGetAllSeries, useGetAllAdMedia, useGetAllAdAssignments, useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
+import { useGetAllSeries, useGetAdMedia, useGetAdAssignments, useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
 import VideoPlayer from '../components/VideoPlayer';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -14,8 +14,8 @@ export default function EpisodePlayerPage() {
   });
   const navigate = useNavigate();
   const { data: allSeries, isLoading } = useGetAllSeries();
-  const { data: adMedia } = useGetAllAdMedia();
-  const { data: adAssignments } = useGetAllAdAssignments();
+  const { data: adMedia } = useGetAdMedia();
+  const { data: adAssignments } = useGetAdAssignments();
   const { identity } = useInternetIdentity();
   const { data: userProfile } = useGetCallerUserProfile();
   const { data: isAdmin } = useIsCallerAdmin();

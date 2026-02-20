@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 23,
+  "projectStateVersion": 29,
   "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
@@ -19,7 +19,8 @@
     "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
     "Updating videos fails with 'Failed to update'.",
     "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule.",
-    "After successful login, the UI still shows the login button instead of profile/admin links, preventing access to profile page and admin panel/dashboard."
+    "Login (both Internet Identity and email/password) is broken with a loading loop after requesting Live TV synchronization features - click login, shows loading, then reverts to login button without completing authentication.",
+    "Navigation bar and UI elements have unintended visual changes that need to be reverted to restore expected appearance."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -380,6 +381,182 @@
       "title": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
       "reqIds": [
         "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-livetvsyncplayer-component-and-its-backend-sync-endpoint-to-ensure-they-do-not-interfere-with-authentication-state-actor-initialization-or-session-management-verify-that-the-sync-polling-mechanism-does-not-block-or-reset-authentication-context",
+      "title": "Audit and fix the LiveTVSyncPlayer component and its backend sync endpoint to ensure they do not interfere with authentication state, actor initialization, or session management. Verify that the sync polling mechanism does not block or reset authentication context.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-useauth-context-to-ensure-authentication-state-updates-propagate-immediately-and-synchronously-to-all-consuming-components-header-protected-routes-when-either-internet-identity-or-email-password-login-completes-successfully-without-being-blocked-by-sync-operations-or-query-states",
+      "title": "Fix useAuth context to ensure authentication state updates propagate immediately and synchronously to all consuming components (Header, protected routes) when either Internet Identity or email/password login completes successfully, without being blocked by sync operations or query states.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-actor-initialization-completes-successfully-and-does-not-get-blocked-by-livetvsyncplayer-queries-or-other-concurrent-operations-actor-must-be-fully-initialized-before-header-attempts-to-render-authenticated-ui-or-profile-queries-execute",
+      "title": "Ensure actor initialization completes successfully and does not get blocked by LiveTVSyncPlayer queries or other concurrent operations. Actor must be fully initialized before Header attempts to render authenticated UI or profile queries execute.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-profile-query-dependencies-and-invalidation-to-ensure-user-profile-data-including-role-information-for-admin-premium-status-is-fetched-and-available-immediately-after-login-completes-triggering-header-re-render-with-correct-profile-dropdown-and-admin-link",
+      "title": "Fix profile query dependencies and invalidation to ensure user profile data (including role information for admin/premium status) is fetched and available immediately after login completes, triggering Header re-render with correct profile dropdown and admin link.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-review-and-fix-any-race-conditions-or-circular-dependencies-between-authentication-initialization-actor-creation-livetvsyncplayer-mounting-and-query-execution-that-could-cause-the-login-flow-to-fail-or-get-stuck-in-a-loading-state",
+      "title": "Review and fix any race conditions or circular dependencies between authentication initialization, actor creation, LiveTVSyncPlayer mounting, and query execution that could cause the login flow to fail or get stuck in a loading state.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-comprehensive-error-logging-and-debugging-output-to-the-authentication-flow-useauth-useinternetidentity-useactor-to-identify-exactly-where-the-login-process-is-failing-or-getting-stuck-including-timing-information-and-state-transitions",
+      "title": "Add comprehensive error logging and debugging output to the authentication flow (useAuth, useInternetIdentity, useActor) to identify exactly where the login process is failing or getting stuck, including timing information and state transitions.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-authentication-state-propagation-in-useauth-context-so-that-when-either-internet-identity-or-email-password-login-completes-successfully-the-isauthenticated-flag-and-user-state-update-immediately-and-synchronously-across-all-consuming-components-header-protected-routes-profile-queries-without-being-blocked-by-livetvsyncplayer-queries-sync-operations-or-other-concurrent-operations",
+      "title": "Fix the authentication state propagation in useAuth context so that when either Internet Identity or email/password login completes successfully, the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without being blocked by LiveTVSyncPlayer queries, sync operations, or other concurrent operations.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-actor-initialization-completes-successfully-and-is-fully-available-before-any-authenticated-ui-components-header-profile-queries-admin-checks-attempt-to-render-or-execute-queries-preventing-undefined-actor-errors-and-ensuring-the-backend-actor-is-ready-for-all-authenticated-operations",
+      "title": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors and ensuring the backend actor is ready for all authenticated operations.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-login-both-internet-identity-and-email-password-to-ensure-profile-data-including-role-information-admin-premium-status-is-fetched-and-available-triggering-header-re-render-with-correct-profile-dropdown-and-admin-link",
+      "title": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-or-refactor-any-livetvsyncplayer-initialization-mounting-or-polling-logic-that-interferes-with-authentication-flow-actor-creation-or-session-management-ensuring-that-the-sync-player-does-not-block-login-reset-authentication-context-or-create-circular-dependencies-with-auth-initialization",
+      "title": "Remove or refactor any LiveTVSyncPlayer initialization, mounting, or polling logic that interferes with authentication flow, actor creation, or session management, ensuring that the sync player does not block login, reset authentication context, or create circular dependencies with auth initialization.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-loginpage-navigation-and-redirect-logic-to-successfully-navigate-users-to-the-home-page-after-login-without-triggering-navigation-during-render-causing-redirect-loops-or-leaving-the-ui-in-a-stuck-loading-state",
+      "title": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving the UI in a stuck loading state.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-comprehensive-error-logging-and-debugging-output-throughout-the-authentication-flow-useauth-useinternetidentity-useactor-to-capture-timing-information-state-transitions-and-exact-failure-points-when-login-fails-or-gets-stuck-enabling-precise-diagnosis-of-authentication-issues",
+      "title": "Add comprehensive error logging and debugging output throughout the authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck, enabling precise diagnosis of authentication issues.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-revert-any-unintended-visual-changes-to-the-header-navigation-component-to-restore-its-expected-appearance-before-recent-updates-ensuring-navigation-links-spacing-styling-and-layout-match-the-original-design-without-breaking-responsive-behavior-or-accessibility",
+      "title": "Revert any unintended visual changes to the Header navigation component to restore its expected appearance before recent updates, ensuring navigation links, spacing, styling, and layout match the original design without breaking responsive behavior or accessibility.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-review-and-revert-any-unintended-ui-changes-across-all-pages-and-components-that-occurred-during-recent-updates-restoring-the-expected-visual-appearance-layout-and-styling-while-preserving-all-functional-improvements",
+      "title": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates, restoring the expected visual appearance, layout, and styling while preserving all functional improvements.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-authentication-state-propagation-in-useauth-context-so-that-after-successful-login-both-internet-identity-and-email-password-the-isauthenticated-flag-and-user-state-update-immediately-and-synchronously-across-all-consuming-components-header-protected-routes-profile-queries-without-race-conditions-or-delays",
+      "title": "Fix authentication state propagation in useAuth context so that after successful login (both Internet Identity and email/password), the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without race conditions or delays",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-actor-initialization-completes-successfully-and-is-fully-available-before-any-authenticated-ui-components-header-profile-queries-admin-checks-attempt-to-render-or-execute-queries-preventing-undefined-actor-errors",
+      "title": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-login-both-internet-identity-and-email-password-to-ensure-profile-data-including-role-information-admin-premium-status-is-fetched-and-available-triggering-header-re-render-with-correct-profile-dropdown-and-admin-link-2",
+      "title": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-or-refactor-any-livetvsyncplayer-initialization-mounting-or-polling-logic-that-interferes-with-authentication-flow-actor-creation-or-session-management-ensuring-sync-player-does-not-block-login-or-create-circular-dependencies-with-auth-initialization",
+      "title": "Remove or refactor any LiveTVSyncPlayer initialization, mounting, or polling logic that interferes with authentication flow, actor creation, or session management, ensuring sync player does not block login or create circular dependencies with auth initialization",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-loginpage-navigation-and-redirect-logic-to-successfully-navigate-users-to-the-home-page-after-login-without-triggering-navigation-during-render-causing-redirect-loops-or-leaving-ui-in-a-stuck-loading-state",
+      "title": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving UI in a stuck loading state",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-revert-unintended-visual-changes-to-header-navigation-component-to-restore-expected-appearance-before-recent-updates-ensuring-navigation-links-spacing-styling-and-layout-match-the-original-design-without-breaking-responsive-behavior-or-accessibility",
+      "title": "Revert unintended visual changes to Header navigation component to restore expected appearance before recent updates, ensuring navigation links, spacing, styling, and layout match the original design without breaking responsive behavior or accessibility",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-review-and-revert-any-unintended-ui-changes-across-all-pages-and-components-that-occurred-during-recent-updates-restoring-expected-visual-appearance-layout-and-styling-while-preserving-all-functional-improvements",
+      "title": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates, restoring expected visual appearance, layout, and styling while preserving all functional improvements",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-comprehensive-error-logging-and-debugging-output-throughout-authentication-flow-useauth-useinternetidentity-useactor-to-capture-timing-information-state-transitions-and-exact-failure-points-when-login-fails-or-gets-stuck",
+      "title": "Add comprehensive error logging and debugging output throughout authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck",
+      "reqIds": [
+        "REQ-78"
       ],
       "version": 1
     }

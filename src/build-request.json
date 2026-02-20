@@ -1,87 +1,184 @@
 {
   "kind": "build_request",
-  "title": "Fix Header UI state after Internet Identity login",
+  "title": "Fix authentication state propagation and revert unintended UI changes",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-53",
-      "text": "Update Header component to immediately re-render and reflect authenticated state when Internet Identity login completes, replacing the 'Login' button with profile dropdown and admin link for authenticated users",
+      "id": "REQ-71",
+      "text": "Fix authentication state propagation in useAuth context so that after successful login (both Internet Identity and email/password), the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without race conditions or delays",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
         ],
         "quotes": [
-          "internet identity which it logged in, because I noticed a difference, its just I can't access my profile/admin panel because the button \"login\" is still there instead of whatever is supposed to be there after logging in."
+          "You successfully logged in and are authenticated",
+          "But the Header still shows 'Login' instead of your profile/admin links",
+          "You can't access your admin panel or profile pages"
         ]
       },
       "acceptanceCriteria": [
-        "After successful Internet Identity login, Header shows profile dropdown instead of 'Login' button",
-        "Admin link appears in Header for admin users after Internet Identity login",
-        "Header updates without requiring page reload or manual navigation",
-        "Profile and admin panel become accessible immediately after login completes"
+        "After successful login via Internet Identity, Header immediately shows profile dropdown and admin link instead of 'Login' button",
+        "After successful login via email/password, Header immediately shows profile dropdown and admin link instead of 'Login' button",
+        "Authentication state change triggers synchronous re-render of all consuming components",
+        "No delays or race conditions between login completion and UI update"
       ]
     },
     {
-      "id": "REQ-54",
-      "text": "Fix useInternetIdentity hook and useAuth context to synchronously propagate authentication state changes to all consuming components (including Header) when Internet Identity login succeeds",
+      "id": "REQ-72",
+      "text": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
+        ],
+        "quotes": [
+          "You can't access your admin panel or profile pages"
         ]
       },
       "acceptanceCriteria": [
-        "Authentication state updates propagate synchronously after Internet Identity login",
-        "All components consuming auth context (Header, protected routes) receive updated state immediately",
-        "isAuthenticated flag reflects true state without delay after successful login",
-        "No race conditions between auth state update and component re-renders"
+        "Actor is fully initialized before Header renders authenticated UI",
+        "Actor is fully initialized before profile queries execute",
+        "Actor is fully initialized before admin panel access checks run",
+        "No undefined actor errors occur during authentication flow"
       ]
     },
     {
-      "id": "REQ-55",
-      "text": "Invalidate and refetch user profile queries immediately after Internet Identity login completes to ensure profile data and role information (admin/premium status) are available for Header rendering and navigation guards",
+      "id": "REQ-73",
+      "text": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
+        ],
+        "quotes": [
+          "You can't access your admin panel or profile pages"
         ]
       },
       "acceptanceCriteria": [
-        "Profile query invalidation triggers immediately after Internet Identity authentication succeeds",
-        "User role data (admin status) is fetched and available before Header attempts to render role-specific UI",
-        "Query refetch completes before navigation or protected component rendering",
-        "No undefined or stale profile data causes incorrect UI states in Header"
+        "Profile queries are invalidated immediately after login completes",
+        "Profile data including admin/premium status is fetched before Header renders",
+        "Header receives fresh profile data including role information",
+        "Admin link appears in Header when user has admin role",
+        "Profile page is accessible immediately after login"
       ]
     },
     {
-      "id": "REQ-56",
-      "text": "Ensure actor initialization completes successfully after Internet Identity login before Header and other authenticated components attempt to render, preventing undefined actor errors in profile queries",
+      "id": "REQ-74",
+      "text": "Remove or refactor any LiveTVSyncPlayer initialization, mounting, or polling logic that interferes with authentication flow, actor creation, or session management, ensuring sync player does not block login or create circular dependencies with auth initialization",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
+        ],
+        "quotes": [
+          "Login (both Internet Identity and email/password) is broken with a loading loop after requesting Live TV synchronization features"
         ]
       },
       "acceptanceCriteria": [
-        "Actor instance is fully initialized with Internet Identity principal before profile queries execute",
-        "Header waits for actor availability before attempting to fetch user profile data",
-        "No 'actor is undefined' errors occur during post-login UI rendering",
-        "Protected routes and admin checks have valid actor instance available"
+        "LiveTVSyncPlayer does not interfere with login flow",
+        "LiveTVSyncPlayer does not block actor initialization",
+        "LiveTVSyncPlayer does not reset authentication context",
+        "No circular dependencies between LiveTVSyncPlayer and authentication",
+        "Login completes successfully without being stuck in loading state"
+      ]
+    },
+    {
+      "id": "REQ-75",
+      "text": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving UI in a stuck loading state",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Login (both Internet Identity and email/password) is broken with a loading loop"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After successful login, user is redirected to home page",
+        "Navigation occurs only in useEffect or event handlers, not during render",
+        "No redirect loops occur after login",
+        "UI does not get stuck in loading state after login",
+        "Redirect completes successfully for both Internet Identity and email/password login"
+      ]
+    },
+    {
+      "id": "REQ-76",
+      "text": "Revert unintended visual changes to Header navigation component to restore expected appearance before recent updates, ensuring navigation links, spacing, styling, and layout match the original design without breaking responsive behavior or accessibility",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "You mentioned 'my Navigation reverted back' - can you describe what specifically looks wrong?",
+          "I'm not telling you",
+          "Navigation appearance is still wrong: The Header/navigation never changed back"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Header navigation visual appearance matches state before recent authentication fixes",
+        "Navigation links spacing is restored to original",
+        "Navigation styling matches original design",
+        "Layout structure is restored to original",
+        "Responsive behavior works correctly on mobile and desktop",
+        "Accessibility features remain intact"
+      ]
+    },
+    {
+      "id": "REQ-77",
+      "text": "Review and revert any unintended UI changes across all pages and components that occurred during recent updates, restoring expected visual appearance, layout, and styling while preserving all functional improvements",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Navigation appearance is still wrong"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All pages maintain their original visual appearance",
+        "Layout and styling changes from recent updates are reverted where unintended",
+        "Functional improvements from recent updates are preserved",
+        "No visual regressions exist compared to state before recent authentication fixes"
+      ]
+    },
+    {
+      "id": "REQ-78",
+      "text": "Add comprehensive error logging and debugging output throughout authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Login (both Internet Identity and email/password) is broken with a loading loop"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Console logs show authentication state transitions",
+        "Console logs show timing information for each authentication step",
+        "Console logs identify exact failure points when login fails",
+        "Console logs show actor initialization status",
+        "Console logs show profile query execution status",
+        "Error messages are clear and actionable for debugging"
       ]
     }
   ],
   "constraints": [
-    "Do not modify useInternetIdentity.ts or useActor.ts (immutable paths)",
-    "Preserve existing email/password authentication flows",
-    "Keep Internet Identity login button on Login page functional",
-    "Maintain backward compatibility with existing authentication state consumers"
+    "Do not modify immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
+    "Maintain single-actor backend architecture in backend/main.mo",
+    "Preserve all existing functional features while fixing authentication state synchronization",
+    "Do not break existing LiveTVSyncPlayer functionality on LivePage when removing interference with auth flow"
   ],
   "nonGoals": [
-    "Changing the visual design or layout of Header component",
-    "Modifying backend authentication or access control logic",
+    "Changing the technology stack (React, Motoko, Tailwind)",
     "Adding new authentication methods beyond Internet Identity and email/password",
-    "Refactoring unrelated authentication flows"
+    "Redesigning the Header navigation layout or structure beyond reverting unintended changes",
+    "Refactoring LiveTVSyncPlayer implementation beyond removing auth interference",
+    "Adding new features or functionality beyond fixing authentication and UI appearance"
   ],
   "imageRequirements": {
     "required": [],

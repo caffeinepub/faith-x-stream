@@ -1,4 +1,4 @@
-import { useGetAllVideos, useGetAllSeries, useGetAllBrands, useGetAllAdMedia } from '../hooks/useQueries';
+import { useGetAllVideos, useGetAllSeries, useGetAllBrands, useGetAdMedia } from '../hooks/useQueries';
 import VideoCard from '../components/VideoCard';
 import SeriesCard from '../components/SeriesCard';
 import ClipsShortsFeed from '../components/ClipsShortsFeed';
@@ -19,7 +19,7 @@ export default function HomePage() {
   const { data: videos, isLoading: videosLoading } = useGetAllVideos();
   const { data: series, isLoading: seriesLoading } = useGetAllSeries();
   const { data: brands, isLoading: brandsLoading } = useGetAllBrands();
-  const { data: adMedia, isLoading: adsLoading } = useGetAllAdMedia();
+  const { data: adMedia, isLoading: adsLoading } = useGetAdMedia();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -292,86 +292,68 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Clips/Shorts Section */}
-      <section className="relative">
-        <div className="container px-4 md:px-8 mb-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-              <Film className="h-8 w-8 text-[#cc0000]" />
-              SHORTS
-            </h2>
-            <Link
-              to="/clips"
-              className="text-[#cc0000] hover:text-[#ff0000] font-semibold transition-colors duration-300 flex items-center gap-2"
-            >
-              View All
-              <ChevronRight className="h-5 w-5" />
-            </Link>
+      {/* Shorts Section */}
+      <div className="container px-4 md:px-8">
+        <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <Film className="h-8 w-8 text-[#cc0000]" />
+          Shorts
+        </h2>
+        <ClipsShortsFeed />
+      </div>
+
+      {/* Recommended Videos */}
+      {recommendedVideos.length > 0 && (
+        <div className="container px-4 md:px-8">
+          <h2 className="text-3xl font-bold mb-6">Recommended for You</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+            {recommendedVideos.map((video) => (
+              <VideoCard key={video.id} video={video} />
+            ))}
           </div>
         </div>
-        <ClipsShortsFeed />
-      </section>
+      )}
 
-      <div className="container px-4 md:px-8 space-y-12">
-        {recommendedVideos.length > 0 && (
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-white">
-              RECOMMENDED
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-              {recommendedVideos.map((video) => (
-                <VideoCard key={video.id} video={video} />
-              ))}
-            </div>
-          </section>
-        )}
+      {/* Recommended Series */}
+      {recommendedSeries.length > 0 && (
+        <div className="container px-4 md:px-8">
+          <h2 className="text-3xl font-bold mb-6">Popular Series</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+            {recommendedSeries.map((s) => (
+              <SeriesCard key={s.id} series={s} />
+            ))}
+          </div>
+        </div>
+      )}
 
-        {recommendedSeries.length > 0 && (
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-white">
-              POPULAR SERIES
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-              {recommendedSeries.map((s) => (
-                <SeriesCard key={s.id} series={s} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {featuredBrands.length > 0 && (
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-white flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-[#cc0000]" />
-              NETWORKS & BRANDS
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6">
-              {featuredBrands.map((brand) => (
-                <button
-                  key={brand.id}
-                  onClick={() => navigate({ to: '/networks/$brandId', params: { brandId: brand.id } })}
-                  className="group cursor-pointer rounded-lg overflow-hidden bg-[#1a0000] border-2 border-[#660000] hover:border-[#cc0000] transition-all duration-300"
-                >
-                  <div className="aspect-square relative bg-gradient-to-br from-[#330000] to-[#1a0000] flex items-center justify-center p-4">
-                    {brand.logo ? (
-                      <img
-                        src={brand.logo.getDirectURL()}
-                        alt={brand.name}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <Building2 className="h-16 w-16 text-[#660000]" />
-                    )}
-                  </div>
-                  <div className="p-3 bg-[#1a0000]">
-                    <h3 className="font-semibold text-sm text-white text-center truncate">{brand.name}</h3>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+      {/* Networks & Brands */}
+      {featuredBrands.length > 0 && (
+        <div className="container px-4 md:px-8">
+          <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+            <Building2 className="h-8 w-8 text-[#cc0000]" />
+            Networks & Brands
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+            {featuredBrands.map((brand) => (
+              <Link
+                key={brand.id}
+                to="/networks/$brandId"
+                params={{ brandId: brand.id }}
+                className="aspect-square rounded-lg bg-gradient-to-br from-[#1a0000] to-[#330000] border-2 border-[#660000] hover:border-[#cc0000] transition-all duration-300 flex items-center justify-center p-4 group"
+              >
+                {brand.logo ? (
+                  <img
+                    src={brand.logo.getDirectURL()}
+                    alt={brand.name}
+                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <span className="text-white text-center font-bold">{brand.name}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
