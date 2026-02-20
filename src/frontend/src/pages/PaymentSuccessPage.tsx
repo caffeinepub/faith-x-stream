@@ -10,28 +10,22 @@ export default function PaymentSuccessPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const search = useSearch({ from: '/payment-success' });
-  const sessionId = (search as any)?.session_id;
-  const getSessionStatus = useGetStripeSessionStatus();
+  const sessionId = (search as any)?.session_id || '';
+  const { data: sessionStatus, isLoading } = useGetStripeSessionStatus(sessionId);
 
   useEffect(() => {
-    if (sessionId) {
-      // Verify the session and update user profile
-      getSessionStatus.mutateAsync(sessionId).then((status) => {
-        if (status.__kind__ === 'completed') {
-          // Invalidate user profile to fetch updated premium status
-          queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-          toast.success('Welcome to Premium! Your subscription is now active.');
-        } else if (status.__kind__ === 'failed') {
-          toast.error('Payment verification failed. Please contact support.');
-        }
-      }).catch((error) => {
-        console.error('Session verification error:', error);
-        toast.error('Failed to verify payment. Please contact support.');
-      });
+    if (sessionStatus) {
+      if (sessionStatus.__kind__ === 'completed') {
+        // Invalidate user profile to fetch updated premium status
+        queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+        toast.success('Welcome to Premium! Your subscription is now active.');
+      } else if (sessionStatus.__kind__ === 'failed') {
+        toast.error('Payment verification failed. Please contact support.');
+      }
     }
-  }, [sessionId, getSessionStatus, queryClient]);
+  }, [sessionStatus, queryClient]);
 
-  if (getSessionStatus.isPending) {
+  if (isLoading) {
     return (
       <div className="container px-4 md:px-8 py-12 flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-6 max-w-md">

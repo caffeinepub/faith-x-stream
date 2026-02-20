@@ -191,21 +191,6 @@ export const RegularUserStatus = IDL.Variant({
   }),
   'failed' : IDL.Record({ 'error' : IDL.Text }),
 });
-export const LiveChannelState = IDL.Record({
-  'currentProgram' : IDL.Opt(ScheduledContent),
-  'isCommercialBreak' : IDL.Opt(IDL.Bool),
-  'currentProgramTitle' : IDL.Opt(IDL.Text),
-  'isProgramPlaying' : IDL.Opt(IDL.Bool),
-  'isLooping' : IDL.Opt(IDL.Bool),
-  'availableAsVOD' : IDL.Opt(IDL.Bool),
-  'currentTime' : IDL.Opt(IDL.Int),
-  'currentProgramStartTimestamp' : IDL.Opt(IDL.Int),
-  'programStartTime' : IDL.Opt(IDL.Int),
-  'channel' : LiveChannel,
-  'currentProgramId' : IDL.Opt(IDL.Text),
-  'isContentAvailable' : IDL.Opt(IDL.Bool),
-  'playbackPosition' : IDL.Opt(IDL.Int),
-});
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
     'userPrincipal' : IDL.Opt(IDL.Text),
@@ -313,6 +298,7 @@ export const idlService = IDL.Service({
   'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
   'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
   'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getChannelsByBrand' : IDL.Func(
       [IDL.Text],
@@ -328,11 +314,6 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
-  'getDynamicLiveChannelState' : IDL.Func(
-      [IDL.Text],
-      [LiveChannelState],
-      ['query'],
-    ),
   'getEligibleVideosForLive' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
   'getLiveChannels' : IDL.Func([], [IDL.Vec(LiveChannel)], ['query']),
   'getLiveChannelsByBrand' : IDL.Func(
@@ -342,6 +323,11 @@ export const idlService = IDL.Service({
     ),
   'getSeriesById' : IDL.Func([IDL.Text], [IDL.Opt(TVSeries)], ['query']),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
   'getVideoById' : IDL.Func([IDL.Text], [IDL.Opt(VideoContent)], ['query']),
   'getWatchHistory' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   'incrementAdImpressions' : IDL.Func([], [], []),
@@ -351,6 +337,7 @@ export const idlService = IDL.Service({
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'login' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'register' : IDL.Func([RegisterInput], [], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'search' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),
   'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
   'transform' : IDL.Func(
@@ -553,21 +540,6 @@ export const idlFactory = ({ IDL }) => {
     }),
     'failed' : IDL.Record({ 'error' : IDL.Text }),
   });
-  const LiveChannelState = IDL.Record({
-    'currentProgram' : IDL.Opt(ScheduledContent),
-    'isCommercialBreak' : IDL.Opt(IDL.Bool),
-    'currentProgramTitle' : IDL.Opt(IDL.Text),
-    'isProgramPlaying' : IDL.Opt(IDL.Bool),
-    'isLooping' : IDL.Opt(IDL.Bool),
-    'availableAsVOD' : IDL.Opt(IDL.Bool),
-    'currentTime' : IDL.Opt(IDL.Int),
-    'currentProgramStartTimestamp' : IDL.Opt(IDL.Int),
-    'programStartTime' : IDL.Opt(IDL.Int),
-    'channel' : LiveChannel,
-    'currentProgramId' : IDL.Opt(IDL.Text),
-    'isContentAvailable' : IDL.Opt(IDL.Bool),
-    'playbackPosition' : IDL.Opt(IDL.Int),
-  });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
       'userPrincipal' : IDL.Opt(IDL.Text),
@@ -672,6 +644,7 @@ export const idlFactory = ({ IDL }) => {
     'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
     'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
     'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getChannelsByBrand' : IDL.Func(
         [IDL.Text],
@@ -687,11 +660,6 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getDynamicLiveChannelState' : IDL.Func(
-        [IDL.Text],
-        [LiveChannelState],
-        ['query'],
-      ),
     'getEligibleVideosForLive' : IDL.Func(
         [],
         [IDL.Vec(VideoContent)],
@@ -705,6 +673,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getSeriesById' : IDL.Func([IDL.Text], [IDL.Opt(TVSeries)], ['query']),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
     'getVideoById' : IDL.Func([IDL.Text], [IDL.Opt(VideoContent)], ['query']),
     'getWatchHistory' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'incrementAdImpressions' : IDL.Func([], [], []),
@@ -714,6 +687,7 @@ export const idlFactory = ({ IDL }) => {
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'login' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'register' : IDL.Func([RegisterInput], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'search' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),
     'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
     'transform' : IDL.Func(

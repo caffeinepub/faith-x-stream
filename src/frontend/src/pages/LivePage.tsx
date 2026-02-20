@@ -1,49 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useGetAllLiveChannels, useGetAllVideos } from '../hooks/useQueries';
-import LiveTVSyncPlayer from '../components/LiveTVSyncPlayer';
+import VideoPlayer from '../components/VideoPlayer';
 import LiveGuideGrid from '../components/live/LiveGuideGrid';
 import { Button } from '../components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useActor } from '../hooks/useActor';
+import { getCurrentProgramWithOffset } from '../utils/epg';
 
 export default function LivePage() {
-  const { authStatus } = useAuth();
-  const { actor, isFetching: actorFetching } = useActor();
   const { data: channels, isLoading: channelsLoading } = useGetAllLiveChannels();
   const { data: videos, isLoading: videosLoading } = useGetAllVideos();
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
-  const [currentProgramId, setCurrentProgramId] = useState<string | null>(null);
-
-  console.log('[LivePage] Render state:', { authStatus, actorFetching, actor: !!actor, channelsLoading, videosLoading });
 
   // Auto-select first channel when channels load
   useEffect(() => {
     if (channels && channels.length > 0 && !selectedChannelId) {
-      console.log('[LivePage] Auto-selecting first channel:', channels[0].id);
       setSelectedChannelId(channels[0].id);
     }
   }, [channels, selectedChannelId]);
-
-  const handleProgramChange = (programId: string | null) => {
-    console.log('[LivePage] Program changed:', programId);
-    setCurrentProgramId(programId);
-  };
-
-  // Show loading while auth is initializing or actor is not ready
-  if (authStatus === 'initializing' || actorFetching || !actor) {
-    console.log('[LivePage] Waiting for initialization...');
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-            <p className="text-white">Initializing...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (channelsLoading || videosLoading) {
     return (
@@ -67,6 +40,9 @@ export default function LivePage() {
     );
   }
 
+  const selectedChannel = channels.find(ch => ch.id === selectedChannelId);
+  const currentProgramInfo = selectedChannel ? getCurrentProgramWithOffset(selectedChannel, videos || []) : null;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-white mb-8">Live TV</h1>
@@ -77,10 +53,7 @@ export default function LivePage() {
           <Button
             key={channel.id}
             variant={selectedChannelId === channel.id ? 'default' : 'outline'}
-            onClick={() => {
-              console.log('[LivePage] Channel selected:', channel.id);
-              setSelectedChannelId(channel.id);
-            }}
+            onClick={() => setSelectedChannelId(channel.id)}
             className={
               selectedChannelId === channel.id
                 ? 'bg-red-600 hover:bg-red-700'
@@ -92,12 +65,16 @@ export default function LivePage() {
         ))}
       </div>
 
-      {/* Live TV Player - only render when actor is ready */}
-      {selectedChannelId && actor && !actorFetching && (
+      {/* Live TV Player */}
+      {selectedChannelId && currentProgramInfo && currentProgramInfo.video && (
         <div className="mb-8">
-          <LiveTVSyncPlayer
-            channelId={selectedChannelId}
-            onProgramChange={handleProgramChange}
+          <VideoPlayer
+            videoUrl={currentProgramInfo.video.videoUrl.getDirectURL()}
+            title={currentProgramInfo.video.title}
+            isLiveTV={true}
+            liveSeekSeconds={currentProgramInfo.offsetSeconds}
+            liveSeekToken={Date.now()}
+            liveAdLocations={currentProgramInfo.schedule?.adLocations || []}
           />
         </div>
       )}
@@ -110,10 +87,7 @@ export default function LivePage() {
             channels={channels}
             videos={videos}
             selectedChannel={selectedChannelId}
-            onChannelSelect={(channelId) => {
-              console.log('[LivePage] EPG channel selected:', channelId);
-              setSelectedChannelId(channelId);
-            }}
+            onChannelSelect={(channelId) => setSelectedChannelId(channelId)}
           />
         </div>
       )}

@@ -50,15 +50,7 @@ export default function UpgradePage() {
         quantity: BigInt(1),
       };
 
-      const baseUrl = `${window.location.protocol}//${window.location.host}`;
-      const successUrl = `${baseUrl}/payment-success`;
-      const cancelUrl = `${baseUrl}/payment-failure`;
-
-      const session = await createCheckout.mutateAsync({
-        items: [premiumItem],
-        successUrl,
-        cancelUrl,
-      });
+      const session = await createCheckout.mutateAsync([premiumItem]);
 
       if (!session?.url) {
         throw new Error('Stripe session missing url');
@@ -151,34 +143,33 @@ export default function UpgradePage() {
                 {features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <feature.icon className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
-                    <span className="text-white">{feature.text}</span>
+                    <span className="text-white/90">{feature.text}</span>
                   </li>
                 ))}
               </ul>
               <Button
                 onClick={handleUpgrade}
-                disabled={isProcessing || !isStripeConfigured}
-                className="w-full bg-gradient-to-r from-[#cc0000] to-[#ff0000] hover:from-[#990000] hover:to-[#cc0000] text-white font-bold py-6 text-lg transition-all duration-300"
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-[#cc0000] to-[#ff0000] hover:from-[#ff0000] hover:to-[#cc0000] text-white font-semibold py-6 text-lg"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <Crown className="h-5 w-5 mr-2" />
+                    <Crown className="mr-2 h-5 w-5" />
                     Upgrade Now
                   </>
                 )}
               </Button>
-              {!isStripeConfigured && (
-                <p className="text-sm text-center text-yellow-500">
-                  Payment system is being configured. Please check back soon.
-                </p>
-              )}
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mt-12 text-center text-white/60 text-sm">
+          <p>Cancel anytime. No hidden fees. Secure payment processing.</p>
         </div>
       </div>
     </div>

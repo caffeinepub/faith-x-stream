@@ -1,16 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix authentication state propagation so login works immediately, and revert unintended UI changes to restore original navigation appearance.
+**Goal:** Restore Internet Identity login functionality alongside existing email/password authentication, ensuring the full authentication flow updates UI components properly.
 
 **Planned changes:**
-- Fix authentication state synchronization in useAuth context to update isAuthenticated and user state immediately after successful login (both Internet Identity and email/password)
-- Ensure actor initialization completes before authenticated UI components render or execute queries
-- Invalidate and refetch user profile queries immediately after login to load role information (admin/premium status)
-- Remove or refactor LiveTVSyncPlayer initialization logic that interferes with authentication flow
-- Fix LoginPage navigation to redirect users to home page after login without causing loops or stuck loading states
-- Revert unintended visual changes to Header navigation component to restore original appearance
-- Review and revert any unintended UI changes across all pages while preserving functional improvements
-- Add comprehensive error logging throughout authentication flow for debugging
+- Add Internet Identity login button back to LoginPage UI alongside email/password form
+- Wire II button to trigger useInternetIdentity authentication flow
+- Ensure successful II login immediately updates authentication state in useAuth context
+- Initialize backend actor immediately after successful II login before profile queries
+- Invalidate and refetch user profile queries after II login to load role information
+- Implement proper navigation to home page after successful II login without redirect loops
 
-**User-visible outcome:** After logging in (via Internet Identity or email/password), users immediately see their profile dropdown and admin link in the Header (if admin), can access their profile and admin pages without delays, and the navigation appearance matches the original design before recent updates.
+**User-visible outcome:** Users can log in using either Internet Identity or email/password. After successful II login, the Header immediately displays the profile dropdown and admin link, and users are redirected to the home page ready to use authenticated features.

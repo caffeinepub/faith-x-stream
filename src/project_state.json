@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 29,
-  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections.",
+  "projectStateVersion": 33,
+  "summary": "Video streaming/content platform app with admin dashboard; address autoplay, video management, and UI stability; evolve UX toward Pluto TV-style FAST/live channels with guide browsing; add Live TV-specific playback controls (disable seeking forward) and scheduled unskippable ads; separate Live TV eligibility and standalone VOD availability via two independent toggles on content upload/edit (Movies, Podcasts, TV Shows); auto-generate clips/short-form content from uploaded videos with same name but different captions; keep Movies and Podcasts as separate admin sections. Rolling back LiveTVSyncPlayer to restore authentication and navigation stability.",
   "architectural_notes": [
     "Admin dashboard should be organized by content type with dedicated upload flows (Movies, TV Shows, Podcasts, Clips, Live TV).",
     "Video entities require a content-type field (e.g., movie/film/podcast/etc.) to drive admin UI and update/edit logic.",
@@ -18,9 +18,8 @@
     "Autoplay is freezing and not playing.",
     "UI is bugged in Live, Originals, Profile/MyProfile, and Admin Panel Dashboard.",
     "Updating videos fails with 'Failed to update'.",
-    "Live TV (VOD-scheduled) channels restart the VOD from the beginning after a few seconds on all channels instead of continuing linearly according to the schedule.",
-    "Login (both Internet Identity and email/password) is broken with a loading loop after requesting Live TV synchronization features - click login, shows loading, then reverts to login button without completing authentication.",
-    "Navigation bar and UI elements have unintended visual changes that need to be reverted to restore expected appearance."
+    "Navigation bar and UI elements have unintended visual changes that need to be reverted to restore expected appearance.",
+    "Internet Identity login button is missing from LoginPage after rollback to version 50."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -444,17 +443,19 @@
       "id": "feature-ensure-actor-initialization-completes-successfully-and-is-fully-available-before-any-authenticated-ui-components-header-profile-queries-admin-checks-attempt-to-render-or-execute-queries-preventing-undefined-actor-errors-and-ensuring-the-backend-actor-is-ready-for-all-authenticated-operations",
       "title": "Ensure actor initialization completes successfully and is fully available before any authenticated UI components (Header, profile queries, admin checks) attempt to render or execute queries, preventing undefined actor errors and ensuring the backend actor is ready for all authenticated operations.",
       "reqIds": [
-        "REQ-64"
+        "REQ-64",
+        "REQ-83"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-login-both-internet-identity-and-email-password-to-ensure-profile-data-including-role-information-admin-premium-status-is-fetched-and-available-triggering-header-re-render-with-correct-profile-dropdown-and-admin-link",
       "title": "Invalidate and refetch user profile queries immediately after successful login (both Internet Identity and email/password) to ensure profile data including role information (admin/premium status) is fetched and available, triggering Header re-render with correct profile dropdown and admin link.",
       "reqIds": [
-        "REQ-65"
+        "REQ-65",
+        "REQ-84"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-remove-or-refactor-any-livetvsyncplayer-initialization-mounting-or-polling-logic-that-interferes-with-authentication-flow-actor-creation-or-session-management-ensuring-that-the-sync-player-does-not-block-login-reset-authentication-context-or-create-circular-dependencies-with-auth-initialization",
@@ -468,9 +469,10 @@
       "id": "feature-fix-loginpage-navigation-and-redirect-logic-to-successfully-navigate-users-to-the-home-page-after-login-without-triggering-navigation-during-render-causing-redirect-loops-or-leaving-the-ui-in-a-stuck-loading-state",
       "title": "Fix LoginPage navigation and redirect logic to successfully navigate users to the home page after login without triggering navigation during render, causing redirect loops, or leaving the UI in a stuck loading state.",
       "reqIds": [
-        "REQ-67"
+        "REQ-67",
+        "REQ-85"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-add-comprehensive-error-logging-and-debugging-output-throughout-the-authentication-flow-useauth-useinternetidentity-useactor-to-capture-timing-information-state-transitions-and-exact-failure-points-when-login-fails-or-gets-stuck-enabling-precise-diagnosis-of-authentication-issues",
@@ -557,6 +559,86 @@
       "title": "Add comprehensive error logging and debugging output throughout authentication flow (useAuth, useInternetIdentity, useActor) to capture timing information, state transitions, and exact failure points when login fails or gets stuck",
       "reqIds": [
         "REQ-78"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-all-livetvsyncplayer-component-code-and-references-from-the-frontend-codebase-including-the-component-file-itself-frontend-src-components-livetvsyncplayer-tsx-and-all-imports-usages-in-livepage-and-other-components",
+      "title": "Remove all LiveTVSyncPlayer component code and references from the frontend codebase, including the component file itself (frontend/src/components/LiveTVSyncPlayer.tsx) and all imports/usages in LivePage and other components.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-livepage-to-use-the-standard-videoplayer-component-for-live-tv-channel-playback-instead-of-livetvsyncplayer-restoring-the-playback-implementation-that-existed-before-the-sync-player-was-introduced-while-preserving-all-existing-live-tv-features-epg-grid-channel-selection-channel-surfing-ad-insertion-controls-seeking-restrictions",
+      "title": "Update LivePage to use the standard VideoPlayer component for Live TV channel playback instead of LiveTVSyncPlayer, restoring the playback implementation that existed before the sync player was introduced while preserving all existing Live TV features (EPG grid, channel selection, channel surfing, ad insertion controls, seeking restrictions).",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-useauth-context-authentication-state-propagation-so-that-after-successful-login-both-internet-identity-and-email-password-the-isauthenticated-flag-and-user-state-update-immediately-and-synchronously-across-all-consuming-components-header-protected-routes-profile-queries-without-race-conditions-delays-or-interference-from-query-operations",
+      "title": "Fix useAuth context authentication state propagation so that after successful login (both Internet Identity and email/password), the isAuthenticated flag and user state update immediately and synchronously across all consuming components (Header, protected routes, profile queries) without race conditions, delays, or interference from query operations.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-header-navigation-component-to-its-expected-visual-appearance-before-recent-updates-reverting-any-unintended-styling-spacing-or-layout-changes-while-ensuring-navigation-links-responsive-behavior-and-accessibility-remain-functional",
+      "title": "Restore Header navigation component to its expected visual appearance before recent updates, reverting any unintended styling, spacing, or layout changes while ensuring navigation links, responsive behavior, and accessibility remain functional.",
+      "reqIds": [
+        "REQ-86"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-review-and-revert-any-unintended-ui-changes-across-all-pages-and-components-homepage-livepage-originalspage-profilepage-adminpage-and-others-that-occurred-during-recent-updates-restoring-the-expected-visual-appearance-layout-and-styling-while-preserving-all-functional-improvements",
+      "title": "Review and revert any unintended UI changes across all pages and components (HomePage, LivePage, OriginalsPage, ProfilePage, AdminPage, and others) that occurred during recent updates, restoring the expected visual appearance, layout, and styling while preserving all functional improvements.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-internet-identity-login-button-back-to-loginpage-ui-alongside-the-existing-email-password-login-form-ensuring-both-authentication-methods-are-visible-and-accessible-to-users",
+      "title": "Add Internet Identity login button back to LoginPage UI alongside the existing email/password login form, ensuring both authentication methods are visible and accessible to users",
+      "reqIds": [
+        "REQ-88"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-internet-identity-login-button-to-trigger-the-useinternetidentity-authentication-flow-opening-the-internet-identity-authentication-window-when-clicked",
+      "title": "Wire the Internet Identity login button to trigger the useInternetIdentity authentication flow, opening the Internet Identity authentication window when clicked",
+      "reqIds": [
+        "REQ-89"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-trigger-actor-initialization-immediately-after-successful-internet-identity-login-completes-ensuring-the-backend-actor-is-created-with-the-authenticated-identity-before-any-profile-queries-execute",
+      "title": "Trigger actor initialization immediately after successful Internet Identity login completes, ensuring the backend actor is created with the authenticated identity before any profile queries execute",
+      "reqIds": [
+        "REQ-91"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-invalidate-and-refetch-user-profile-queries-immediately-after-successful-internet-identity-login-to-load-admin-premium-role-information-triggering-header-component-to-re-render-with-profile-dropdown-and-admin-link",
+      "title": "Invalidate and refetch user profile queries immediately after successful Internet Identity login to load admin/premium role information, triggering Header component to re-render with profile dropdown and admin link",
+      "reqIds": [
+        "REQ-92"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-proper-navigation-after-successful-internet-identity-login-redirecting-users-to-the-home-page-without-triggering-navigation-during-render-or-causing-redirect-loops",
+      "title": "Implement proper navigation after successful Internet Identity login, redirecting users to the home page without triggering navigation during render or causing redirect loops",
+      "reqIds": [
+        "REQ-93"
       ],
       "version": 1
     }
@@ -715,48 +797,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-38",
-      "summary": "Implement synchronized Live TV playback so all viewers watching the same channel see the exact same moment at the same time (join at current playback position, not from start)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-39",
-      "summary": "Enable automatic program looping when schedule ends (loop back to start unless additional programs are added to continue)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-40",
-      "summary": "Build enhanced Live TV playback system on top of existing architecture with server-side time tracking for frame-accurate synchronization across all clients",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-41",
-      "summary": "Implement server-side time tracking in the backend to calculate the exact playback position for each Live TV channel based on the current server time and the channel's schedule. For each channel, compute where in the current program playback should be (elapsed time since program start) and return this computed position along with current program metadata when frontend clients request channel state.",
-      "reqIds": [
-        "REQ-38"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-42",
-      "summary": "Add a backend endpoint or extend existing channel queries to return real-time synchronization data including: current program ID, current program start timestamp, server current time, computed playback position within the program, and whether the program is looping. Ensure this data is calculated fresh on each request to maintain accuracy.",
-      "reqIds": [
-        "REQ-39"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-43",
-      "summary": "Implement automatic program looping logic in the backend schedule calculation: when the current time exceeds all scheduled programs for a channel, loop back to the first program and calculate position within the looped playback. If new programs are added to the schedule, continue sequentially instead of looping.",
-      "reqIds": [
-        "REQ-40"
-      ],
-      "status": "pending"
-    },
-    {
       "id": "AR-44",
       "summary": "Fix UI state synchronization after login so authenticated users see profile/admin links instead of login button in navigation and can access profile and admin panel immediately after successful login",
       "reqIds": [],
@@ -767,6 +807,34 @@
       "summary": "Fix LoginPage redirect logic to navigate users to home page after successful login without causing navigation during render or redirect loops",
       "reqIds": [
         "REQ-51"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Rebuild LiveTVSyncPlayer with authentication safety: implement server-side synchronization for Live TV that does not interfere with auth state, actor initialization, or session management",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Remove backend sync endpoint and server-side synchronization logic that was added for LiveTVSyncPlayer, including any methods like getSyncState, getCurrentLivePosition, or similar sync-related functions in backend/main.mo.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Restore Internet Identity login button to LoginPage alongside email/password form and ensure full II authentication flow works properly (button triggers II window, successful login updates Header with profile/admin links, navigation works after login)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-55",
+      "summary": "Ensure successful Internet Identity login immediately updates authentication state in useAuth context, setting isAuthenticated to true and populating user data synchronously across all consuming components",
+      "reqIds": [
+        "REQ-90"
       ],
       "status": "pending"
     }

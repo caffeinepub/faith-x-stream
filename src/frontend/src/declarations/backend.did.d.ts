@@ -99,21 +99,6 @@ export interface LiveChannel {
   'isOriginal' : boolean,
   'schedule' : Array<ScheduledContent>,
 }
-export interface LiveChannelState {
-  'currentProgram' : [] | [ScheduledContent],
-  'isCommercialBreak' : [] | [boolean],
-  'currentProgramTitle' : [] | [string],
-  'isProgramPlaying' : [] | [boolean],
-  'isLooping' : [] | [boolean],
-  'availableAsVOD' : [] | [boolean],
-  'currentTime' : [] | [bigint],
-  'currentProgramStartTimestamp' : [] | [bigint],
-  'programStartTime' : [] | [bigint],
-  'channel' : LiveChannel,
-  'currentProgramId' : [] | [string],
-  'isContentAvailable' : [] | [boolean],
-  'playbackPosition' : [] | [bigint],
-}
 export type LoginStatus = { 'admin' : UserProfile } |
   { 'regularUser' : UserProfile } |
   { 'anonymous' : null };
@@ -283,6 +268,7 @@ export interface _SERVICE {
   'getBrandById' : ActorMethod<[string], [] | [Brand]>,
   'getCallerLoginStatus' : ActorMethod<[], LoginStatus>,
   'getCallerRegularUserStatus' : ActorMethod<[], RegularUserStatus>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getChannelsByBrand' : ActorMethod<
     [string],
@@ -295,12 +281,12 @@ export interface _SERVICE {
       'liveChannels' : Array<string>,
     }
   >,
-  'getDynamicLiveChannelState' : ActorMethod<[string], LiveChannelState>,
   'getEligibleVideosForLive' : ActorMethod<[], Array<VideoContent>>,
   'getLiveChannels' : ActorMethod<[], Array<LiveChannel>>,
   'getLiveChannelsByBrand' : ActorMethod<[string], Array<LiveChannel>>,
   'getSeriesById' : ActorMethod<[string], [] | [TVSeries]>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVideoById' : ActorMethod<[string], [] | [VideoContent]>,
   'getWatchHistory' : ActorMethod<[], Array<string>>,
   'incrementAdImpressions' : ActorMethod<[], undefined>,
@@ -310,6 +296,7 @@ export interface _SERVICE {
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'login' : ActorMethod<[string, string], boolean>,
   'register' : ActorMethod<[RegisterInput], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'search' : ActorMethod<[string], Array<SearchResult>>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,

@@ -10,7 +10,6 @@ import type {
   Analytics,
   UserProfile,
   SearchResult,
-  LiveChannelState,
   RegisterInput,
   StripeConfiguration,
   StripeSessionStatus,
@@ -26,9 +25,7 @@ export function useGetCallerUserProfile() {
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      console.log('[useGetCallerUserProfile] Fetching profile...');
       const loginStatus = await actor.getCallerLoginStatus();
-      console.log('[useGetCallerUserProfile] Login status:', loginStatus);
       
       if (loginStatus.__kind__ === 'regularUser') {
         return loginStatus.regularUser;
@@ -40,13 +37,6 @@ export function useGetCallerUserProfile() {
     enabled: !!actor && !actorFetching,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  console.log('[useGetCallerUserProfile] Query state:', { 
-    isLoading: query.isLoading, 
-    isFetched: query.isFetched, 
-    data: !!query.data,
-    actorFetching 
   });
 
   // Return custom state that properly reflects actor dependency
@@ -64,20 +54,11 @@ export function useIsCallerAdmin() {
     queryKey: ['isAdmin'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      console.log('[useIsCallerAdmin] Checking admin status...');
-      const result = await actor.isCallerAdmin();
-      console.log('[useIsCallerAdmin] Admin status:', result);
-      return result;
+      return actor.isCallerAdmin();
     },
     enabled: !!actor && !actorFetching,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  console.log('[useIsCallerAdmin] Query state:', { 
-    isLoading: query.isLoading, 
-    data: query.data,
-    actorFetching 
   });
 
   return {
@@ -305,21 +286,6 @@ export function useGetAllLiveChannels() {
       return actor.getLiveChannels();
     },
     enabled: !!actor && !actorFetching,
-  });
-}
-
-export function useGetDynamicLiveChannelState(channelId: string) {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  return useQuery<LiveChannelState>({
-    queryKey: ['liveChannelState', channelId],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      console.log('[useGetDynamicLiveChannelState] Fetching state for channel:', channelId);
-      return actor.getDynamicLiveChannelState(channelId);
-    },
-    enabled: !!actor && !actorFetching && !!channelId,
-    refetchInterval: 10000, // Refetch every 10 seconds
   });
 }
 
@@ -688,8 +654,11 @@ export function useCreateCheckoutSession() {
   const { actor } = useActor();
 
   return useMutation({
-    mutationFn: async ({ items, successUrl, cancelUrl }: { items: ShoppingItem[]; successUrl: string; cancelUrl: string }) => {
+    mutationFn: async (items: ShoppingItem[]) => {
       if (!actor) throw new Error('Actor not available');
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      const successUrl = `${baseUrl}/payment-success`;
+      const cancelUrl = `${baseUrl}/payment-failure`;
       const result = await actor.createCheckoutSession(items, successUrl, cancelUrl);
       const session = JSON.parse(result) as { id: string; url: string };
       if (!session?.url) {
@@ -700,13 +669,15 @@ export function useCreateCheckoutSession() {
   });
 }
 
-export function useGetStripeSessionStatus() {
-  const { actor } = useActor();
+export function useGetStripeSessionStatus(sessionId: string) {
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useMutation({
-    mutationFn: async (sessionId: string): Promise<StripeSessionStatus> => {
+  return useQuery<StripeSessionStatus>({
+    queryKey: ['stripeSessionStatus', sessionId],
+    queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getStripeSessionStatus(sessionId);
     },
+    enabled: !!actor && !actorFetching && !!sessionId,
   });
 }

@@ -1,160 +1,158 @@
 import { Link } from '@tanstack/react-router';
+import { Search, User, LogOut, Shield } from 'lucide-react';
 import { Button } from './ui/button';
-import { useAuth } from '../hooks/useAuth';
-import { useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
+import { Input } from './ui/input';
+import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { User, LogOut, Settings, Loader2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 
 export default function Header() {
-  const { isAuthenticated, logout, authStatus } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
   const { actor, isFetching: actorFetching } = useActor();
-  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  
+  // Only fetch profile and admin status when authenticated and actor is ready
+  const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
 
-  console.log('[Header] Render state:', { 
-    isAuthenticated, 
-    authStatus, 
-    actorFetching, 
-    actor: !!actor, 
-    profileLoading, 
-    profileFetched, 
-    userProfile: !!userProfile,
-    isAdmin,
-    adminLoading
-  });
-
-  const handleLogout = async () => {
-    console.log('[Header] Logout clicked');
-    try {
-      await logout();
-    } catch (error) {
-      console.error('[Header] Logout error:', error);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate({ to: '/search', search: { q: searchQuery } });
     }
   };
 
-  // Show loading spinner while initializing or actor is not ready
-  const isInitializing = authStatus === 'initializing' || actorFetching;
-  
-  // When authenticated, wait for actor and profile to be ready
-  const isLoadingAuthData = isAuthenticated && (!actor || profileLoading);
+  const handleLogout = async () => {
+    await logout();
+    navigate({ to: '/' });
+  };
 
-  console.log('[Header] Display logic:', { isInitializing, isLoadingAuthData });
+  // Show loading state while actor is initializing
+  const isInitializing = actorFetching || !actor;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-red-900/20 bg-gradient-to-r from-black via-red-950/30 to-black backdrop-blur supports-[backdrop-filter]:bg-black/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center space-x-2">
-          <img src="/assets/4-removebg-preview.png" alt="FAITH X-Stream" className="h-10 w-auto" />
-          <span className="text-xl font-bold text-white">FAITH X-Stream</span>
-        </Link>
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="/assets/4-removebg-preview.png" alt="FAITH X-Stream" className="h-10 w-auto" />
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link
+              to="/"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Home
+            </Link>
+            <Link
+              to="/movies"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Movies
+            </Link>
+            <Link
+              to="/tv-shows"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              TV Shows
+            </Link>
+            <Link
+              to="/originals"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Originals
+            </Link>
+            <Link
+              to="/live"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Live TV
+            </Link>
+            <Link
+              to="/clips"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Clips
+            </Link>
+            <Link
+              to="/networks"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
+            >
+              Networks
+            </Link>
+          </nav>
+        </div>
 
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link
-            to="/"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Home
-          </Link>
-          <Link
-            to="/originals"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Originals
-          </Link>
-          <Link
-            to="/movies"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Movies
-          </Link>
-          <Link
-            to="/tv-shows"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            TV Shows
-          </Link>
-          <Link
-            to="/clips"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Clips
-          </Link>
-          <Link
-            to="/live"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Live TV
-          </Link>
-          <Link
-            to="/networks"
-            className="text-sm font-medium text-gray-300 transition-colors hover:text-red-500"
-          >
-            Networks
-          </Link>
-        </nav>
+        <div className="flex items-center gap-4">
+          <form onSubmit={handleSearch} className="hidden md:flex items-center">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="pl-9 w-[200px] lg:w-[300px] bg-black/50 border-red-900/30 text-white placeholder:text-gray-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
 
-        <div className="flex items-center space-x-4">
-          {isInitializing || isLoadingAuthData ? (
-            <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          ) : isAuthenticated && actor ? (
-            <>
-              {!adminLoading && isAdmin && (
-                <Link to="/admin">
-                  <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Admin
-                  </Button>
-                </Link>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-white hover:text-red-500">
-                    <User className="h-5 w-5 mr-2" />
-                    {userProfile?.name || 'User'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-black border-red-900">
-                  <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-red-900/20" />
-                  <DropdownMenuItem asChild className="text-white hover:bg-red-900/20 cursor-pointer">
-                    <Link to="/profile">
-                      <User className="h-4 w-4 mr-2" />
-                      Profile
+          {isAuthenticated && !isInitializing ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-red-900/20">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-black/95 border-red-900/30">
+                {!profileLoading && userProfile && (
+                  <>
+                    <div className="px-2 py-1.5 text-sm text-gray-400">
+                      {userProfile.name}
+                    </div>
+                    <DropdownMenuSeparator className="bg-red-900/30" />
+                  </>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer text-white hover:bg-red-900/20">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                {!adminLoading && isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer text-white hover:bg-red-900/20">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Panel
                     </Link>
                   </DropdownMenuItem>
-                  {userProfile && !userProfile.isPremium && !isAdmin && (
-                    <DropdownMenuItem asChild className="text-white hover:bg-red-900/20 cursor-pointer">
-                      <Link to="/upgrade">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Upgrade to Premium
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator className="bg-red-900/20" />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-red-500 hover:bg-red-900/20 cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+                )}
+                <DropdownMenuSeparator className="bg-red-900/30" />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-white hover:bg-red-900/20">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <Link to="/login">
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                Login
-              </Button>
-            </Link>
+            <Button
+              variant="default"
+              size="sm"
+              asChild
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Link to="/login">Login</Link>
+            </Button>
           )}
         </div>
       </div>

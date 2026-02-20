@@ -95,8 +95,7 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
   const [authStatus, setAuthStatus] = useState<AuthStatus>('initializing');
   const [authError, setAuthError] = useState<Error | undefined>(undefined);
   const [emailAuthActive, setEmailAuthActive] = useState(false);
-
-  console.log('[AuthProvider] State:', { authStatus, authMethod, emailAuthActive, isIIAuthenticated: !!identity && !identity.getPrincipal().isAnonymous(), actorFetching });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Check if user is authenticated via Internet Identity
   const isIIAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
@@ -104,11 +103,8 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
   // Initialize: restore email auth session if exists, then transition to idle
   useEffect(() => {
     if (!actor || actorFetching) {
-      console.log('[AuthProvider] Waiting for actor...', { actor: !!actor, actorFetching });
       return;
     }
-
-    console.log('[AuthProvider] Actor ready, restoring session...');
 
     const restoreSession = async () => {
       const storedAuth = localStorage.getItem('emailAuth');
@@ -117,40 +113,34 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
           const parsed = JSON.parse(storedAuth);
           
           if (parsed.authenticated && parsed.email && parsed.password) {
-            console.log('[AuthProvider] Restoring email auth session for:', parsed.email);
             // Re-authenticate with backend to restore session
             try {
               const success = await actor.login(parsed.email, parsed.password);
               if (success) {
-                console.log('[AuthProvider] Session restored successfully');
                 setEmailAuthActive(true);
                 setAuthMethod('email-password');
+                setIsAuthenticated(true);
                 setAuthStatus('success');
                 // Invalidate queries to fetch fresh data
                 await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
                 await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
                 await queryClient.invalidateQueries({ queryKey: ['loginStatus'] });
               } else {
-                console.log('[AuthProvider] Session restore failed');
                 localStorage.removeItem('emailAuth');
                 setAuthStatus('idle');
               }
             } catch (error) {
-              console.error('[AuthProvider] Session restore error:', error);
               localStorage.removeItem('emailAuth');
               setAuthStatus('idle');
             }
           } else {
-            console.log('[AuthProvider] No valid session data');
             setAuthStatus('idle');
           }
         } catch (e) {
-          console.error('[AuthProvider] Session parse error:', e);
           localStorage.removeItem('emailAuth');
           setAuthStatus('idle');
         }
       } else {
-        console.log('[AuthProvider] No stored session');
         setAuthStatus('idle');
       }
     };
@@ -161,14 +151,14 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
   // Update auth method when II authentication changes
   useEffect(() => {
     if (isIIAuthenticated && authStatus !== 'initializing') {
-      console.log('[AuthProvider] II authenticated, updating state');
       setAuthMethod('internet-identity');
+      setIsAuthenticated(true);
       setAuthStatus('success');
       localStorage.removeItem('emailAuth');
       setEmailAuthActive(false);
     } else if (!emailAuthActive && !isIIAuthenticated && authStatus !== 'initializing' && authStatus !== 'authenticating') {
-      console.log('[AuthProvider] Not authenticated, resetting state');
       setAuthMethod(null);
+      setIsAuthenticated(false);
       if (authStatus !== 'error') {
         setAuthStatus('idle');
       }
@@ -177,182 +167,155 @@ export function AuthProvider({ children }: PropsWithChildren<{ children: ReactNo
 
   // Track Internet Identity login status changes
   useEffect(() => {
-    console.log('[AuthProvider] II status changed:', iiStatus);
     if (iiStatus === 'logging-in') {
       setAuthStatus('authenticating');
     } else if (iiStatus === 'success' && isIIAuthenticated) {
-      console.log('[AuthProvider] II login success');
       setAuthMethod('internet-identity');
+      setIsAuthenticated(true);
       setAuthStatus('success');
       setAuthError(undefined);
-      // Invalidate queries to fetch fresh data
+      // Invalidate queries immediately
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
       queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
       queryClient.invalidateQueries({ queryKey: ['loginStatus'] });
     } else if (iiStatus === 'loginError') {
-      console.error('[AuthProvider] II login error');
       setAuthStatus('error');
       setAuthError(new Error('Internet Identity login failed. Please try again.'));
       setAuthMethod(null);
+      setIsAuthenticated(false);
     } else if (iiStatus === 'idle' && !isIIAuthenticated && authStatus === 'authenticating') {
-      console.log('[AuthProvider] II login cancelled');
       setAuthStatus('idle');
       setAuthMethod(null);
+      setIsAuthenticated(false);
     }
   }, [iiStatus, isIIAuthenticated, authStatus, queryClient]);
 
   const loginWithEmail = useCallback(async (email: string, password: string) => {
-    console.log('[AuthProvider] loginWithEmail called for:', email);
-    const startTime = Date.now();
-    
-    // Wait for actor to be ready
     if (!actor) {
-      console.log('[AuthProvider] Actor not ready, waiting...');
-      if (actorFetching) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!actor) {
-          console.error('[AuthProvider] Actor still not ready after wait');
-          throw new Error('Service temporarily unavailable. Please wait a moment and try again.');
-        }
-      } else {
-        console.error('[AuthProvider] Actor not available');
-        throw new Error('Service temporarily unavailable. Please try again.');
-      }
+      throw new Error('Service not ready. Please try again.');
     }
-    
-    console.log('[AuthProvider] Actor ready, proceeding with login');
-    setAuthStatus('authenticating');
-    setAuthError(undefined);
-    
+
     try {
+      setAuthStatus('authenticating');
+      setAuthError(undefined);
+      
       const success = await actor.login(email, password);
-      console.log('[AuthProvider] Backend login result:', success);
       
       if (success) {
-        // Store authentication state
-        localStorage.setItem('emailAuth', JSON.stringify({ 
-          email, 
-          password,
-          authenticated: true,
-          timestamp: Date.now()
-        }));
-        
-        console.log('[AuthProvider] Setting authenticated state...');
-        // Set authenticated state IMMEDIATELY and SYNCHRONOUSLY
+        // Update state synchronously
         setEmailAuthActive(true);
         setAuthMethod('email-password');
+        setIsAuthenticated(true);
         setAuthStatus('success');
         
-        console.log('[AuthProvider] Invalidating queries...');
-        // Invalidate queries AFTER state is set
+        // Store credentials for session persistence
+        localStorage.setItem('emailAuth', JSON.stringify({
+          authenticated: true,
+          email,
+          password
+        }));
+        
+        // Invalidate queries after state update
         await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
         await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
         await queryClient.invalidateQueries({ queryKey: ['loginStatus'] });
-        
-        const elapsed = Date.now() - startTime;
-        console.log(`[AuthProvider] Login completed successfully in ${elapsed}ms`);
       } else {
         throw new Error('Invalid email or password');
       }
     } catch (error) {
-      console.error('[AuthProvider] Login error:', error);
       const normalizedError = normalizeError(error);
       setAuthError(normalizedError);
       setAuthStatus('error');
-      localStorage.removeItem('emailAuth');
-      setEmailAuthActive(false);
+      setIsAuthenticated(false);
       throw normalizedError;
     }
-  }, [actor, actorFetching, queryClient]);
+  }, [actor, queryClient]);
 
   const registerWithEmail = useCallback(async (input: RegisterInput) => {
-    console.log('[AuthProvider] registerWithEmail called for:', input.email);
-    
-    // Wait for actor to be ready
     if (!actor) {
-      if (actorFetching) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!actor) {
-          throw new Error('Service temporarily unavailable. Please wait a moment and try again.');
-        }
-      } else {
-        throw new Error('Service temporarily unavailable. Please try again.');
-      }
+      throw new Error('Service not ready. Please try again.');
     }
-    
-    setAuthStatus('authenticating');
-    setAuthError(undefined);
-    
+
     try {
+      setAuthStatus('authenticating');
+      setAuthError(undefined);
+      
       await actor.register(input);
-      console.log('[AuthProvider] Registration successful, logging in...');
-      // After registration, automatically log in
-      await loginWithEmail(input.email, input.password);
+      
+      // Update state synchronously
+      setEmailAuthActive(true);
+      setAuthMethod('email-password');
+      setIsAuthenticated(true);
+      setAuthStatus('success');
+      
+      // Store credentials for session persistence
+      localStorage.setItem('emailAuth', JSON.stringify({
+        authenticated: true,
+        email: input.email,
+        password: input.password
+      }));
+      
+      // Invalidate queries after state update
+      await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
+      await queryClient.invalidateQueries({ queryKey: ['loginStatus'] });
     } catch (error) {
-      console.error('[AuthProvider] Registration error:', error);
       const normalizedError = normalizeError(error);
       setAuthError(normalizedError);
       setAuthStatus('error');
+      setIsAuthenticated(false);
       throw normalizedError;
     }
-  }, [actor, actorFetching, loginWithEmail]);
+  }, [actor, queryClient]);
 
   const loginWithInternetIdentity = useCallback(() => {
-    console.log('[AuthProvider] loginWithInternetIdentity called');
-    setAuthStatus('authenticating');
     setAuthError(undefined);
-    localStorage.removeItem('emailAuth');
-    setEmailAuthActive(false);
     iiLogin();
   }, [iiLogin]);
 
   const logout = useCallback(async () => {
-    console.log('[AuthProvider] logout called, method:', authMethod);
-    
-    if (authMethod === 'internet-identity') {
-      await iiClear();
-    } else if (authMethod === 'email-password') {
+    // Clear email auth
+    if (emailAuthActive) {
       localStorage.removeItem('emailAuth');
       setEmailAuthActive(false);
     }
     
+    // Clear II auth
+    if (isIIAuthenticated) {
+      await iiClear();
+    }
+    
+    // Reset state
     setAuthMethod(null);
+    setIsAuthenticated(false);
     setAuthStatus('idle');
     setAuthError(undefined);
     
-    // Clear all cached queries on logout
+    // Clear all cached data
     queryClient.clear();
-    console.log('[AuthProvider] Logout complete');
-  }, [authMethod, iiClear, queryClient]);
+  }, [emailAuthActive, isIIAuthenticated, iiClear, queryClient]);
 
-  const isAuthenticated = isIIAuthenticated || emailAuthActive;
+  const contextValue = useMemo<AuthContext>(() => ({
+    isAuthenticated,
+    authMethod,
+    loginWithEmail,
+    registerWithEmail,
+    loginWithInternetIdentity,
+    logout,
+    authStatus,
+    authError,
+    isAuthenticating: authStatus === 'authenticating',
+    isAuthError: authStatus === 'error',
+  }), [
+    isAuthenticated,
+    authMethod,
+    loginWithEmail,
+    registerWithEmail,
+    loginWithInternetIdentity,
+    logout,
+    authStatus,
+    authError,
+  ]);
 
-  console.log('[AuthProvider] Computed isAuthenticated:', isAuthenticated);
-
-  const value = useMemo<AuthContext>(
-    () => ({
-      isAuthenticated,
-      authMethod,
-      loginWithEmail,
-      registerWithEmail,
-      loginWithInternetIdentity,
-      logout,
-      authStatus,
-      authError,
-      isAuthenticating: authStatus === 'authenticating',
-      isAuthError: authStatus === 'error',
-    }),
-    [
-      isAuthenticated,
-      authMethod,
-      loginWithEmail,
-      registerWithEmail,
-      loginWithInternetIdentity,
-      logout,
-      authStatus,
-      authError,
-    ]
-  );
-
-  return createElement(AuthReactContext.Provider, { value, children });
+  return createElement(AuthReactContext.Provider, { value: contextValue }, children);
 }

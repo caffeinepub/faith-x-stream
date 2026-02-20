@@ -44,9 +44,9 @@ actor {
     genre : ?Text;
     releaseYear : ?Nat;
     eligibleForLive : Bool;
-    availableAsVOD : Bool; // New field
-    sourceVideoId : ?Text; // Link back to original video for clips
-    clipCaption : ?Text; // Caption for clips
+    availableAsVOD : Bool;
+    sourceVideoId : ?Text;
+    clipCaption : ?Text;
   };
 
   public type TVSeries = {
@@ -256,6 +256,27 @@ actor {
     AccessControl.getUserRole(accessControlState, caller);
   };
 
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can access profiles");
+    };
+    users.get(caller);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    users.get(user);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    users.add(caller, profile);
+  };
+
   public query ({ caller }) func getCallerRegularUserStatus() : async RegularUserStatus {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access regular user status");
@@ -377,107 +398,6 @@ actor {
     switch (users.get(principal)) {
       case (null) { #anonymous };
       case (?user) { #regularUser(user) };
-    };
-  };
-
-  // ===== LIVE TV SYNC =====
-
-  public type LiveChannelState = {
-    channel : LiveChannel;
-    currentProgram : ?ScheduledContent;
-    currentProgramId : ?Text;
-    currentProgramTitle : ?Text;
-    currentProgramStartTimestamp : ?Int;
-    programStartTime : ?Int;
-    currentTime : ?Int;
-    playbackPosition : ?Int;
-    isLooping : ?Bool;
-    isProgramPlaying : ?Bool;
-    isContentAvailable : ?Bool;
-    availableAsVOD : ?Bool;
-    isCommercialBreak : ?Bool;
-  };
-
-  public query func getDynamicLiveChannelState(channelId : Text) : async LiveChannelState {
-    let currentTime = Int.abs(Time.now() / 1000000);
-
-    switch (liveChannels.get(channelId)) {
-      case (null) {
-        Runtime.trap("Live channel not found");
-      };
-      case (?channel) {
-        let schedule = channel.schedule;
-        let totalPrograms = schedule.size();
-        var startProgramIndex : ?Nat = null;
-
-        if (totalPrograms == 0) {
-          return {
-            channel;
-            currentProgram = null;
-            currentProgramId = null;
-            currentProgramTitle = null;
-            currentProgramStartTimestamp = null;
-            programStartTime = null;
-            currentTime = ?currentTime;
-            playbackPosition = null;
-            isLooping = ?false;
-            isProgramPlaying = ?false;
-            isContentAvailable = ?false;
-            availableAsVOD = null;
-            isCommercialBreak = ?false;
-          };
-        };
-
-        var cycleCount = 0;
-        var found = false;
-
-        while (not found and cycleCount < 2) {
-          for (index in Nat.range(0, totalPrograms)) {
-            if (not found) {
-              let current = cycleCount;
-              let currentStartTime = current * totalPrograms;
-              let programIndex = index + currentStartTime;
-              startProgramIndex := ?programIndex;
-              let program = channel.schedule[index];
-              if (
-                currentTime >= program.startTime
-                and currentTime < program.endTime
-              ) {
-                found := true;
-                startProgramIndex := ?programIndex;
-              };
-            };
-          };
-          cycleCount += 1;
-        };
-
-        let currentProgramIndex = switch (startProgramIndex) {
-          case (null) { 0 };
-          case (?index) { index % totalPrograms };
-        };
-        let currentProgram = channel.schedule[currentProgramIndex];
-        let programStartTime = currentProgram.startTime + (cycleCount - 1) * totalPrograms;
-        let playbackPosition = currentTime - programStartTime;
-
-        let currentProgramId = ?currentProgram.contentId;
-        let currentProgramStartTimestamp = ?programStartTime;
-
-        {
-          channel;
-          currentProgram = ?currentProgram;
-          currentProgramId;
-          currentProgramTitle = currentProgramId;
-          currentProgramStartTimestamp;
-          programStartTime = ?programStartTime;
-          currentTime = ?currentTime;
-          playbackPosition = ?playbackPosition;
-          isLooping = ?(cycleCount > 1);
-          isProgramPlaying = ?false;
-          isContentAvailable = ?true;
-          availableAsVOD = null;
-          isCommercialBreak = ?false;
-        };
-      };
     };
   };
 
