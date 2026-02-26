@@ -1,181 +1,215 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Clapperboard } from 'lucide-react';
+import { useMemo } from 'react';
+import { Link } from '@tanstack/react-router';
+import { Play, ChevronRight, Tv, Film, Mic, Star } from 'lucide-react';
+import { useGetAllVideos, useGetAllSeries, useGetAllBrands, useGetAllClips } from '../hooks/useQueries';
+import { Skeleton } from '@/components/ui/skeleton';
 import HeroSection from '../components/HeroSection';
-import ContentRow from '../components/ContentRow';
-import BrandRail from '../components/BrandRail';
+import VideoCard from '../components/VideoCard';
+import SeriesCard from '../components/SeriesCard';
 import ClipsShortsFeed from '../components/ClipsShortsFeed';
-import { Skeleton } from '../components/ui/skeleton';
-import {
-  useGetAllVideos,
-  useGetAllSeries,
-  useGetAllBrands,
-  useGetWatchHistory,
-} from '../hooks/useQueries';
-import { VideoContent, TVSeries, ContentType } from '../backend';
+import BrandRail from '../components/BrandRail';
+import type { VideoContent, TVSeries } from '../backend';
 
-function isMovie(v: VideoContent) {
+function ContentRowSkeleton() {
   return (
-    !v.isClip &&
-    v.availableAsVOD &&
-    (v.contentType === ContentType.movie ||
-      v.contentType === ContentType.film ||
-      v.contentType === ContentType.documentary)
+    <div className="flex gap-3 overflow-hidden">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="shrink-0 w-40">
+          <Skeleton className="w-40 h-56 rounded-lg" />
+          <Skeleton className="w-32 h-3 mt-2 rounded" />
+        </div>
+      ))}
+    </div>
   );
-}
-
-function isPodcast(v: VideoContent) {
-  return !v.isClip && v.availableAsVOD && v.contentType === ContentType.podcast;
 }
 
 export default function HomePage() {
-  const navigate = useNavigate();
-  const { data: videos = [], isLoading: videosLoading } = useGetAllVideos();
+  // All queries run independently of auth state — public content
+  const { data: allVideos = [], isLoading: videosLoading } = useGetAllVideos();
   const { data: allSeries = [], isLoading: seriesLoading } = useGetAllSeries();
   const { data: brands = [], isLoading: brandsLoading } = useGetAllBrands();
-  const { data: watchHistoryIds = [] } = useGetWatchHistory();
 
   const isLoading = videosLoading || seriesLoading;
 
-  // Hero items: featured originals or first few VOD items
-  const heroItems = useMemo(() => {
-    const originals: (VideoContent | TVSeries)[] = [
-      ...videos.filter((v) => v.isOriginal && v.availableAsVOD && !v.isClip),
-      ...allSeries.filter((s) => s.isOriginal),
-    ];
-    if (originals.length > 0) return originals.slice(0, 5);
-    const vodVideos = videos.filter((v) => v.availableAsVOD && !v.isClip);
-    return ([...vodVideos, ...allSeries] as (VideoContent | TVSeries)[]).slice(0, 5);
-  }, [videos, allSeries]);
-
-  // Content rows
-  const movies = useMemo(() => videos.filter(isMovie), [videos]);
-  const podcasts = useMemo(() => videos.filter(isPodcast), [videos]);
-  const originals = useMemo(
-    () => [
-      ...videos.filter((v) => v.isOriginal && !v.isClip && v.availableAsVOD),
-      ...allSeries.filter((s) => s.isOriginal),
-    ] as (VideoContent | TVSeries)[],
-    [videos, allSeries]
+  // Filter content by type
+  const movies = allVideos.filter(
+    (v) => !v.isClip && (v.contentType === 'movie' || v.contentType === 'film') && v.availableAsVOD
   );
+  const podcasts = allVideos.filter(
+    (v) => !v.isClip && v.contentType === 'podcast' && v.availableAsVOD
+  );
+  const originals = allVideos.filter((v) => !v.isClip && v.isOriginal && v.availableAsVOD);
+  const originalSeries = allSeries.filter((s) => s.isOriginal);
 
-  // Continue watching
-  const continueWatching = useMemo(() => {
-    if (!watchHistoryIds.length) return [];
-    const videoMap = new Map(videos.map((v) => [v.id, v]));
-    return watchHistoryIds
-      .map((id) => videoMap.get(id))
-      .filter((v): v is VideoContent => !!v)
-      .slice(0, 10);
-  }, [watchHistoryIds, videos]);
+  // Hero items: featured originals + series
+  const heroContent = useMemo(() => {
+    const items: (VideoContent | TVSeries)[] = [
+      ...originals.slice(0, 3),
+      ...originalSeries.slice(0, 2),
+    ];
+    if (items.length > 0) return items.slice(0, 5);
+    // Fallback: any available VOD content
+    return (allVideos.filter((v) => !v.isClip && v.availableAsVOD) as (VideoContent | TVSeries)[]).slice(0, 5);
+  }, [originals, originalSeries, allVideos]);
 
-  // Brand rails data
-  const brandRailData = useMemo(() => {
+  // Brand rails: resolve assigned content per brand
+  const brandRails = useMemo(() => {
     return brands
       .map((brand) => {
-        const brandFilms = brand.assignedFilms
-          .map((id) => videos.find((v) => v.id === id))
+        const films = brand.assignedFilms
+          .map((id) => allVideos.find((v) => v.id === id))
           .filter((v): v is VideoContent => !!v);
-        const brandSeries = brand.assignedSeries
+        const series = brand.assignedSeries
           .map((id) => allSeries.find((s) => s.id === id))
           .filter((s): s is TVSeries => !!s);
-        const brandClips = brand.assignedClips
-          .map((id) => videos.find((v) => v.id === id))
+        const clips = brand.assignedClips
+          .map((id) => allVideos.find((v) => v.id === id))
           .filter((v): v is VideoContent => !!v);
-        const total = brandFilms.length + brandSeries.length + brandClips.length;
-        return { brand, films: brandFilms, series: brandSeries, clips: brandClips, total };
+        const total = films.length + series.length + clips.length;
+        return { brand, films, series, clips, total };
       })
-      .filter((d) => d.total > 0);
-  }, [brands, videos, allSeries]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Skeleton className="w-full h-[70vh]" />
-        <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-10 space-y-10">
-          {[1, 2, 3].map((i) => (
-            <div key={i}>
-              <Skeleton className="h-7 w-48 mb-4" />
-              <div className="flex gap-3">
-                {[1, 2, 3, 4, 5, 6].map((j) => (
-                  <Skeleton key={j} className="w-44 aspect-[2/3] rounded-lg flex-shrink-0" />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+      .filter((d) => d.total > 0)
+      .slice(0, 4);
+  }, [brands, allVideos, allSeries]);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
-      {heroItems.length > 0 && <HeroSection items={heroItems} />}
+      {/* Hero Section */}
+      {isLoading ? (
+        <div className="relative w-full h-[60vh] min-h-[400px]">
+          <Skeleton className="absolute inset-0 rounded-none" />
+        </div>
+      ) : heroContent.length > 0 ? (
+        <HeroSection items={heroContent} />
+      ) : (
+        <div className="relative w-full h-[50vh] min-h-[360px] flex items-center justify-center bg-gradient-to-b from-[oklch(0.15_0.05_15)] to-background">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to FAITH X-Stream</h1>
+            <p className="text-foreground/60 mb-6">Faith-based content for the whole family</p>
+            <Link to="/live" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:bg-primary/90 transition-colors">
+              <Tv className="w-4 h-4" />
+              Watch Live TV
+            </Link>
+          </div>
+        </div>
+      )}
 
-      {/* Main content */}
-      <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-10 space-y-12">
-        {/* Continue Watching */}
-        {continueWatching.length > 0 && (
-          <ContentRow
-            title="Continue Watching"
-            items={continueWatching}
-            onSeeAll={() => navigate({ to: '/profile' })}
-          />
+      <div className="max-w-screen-2xl mx-auto px-4 py-8 space-y-10">
+        {/* Movies Row */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Film className="w-5 h-5 text-primary" />
+              Movies
+            </h2>
+            <Link to="/movies" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+              See all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          {videosLoading ? (
+            <ContentRowSkeleton />
+          ) : movies.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {movies.slice(0, 12).map((video) => (
+                <div key={video.id} className="shrink-0 w-40">
+                  <VideoCard video={video} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-foreground/40 text-sm py-4">No movies available yet.</p>
+          )}
+        </section>
+
+        {/* TV Shows Row */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Tv className="w-5 h-5 text-primary" />
+              TV Shows
+            </h2>
+            <Link to="/tv-shows" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+              See all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          {seriesLoading ? (
+            <ContentRowSkeleton />
+          ) : allSeries.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {allSeries.slice(0, 12).map((s) => (
+                <div key={s.id} className="shrink-0 w-40">
+                  <SeriesCard series={s} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-foreground/40 text-sm py-4">No TV shows available yet.</p>
+          )}
+        </section>
+
+        {/* Podcasts Row */}
+        {(podcasts.length > 0 || videosLoading) && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Mic className="w-5 h-5 text-primary" />
+                Podcasts
+              </h2>
+              <Link to="/podcasts" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+                See all <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            {videosLoading ? (
+              <ContentRowSkeleton />
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                {podcasts.slice(0, 12).map((video) => (
+                  <div key={video.id} className="shrink-0 w-40">
+                    <VideoCard video={video} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
-        {/* Movies */}
-        {movies.length > 0 && (
-          <ContentRow
-            title="Movies"
-            items={movies}
-            onSeeAll={() => navigate({ to: '/movies' })}
-          />
-        )}
-
-        {/* TV Shows */}
-        {allSeries.length > 0 && (
-          <ContentRow
-            title="TV Shows"
-            items={allSeries}
-            onSeeAll={() => navigate({ to: '/tv-shows' })}
-          />
-        )}
-
-        {/* Podcasts */}
-        {podcasts.length > 0 && (
-          <ContentRow
-            title="Podcasts"
-            items={podcasts}
-            onSeeAll={() => navigate({ to: '/podcasts' })}
-          />
-        )}
-
-        {/* Originals */}
-        {originals.length > 0 && (
-          <ContentRow
-            title="F.A.I.T.H. Originals"
-            items={originals}
-            onSeeAll={() => navigate({ to: '/originals' })}
-          />
+        {/* Originals Row */}
+        {(originals.length > 0 || originalSeries.length > 0 || isLoading) && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary fill-primary" />
+                Originals
+              </h2>
+              <Link to="/originals" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+                See all <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            {isLoading ? (
+              <ContentRowSkeleton />
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                {originals.slice(0, 8).map((video) => (
+                  <div key={video.id} className="shrink-0 w-40">
+                    <VideoCard video={video} />
+                  </div>
+                ))}
+                {originalSeries.slice(0, 4).map((s) => (
+                  <div key={s.id} className="shrink-0 w-40">
+                    <SeriesCard series={s} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
         {/* Brand Rails */}
-        {brandRailData.length > 0 && (
+        {!brandsLoading && brandRails.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h2 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wide uppercase">
-                Browse by Network
-              </h2>
-              <button
-                onClick={() => navigate({ to: '/networks' })}
-                className="text-xs font-semibold text-[oklch(0.55_0.24_25)] hover:text-[oklch(0.65_0.26_22)] uppercase tracking-widest transition-colors"
-              >
-                All Networks →
-              </button>
-            </div>
-            <div className="space-y-10">
-              {brandRailData.map(({ brand, films, series, clips }) => (
+            <h2 className="text-xl font-bold text-foreground mb-6">Networks &amp; Brands</h2>
+            <div className="space-y-8">
+              {brandRails.map(({ brand, films, series, clips }) => (
                 <BrandRail
                   key={brand.id}
                   brand={brand}
@@ -190,17 +224,14 @@ export default function HomePage() {
 
         {/* Clips / Shorts Feed */}
         <section>
-          <div className="flex items-center justify-between mb-4 px-1">
-            <h2 className="font-display text-xl lg:text-2xl font-bold text-white tracking-wide uppercase flex items-center gap-2">
-              <Clapperboard size={20} className="text-[oklch(0.55_0.24_25)]" />
-              Clips &amp; Shorts
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Play className="w-5 h-5 text-primary" />
+              Short Clips
             </h2>
-            <button
-              onClick={() => navigate({ to: '/clips' })}
-              className="text-xs font-semibold text-[oklch(0.55_0.24_25)] hover:text-[oklch(0.65_0.26_22)] uppercase tracking-widest transition-colors"
-            >
-              See All →
-            </button>
+            <Link to="/clips" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+              See all <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
           <ClipsShortsFeed />
         </section>

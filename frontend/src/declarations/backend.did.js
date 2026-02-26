@@ -153,6 +153,18 @@ export const ShoppingItem = IDL.Record({
   'priceInCents' : IDL.Nat,
   'productDescription' : IDL.Text,
 });
+export const UserRole__1 = IDL.Variant({
+  'masterAdmin' : IDL.Null,
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
+export const UserInfo = IDL.Record({
+  'principal' : IDL.Principal,
+  'displayName' : IDL.Text,
+  'role' : UserRole__1,
+  'email' : IDL.Text,
+});
 export const TrendingContent = IDL.Record({
   'id' : IDL.Text,
   'title' : IDL.Text,
@@ -283,6 +295,8 @@ export const idlService = IDL.Service({
   'deleteLiveChannel' : IDL.Func([IDL.Text], [], []),
   'deleteSeries' : IDL.Func([IDL.Text], [], []),
   'deleteVideo' : IDL.Func([IDL.Text], [], []),
+  'demoteFromAdmin' : IDL.Func([IDL.Principal], [], []),
+  'demoteFromMasterAdmin' : IDL.Func([IDL.Principal], [], []),
   'getAdAssignments' : IDL.Func([], [IDL.Vec(AdAssignment)], ['query']),
   'getAdAssignmentsForLive' : IDL.Func(
       [IDL.Text],
@@ -293,9 +307,11 @@ export const idlService = IDL.Service({
   'getAllBrands' : IDL.Func([], [IDL.Vec(Brand)], ['query']),
   'getAllClips' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
   'getAllSeries' : IDL.Func([], [IDL.Vec(TVSeries)], ['query']),
+  'getAllUsers' : IDL.Func([], [IDL.Vec(UserInfo)], ['query']),
   'getAllVideos' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
   'getAnalytics' : IDL.Func([], [Analytics], ['query']),
   'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
+  'getCallerFullUserRole' : IDL.Func([], [UserRole__1], ['query']),
   'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
   'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -334,8 +350,12 @@ export const idlService = IDL.Service({
   'incrementViews' : IDL.Func([], [], []),
   'initializeAccessControl' : IDL.Func([], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isCallerMasterAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isProfileComplete' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'login' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+  'promoteToAdmin' : IDL.Func([IDL.Principal], [], []),
+  'promoteToMasterAdmin' : IDL.Func([IDL.Principal], [], []),
   'register' : IDL.Func([RegisterInput], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'search' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),
@@ -502,6 +522,18 @@ export const idlFactory = ({ IDL }) => {
     'priceInCents' : IDL.Nat,
     'productDescription' : IDL.Text,
   });
+  const UserRole__1 = IDL.Variant({
+    'masterAdmin' : IDL.Null,
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
+  const UserInfo = IDL.Record({
+    'principal' : IDL.Principal,
+    'displayName' : IDL.Text,
+    'role' : UserRole__1,
+    'email' : IDL.Text,
+  });
   const TrendingContent = IDL.Record({
     'id' : IDL.Text,
     'title' : IDL.Text,
@@ -629,6 +661,8 @@ export const idlFactory = ({ IDL }) => {
     'deleteLiveChannel' : IDL.Func([IDL.Text], [], []),
     'deleteSeries' : IDL.Func([IDL.Text], [], []),
     'deleteVideo' : IDL.Func([IDL.Text], [], []),
+    'demoteFromAdmin' : IDL.Func([IDL.Principal], [], []),
+    'demoteFromMasterAdmin' : IDL.Func([IDL.Principal], [], []),
     'getAdAssignments' : IDL.Func([], [IDL.Vec(AdAssignment)], ['query']),
     'getAdAssignmentsForLive' : IDL.Func(
         [IDL.Text],
@@ -639,9 +673,11 @@ export const idlFactory = ({ IDL }) => {
     'getAllBrands' : IDL.Func([], [IDL.Vec(Brand)], ['query']),
     'getAllClips' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
     'getAllSeries' : IDL.Func([], [IDL.Vec(TVSeries)], ['query']),
+    'getAllUsers' : IDL.Func([], [IDL.Vec(UserInfo)], ['query']),
     'getAllVideos' : IDL.Func([], [IDL.Vec(VideoContent)], ['query']),
     'getAnalytics' : IDL.Func([], [Analytics], ['query']),
     'getBrandById' : IDL.Func([IDL.Text], [IDL.Opt(Brand)], ['query']),
+    'getCallerFullUserRole' : IDL.Func([], [UserRole__1], ['query']),
     'getCallerLoginStatus' : IDL.Func([], [LoginStatus], ['query']),
     'getCallerRegularUserStatus' : IDL.Func([], [RegularUserStatus], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -684,8 +720,12 @@ export const idlFactory = ({ IDL }) => {
     'incrementViews' : IDL.Func([], [], []),
     'initializeAccessControl' : IDL.Func([], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isCallerMasterAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isProfileComplete' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'login' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'promoteToAdmin' : IDL.Func([IDL.Principal], [], []),
+    'promoteToMasterAdmin' : IDL.Func([IDL.Principal], [], []),
     'register' : IDL.Func([RegisterInput], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'search' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),

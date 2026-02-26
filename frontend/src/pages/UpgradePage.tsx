@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Crown, Check, ArrowLeft, Sparkles, Zap, Shield, Star, Loader2 } from 'lucide-react';
-import { useCreateCheckoutSession, useIsStripeConfigured, useIsCallerAdmin } from '../hooks/useQueries';
+import { useCreateCheckout, useIsStripeConfigured, useIsCallerAdmin } from '../hooks/useQueries';
 import { toast } from 'sonner';
 import type { ShoppingItem } from '../backend';
 
@@ -12,7 +12,7 @@ export default function UpgradePage() {
   const navigate = useNavigate();
   const { data: isStripeConfigured, isLoading: configLoading } = useIsStripeConfigured();
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
-  const createCheckout = useCreateCheckoutSession();
+  const createCheckout = useCreateCheckout();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const isAdminWithPremium = !!isAdmin;
@@ -58,7 +58,6 @@ export default function UpgradePage() {
 
       window.location.href = session.url;
     } catch (error: any) {
-      console.error('Checkout error:', error);
       toast.error(error.message || 'Failed to start checkout process');
       setIsProcessing(false);
     }
@@ -108,15 +107,15 @@ export default function UpgradePage() {
               <div className="text-3xl font-bold text-white">$0<span className="text-lg text-white/70">/month</span></div>
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 shrink-0" />
                   <span className="text-white/80">Limited content library</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 shrink-0" />
                   <span className="text-white/80">Standard definition streaming</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                  <Check className="h-5 w-5 text-[#cc0000] mt-0.5 shrink-0" />
                   <span className="text-white/80">Ad-supported viewing</span>
                 </li>
               </ul>
@@ -142,7 +141,7 @@ export default function UpgradePage() {
               <ul className="space-y-3">
                 {features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <feature.icon className="h-5 w-5 text-[#cc0000] mt-0.5 flex-shrink-0" />
+                    <feature.icon className="h-5 w-5 text-[#cc0000] mt-0.5 shrink-0" />
                     <span className="text-white/90">{feature.text}</span>
                   </li>
                 ))}

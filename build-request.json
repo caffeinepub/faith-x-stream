@@ -1,131 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Tubi-style Homepage & Navigation Redesign with Disney+ Brand Rails",
+  "title": "Update footer tagline and fix Profile Setup flow",
   "projectName": "FAITH X-Stream",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-94",
-      "text": "Redesign the HomePage with a Tubi-inspired layout: replace the current hero/featured section with a prominent full-width hero banner showcasing featured content (with play and more-info CTAs), followed by horizontal scrollable genre/category content rows (Movies, TV Shows, Podcasts, Originals, etc.), and clean VideoCard/SeriesCard layouts with hover effects and smooth transitions. The Shorts/Clips vertical feed and existing functional sections must be preserved and integrated into the new layout.",
+      "id": "REQ-1",
+      "text": "Update the footer tagline paragraph (located at XPath /html[1]/body[1]/div[1]/div[1]/footer[1]/div[1]/div[1]/div[1]/p[1]) to read: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "yes I'm thinking of a more complete redesign of the homepage/navigation toward Tubi's style",
-          "Homepage redesign — Tubi-style hero banner with featured content, horizontal genre/category rows for browsing (Movies, TV Shows, Podcasts, etc.), clean card layouts with hover effects"
+          "Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+          "Update the footer tagline to read Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More."
         ]
       },
       "acceptanceCriteria": [
-        "HomePage renders a full-width hero banner featuring one or more promoted content items with Play and More Info buttons",
-        "Below the hero, at least 4–5 horizontal scrollable rows exist, each labeled by genre or content type (e.g., 'Movies', 'TV Shows', 'Podcasts', 'Originals', 'Continue Watching')",
-        "VideoCard and SeriesCard components display with clean layouts and visible hover effects (overlay, scale, or highlight)",
-        "Existing Shorts/Clips vertical feed section is preserved and positioned appropriately within the new layout",
-        "Page is responsive and renders correctly on both desktop and mobile viewports"
+        "The footer paragraph text exactly reads: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+        "No other footer content or layout is changed."
       ]
     },
     {
-      "id": "REQ-95",
-      "text": "Add Disney+-style brand/network rails to the HomePage and the NetworksPage: group content by brand/network with the brand logo as a section header, followed by a horizontal carousel of associated content (videos, series, clips). Each brand rail should link to the full BrandDetailPage.",
-      "target": "frontend",
+      "id": "REQ-2",
+      "text": "Fix the Set Up Profile flow in ProfileSetupModal.tsx: ensure the modal appears correctly for authenticated Internet Identity users who have not completed their profile, that all form fields such as email are functional and submit properly, and that the modal dismisses and does not re-appear after successful profile setup.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-1"
         ],
         "quotes": [
-          "I want brand/network to show up like how Disney+ has",
-          "Brand/Network rails — Disney+-style network/brand showcases on the homepage and browse pages, grouping content by brand/network with logo headers and horizontal carousels"
+          "Fix the Set up Profile"
         ]
       },
       "acceptanceCriteria": [
-        "HomePage includes a 'Browse by Network' or equivalent section with one horizontal rail per brand/network that has associated content",
-        "Each brand rail displays the brand logo prominently as the section header",
-        "Content items within each rail are shown in a horizontally scrollable carousel using VideoCard/SeriesCard components",
-        "Clicking the brand logo or a 'See All' link navigates to the BrandDetailPage for that brand",
-        "NetworksPage is updated to reflect the same Disney+-style brand grid/card treatment",
-        "Rails only render for brands that have at least one piece of associated content"
-      ]
-    },
-    {
-      "id": "REQ-96",
-      "text": "Redesign the global navigation Header toward a Tubi-style top nav with a VOD-first focus: reorder navigation links to prioritize VOD categories (Movies, TV Shows, Podcasts, Originals) with Live TV as a secondary entry, make the search bar more prominent, ensure the Live Guide entry point remains accessible, and improve mobile responsiveness with a clean hamburger/drawer menu.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "Navigation redesign — Tubi-style top nav with clear VOD-first focus, category browsing (Movies, TV Shows, Podcasts, Live TV), search prominence",
-          "yes I'm thinking of a more complete redesign of the homepage/navigation toward Tubi's style"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Header navigation links are ordered VOD-first: Home, Movies, TV Shows, Podcasts, Originals, Live TV (Live Guide), Clips, Networks",
-        "Search bar is visually prominent in the header (expanded input or large icon with immediate expand-on-click behavior)",
-        "On mobile, navigation collapses into a hamburger menu that opens a drawer with all navigation links",
-        "Authenticated state (profile dropdown, admin link) continues to render correctly after login",
-        "Live Guide entry point remains accessible in the navigation on both desktop and mobile"
-      ]
-    },
-    {
-      "id": "REQ-97",
-      "text": "Redesign the VOD browsing and discovery pages — MoviesPage, TVShowsPage, and any PodcastsPage — with Tubi-style genre/category filtering and clean content grid layouts. Each page should include filter tabs or chips for genre/category at the top, followed by a responsive content grid. Apply the same treatment consistently across all three pages.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "VOD-first browsing experience — content discovery pages styled after Tubi's clean genre/category browsing with filter options"
-        ]
-      },
-      "acceptanceCriteria": [
-        "MoviesPage, TVShowsPage, and PodcastsPage each display genre/category filter chips or tabs at the top of the content area",
-        "Selecting a genre filter updates the content grid to show only matching items without a full page reload",
-        "Content grids use a responsive layout (e.g., 2 columns on mobile, 4–5 on desktop) with consistent card sizing",
-        "Cards display title, thumbnail, and relevant metadata (content type label, premium badge if applicable)",
-        "Empty state is shown gracefully when no content matches the selected filter",
-        "VOD availability filter (availableAsVOD=true) is still enforced on all three pages"
-      ]
-    },
-    {
-      "id": "REQ-98",
-      "text": "Update the visual theme across the entire app to be slightly more vibrant while remaining within the existing dark red/black style: use richer, more saturated reds (e.g., deeper crimson to vivid scarlet range), improve contrast for text and UI elements against dark backgrounds, apply more dynamic card treatments (subtle glow or saturated border on hover/focus), and ensure the updated palette is applied consistently via the existing Tailwind/OKLCH color configuration.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "No, but you can go a little more vibrant but staying within the style of my platform right now.",
-          "Visual style — staying dark but punching up the vibrancy (richer reds, better contrast, more dynamic card treatments)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Primary red/accent color values in index.css and tailwind.config.js are updated to be more saturated/vibrant while remaining in the red family",
-        "Text contrast against dark backgrounds meets at least AA accessibility ratio for body text",
-        "VideoCard and SeriesCard hover states display a more dynamic visual treatment (e.g., glowing red border, saturated overlay)",
-        "The updated color palette is applied consistently across Header, Footer, buttons, cards, badges, and page backgrounds",
-        "No new color families (blue, purple, green) are introduced — only reds, dark neutrals, and whites/grays"
+        "The Profile Setup modal appears when an authenticated Internet Identity user has not set up their profile.",
+        "The email field accepts input and the form submits without errors.",
+        "After successful submission the modal closes and does not reappear on subsequent page loads for the same user.",
+        "If the user is not authenticated or already has a profile, the modal does not appear."
       ]
     }
   ],
   "constraints": [
-    "Do not change the backend schema or Motoko code for this redesign",
-    "All immutable frontend paths (hooks/useInternetIdentity.ts, hooks/useActor.ts, main.tsx, components/ui) must not be modified",
-    "Live TV features (EPG grid, channel surfing, seeking restrictions, ad insertion) must remain fully functional after the redesign",
-    "Existing authentication flows (email/password and Internet Identity) must not be broken by UI changes",
-    "availableAsVOD filtering must remain enforced on all VOD content pages",
-    "Keep the existing dark red/black color theme — do not shift to a lighter palette like Tubi's"
+    "Do not change any other footer content, layout, or navigation links.",
+    "Do not modify files listed in frontend.immutablePaths."
   ],
   "nonGoals": [
-    "Removing or demoting Live TV — it remains accessible as a secondary feature",
-    "Rebuilding the VideoPlayer component as part of this redesign",
-    "Changing backend data models or API contracts",
-    "Introducing new content types or admin panel restructuring (already covered by existing features)",
-    "Adding real-time or WebSocket-based features",
-    "Changing the authentication mechanism or session management logic"
+    "Adding real video playback or content source integration.",
+    "Any changes to the admin panel or other pages.",
+    "Redesigning the footer layout or navigation structure."
   ],
   "imageRequirements": {
     "required": [],

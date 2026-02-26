@@ -1,62 +1,29 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T00:49:58.501Z",
-  "summary": "The diff implements most of the five requirements (REQ-94 through REQ-98) with substantial coverage. Key additions include HeroSection, ContentRow, BrandRail components, redesigned Header, updated MoviesPage/TVShowsPage/PodcastsPage with genre filters, updated NetworksPage, updated index.css and tailwind.config.js color tokens, and a new PodcastsPage. However, a few specific acceptance criteria have gaps, most notably the TVShowsPage genre filter not actually filtering content, and the tailwind.config.js still using hsl() wrappers for most color tokens despite the requirement to update to OKLCH-based values.",
-  "missing_requirements": [
-    {
-      "id": "REQ-97",
-      "requirement": "Selecting a genre filter on TVShowsPage updates the content grid to show only matching items without a full page reload",
-      "reason": "In TVShowsPage.tsx, the filtered useMemo explicitly returns allSeries regardless of selectedGenre (comment says 'for now show all when All selected'), meaning genre filter chips do not actually filter the TV Shows grid.",
-      "evidence": [
-        "frontend/src/pages/TVShowsPage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-98",
-      "requirement": "Primary red/accent color values in tailwind.config.js are updated to be more saturated/vibrant using OKLCH",
-      "reason": "tailwind.config.js still maps most semantic tokens (background, foreground, primary, secondary, etc.) through hsl(var(--...)) rather than oklch(), meaning the OKLCH values defined in index.css are not directly wired. The brand.* tokens use var() correctly, but primary/accent/card tokens still wrap in hsl().",
-      "evidence": [
-        "frontend/tailwind.config.js"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-26T16:43:32.744Z",
+  "summary": "Both REQ-1 and REQ-2 appear to be implemented in the diff. The footer tagline in Footer.tsx now reads exactly as specified, and ProfileSetupModal.tsx has been updated with functional email field, proper submission logic, query invalidation on success, and Layout.tsx controls modal visibility based on authentication and profile state.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "HeroSection includes a mute/unmute button for background video preview playback",
-      "reason": "The build request only required Play and More Info CTAs on the hero banner. The muted toggle with Volume2/VolumeX icons is an added feature not specified in the requirements or acceptance criteria.",
+      "description": "A new backend migration module (backend/migration.mo) was added and integrated into backend/main.mo, introducing data migration logic for the backend canister.",
+      "reason": "The build request does not mention any backend migration, schema changes, or backend restructuring. This is a backend change not requested in either REQ-1 or REQ-2.",
       "evidence": [
-        "frontend/src/components/HeroSection.tsx"
-      ]
-    },
-    {
-      "description": "HeroSection auto-cycles through multiple featured items every 8 seconds using a setInterval timer",
-      "reason": "The spec says 'one or more promoted content items' with Play and More Info CTAs but does not specify auto-cycling/carousel behavior with a timed interval.",
-      "evidence": [
-        "frontend/src/components/HeroSection.tsx"
+        "backend/migration.mo",
+        "backend/main.mo"
       ]
     }
   ],
   "confidence": 0.82,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/BrandRail.tsx",
-    "frontend/src/components/ContentRow.tsx",
     "frontend/src/components/Footer.tsx",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/components/HeroSection.tsx",
-    "frontend/src/components/SeriesCard.tsx",
-    "frontend/src/components/VideoCard.tsx",
-    "frontend/src/components/admin/SeriesManagement.tsx",
+    "frontend/src/components/Layout.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/pages/HomePage.tsx",
-    "frontend/src/pages/MoviesPage.tsx",
-    "frontend/src/pages/NetworksPage.tsx",
-    "frontend/src/pages/PodcastsPage.tsx",
-    "frontend/src/pages/TVShowsPage.tsx",
-    "frontend/tailwind.config.js",
+    "frontend/src/pages/UpgradePage.tsx",
     "project_state.json"
   ]
 }

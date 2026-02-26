@@ -81,6 +81,12 @@ export interface Brand {
     assignedLiveChannels: Array<string>;
     assignedSeries: Array<string>;
 }
+export interface UserInfo {
+    principal: Principal;
+    displayName: string;
+    role: UserRole__1;
+    email: string;
+}
 export interface Episode {
     id: string;
     title: string;
@@ -243,6 +249,12 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum UserRole__1 {
+    masterAdmin = "masterAdmin",
+    admin = "admin",
+    user = "user",
+    guest = "guest"
+}
 export interface backendInterface {
     addAdAssignment(assignment: AdAssignment): Promise<void>;
     addAdMedia(ad: AdMedia): Promise<void>;
@@ -261,15 +273,19 @@ export interface backendInterface {
     deleteLiveChannel(channelId: string): Promise<void>;
     deleteSeries(seriesId: string): Promise<void>;
     deleteVideo(videoId: string): Promise<void>;
+    demoteFromAdmin(user: Principal): Promise<void>;
+    demoteFromMasterAdmin(user: Principal): Promise<void>;
     getAdAssignments(): Promise<Array<AdAssignment>>;
     getAdAssignmentsForLive(_liveChannelId: string): Promise<Array<AdAssignment>>;
     getAdMedia(): Promise<Array<AdMedia>>;
     getAllBrands(): Promise<Array<Brand>>;
     getAllClips(): Promise<Array<VideoContent>>;
     getAllSeries(): Promise<Array<TVSeries>>;
+    getAllUsers(): Promise<Array<UserInfo>>;
     getAllVideos(): Promise<Array<VideoContent>>;
     getAnalytics(): Promise<Analytics>;
     getBrandById(brandId: string): Promise<Brand | null>;
+    getCallerFullUserRole(): Promise<UserRole__1>;
     getCallerLoginStatus(): Promise<LoginStatus>;
     getCallerRegularUserStatus(): Promise<RegularUserStatus>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -294,8 +310,12 @@ export interface backendInterface {
     incrementViews(): Promise<void>;
     initializeAccessControl(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
+    isCallerMasterAdmin(): Promise<boolean>;
+    isProfileComplete(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
     login(email: string, password: string): Promise<boolean>;
+    promoteToAdmin(user: Principal): Promise<void>;
+    promoteToMasterAdmin(user: Principal): Promise<void>;
     register(input: RegisterInput): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     search(searchQuery: string): Promise<Array<SearchResult>>;

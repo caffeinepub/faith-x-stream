@@ -1,22 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import {
+import type {
   VideoContent,
   TVSeries,
   LiveChannel,
   Brand,
   AdMedia,
   AdAssignment,
-  Analytics,
   UserProfile,
+  Analytics,
   SearchResult,
-  UserRole,
-  RegisterInput,
-  StripeSessionStatus,
+  UserInfo,
+  StripeConfiguration,
   ShoppingItem,
 } from '../backend';
 
-// ===== VIDEOS =====
+// ─── Public content queries ───────────────────────────────────────────────────
 
 export function useGetAllVideos() {
   const { actor, isFetching } = useActor();
@@ -54,8 +53,6 @@ export function useGetAllClips() {
   });
 }
 
-// ===== SERIES =====
-
 export function useGetAllSeries() {
   const { actor, isFetching } = useActor();
   return useQuery<TVSeries[]>({
@@ -80,8 +77,6 @@ export function useGetSeriesById(seriesId: string) {
   });
 }
 
-// ===== LIVE CHANNELS =====
-
 export function useGetLiveChannels() {
   const { actor, isFetching } = useActor();
   return useQuery<LiveChannel[]>({
@@ -96,8 +91,6 @@ export function useGetLiveChannels() {
 
 // Alias for backward compatibility
 export const useGetAllLiveChannels = useGetLiveChannels;
-
-// ===== BRANDS =====
 
 export function useGetAllBrands() {
   const { actor, isFetching } = useActor();
@@ -125,17 +118,22 @@ export function useGetBrandById(brandId: string) {
 
 export function useGetChannelsByBrand(brandId: string) {
   const { actor, isFetching } = useActor();
-  return useQuery({
+  return useQuery<{
+    films: string[];
+    episodes: string[];
+    clips: string[];
+    channels: any[];
+    series: string[];
+    liveChannels: string[];
+  }>({
     queryKey: ['brandChannels', brandId],
     queryFn: async () => {
-      if (!actor) return { channels: [], films: [], series: [], episodes: [], clips: [], liveChannels: [] };
+      if (!actor) return { films: [], episodes: [], clips: [], channels: [], series: [], liveChannels: [] };
       return actor.getChannelsByBrand(brandId);
     },
     enabled: !!actor && !isFetching && !!brandId,
   });
 }
-
-// ===== AD MEDIA =====
 
 export function useGetAdMedia() {
   const { actor, isFetching } = useActor();
@@ -173,33 +171,37 @@ export function useGetAdAssignmentsForLive(liveChannelId: string) {
   });
 }
 
-// ===== ANALYTICS =====
-
-export function useGetAnalytics() {
+export function useSearch(query: string) {
   const { actor, isFetching } = useActor();
-  return useQuery<Analytics>({
-    queryKey: ['analytics'],
+  return useQuery<SearchResult[]>({
+    queryKey: ['search', query],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getAnalytics();
+      if (!actor || !query.trim()) return [];
+      return actor.search(query);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!query.trim(),
   });
 }
 
-// ===== USER PROFILE =====
+// ─── Auth-gated queries ───────────────────────────────────────────────────────
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
+
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
+      try {
+        return await actor.getCallerUserProfile();
+      } catch {
+        return null;
+      }
     },
     enabled: !!actor && !actorFetching,
     retry: false,
   });
+
   return {
     ...query,
     isLoading: actorFetching || query.isLoading,
@@ -207,37 +209,59 @@ export function useGetCallerUserProfile() {
   };
 }
 
-export function useGetCallerUserRole() {
-  const { actor, isFetching } = useActor();
-  return useQuery<UserRole>({
-    queryKey: ['callerUserRole'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserRole();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
 export function useIsCallerAdmin() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const query = useQuery<boolean>({
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
     queryKey: ['isAdmin'],
     queryFn: async () => {
       if (!actor) return false;
-      return actor.isCallerAdmin();
+      try {
+        return await actor.isCallerAdmin();
+      } catch {
+        return false;
+      }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !isFetching,
     retry: false,
-    staleTime: 5 * 60 * 1000,
   });
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-  };
 }
 
-// ===== WATCH HISTORY =====
+// Alias for backward compatibility
+export const useGetIsCallerAdmin = useIsCallerAdmin;
+
+export function useIsCallerMasterAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ['isMasterAdmin'],
+    queryFn: async () => {
+      if (!actor) return false;
+      try {
+        return await actor.isCallerMasterAdmin();
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!actor && !isFetching,
+    retry: false,
+  });
+}
+
+export function useGetCallerFullUserRole() {
+  const { actor, isFetching } = useActor();
+  return useQuery<string>({
+    queryKey: ['callerFullUserRole'],
+    queryFn: async () => {
+      if (!actor) return 'guest';
+      try {
+        return await actor.getCallerFullUserRole() as string;
+      } catch {
+        return 'guest';
+      }
+    },
+    enabled: !!actor && !isFetching,
+    retry: false,
+  });
+}
 
 export function useGetWatchHistory() {
   const { actor, isFetching } = useActor();
@@ -252,24 +276,22 @@ export function useGetWatchHistory() {
       }
     },
     enabled: !!actor && !isFetching,
+    retry: false,
   });
 }
 
-// ===== SEARCH =====
-
-export function useSearch(query: string) {
+export function useGetAnalytics() {
   const { actor, isFetching } = useActor();
-  return useQuery<SearchResult[]>({
-    queryKey: ['search', query],
+  return useQuery<Analytics | null>({
+    queryKey: ['analytics'],
     queryFn: async () => {
-      if (!actor || !query.trim()) return [];
-      return actor.search(query);
+      if (!actor) return null;
+      return actor.getAnalytics();
     },
-    enabled: !!actor && !isFetching && !!query.trim(),
+    enabled: !!actor && !isFetching,
+    retry: false,
   });
 }
-
-// ===== ELIGIBLE VIDEOS FOR LIVE =====
 
 export function useGetEligibleVideosForLive() {
   const { actor, isFetching } = useActor();
@@ -280,15 +302,14 @@ export function useGetEligibleVideosForLive() {
       return actor.getEligibleVideosForLive();
     },
     enabled: !!actor && !isFetching,
+    retry: false,
   });
 }
-
-// ===== STRIPE =====
 
 export function useIsStripeConfigured() {
   const { actor, isFetching } = useActor();
   return useQuery<boolean>({
-    queryKey: ['isStripeConfigured'],
+    queryKey: ['stripeConfigured'],
     queryFn: async () => {
       if (!actor) return false;
       return actor.isStripeConfigured();
@@ -297,10 +318,23 @@ export function useIsStripeConfigured() {
   });
 }
 
+export function useGetAllUsers() {
+  const { actor, isFetching } = useActor();
+  return useQuery<UserInfo[]>({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllUsers();
+    },
+    enabled: !!actor && !isFetching,
+    retry: false,
+  });
+}
+
 export function useGetStripeSessionStatus(sessionId: string) {
   const { actor, isFetching } = useActor();
-  return useQuery<StripeSessionStatus>({
-    queryKey: ['stripeSessionStatus', sessionId],
+  return useQuery({
+    queryKey: ['stripeSession', sessionId],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getStripeSessionStatus(sessionId);
@@ -310,15 +344,16 @@ export function useGetStripeSessionStatus(sessionId: string) {
   });
 }
 
-// ===== MUTATIONS =====
+// ─── Mutations ────────────────────────────────────────────────────────────────
 
 export function useSaveCallerUserProfile() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.saveCallerUserProfile(profile);
+      await actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -329,10 +364,11 @@ export function useSaveCallerUserProfile() {
 export function useAddVideo() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (video: VideoContent) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addVideo(video);
+      await actor.addVideo(video);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
@@ -344,10 +380,11 @@ export function useAddVideo() {
 export function useUpdateVideo() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ videoId, video }: { videoId: string; video: VideoContent }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateVideo(videoId, video);
+      await actor.updateVideo(videoId, video);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
@@ -359,10 +396,11 @@ export function useUpdateVideo() {
 export function useDeleteVideo() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (videoId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteVideo(videoId);
+      await actor.deleteVideo(videoId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
@@ -374,10 +412,11 @@ export function useDeleteVideo() {
 export function useAddSeries() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (tvSeries: TVSeries) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addSeries(tvSeries);
+      await actor.addSeries(tvSeries);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['series'] });
@@ -388,10 +427,11 @@ export function useAddSeries() {
 export function useUpdateSeries() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ seriesId, tvSeries }: { seriesId: string; tvSeries: TVSeries }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateSeries(seriesId, tvSeries);
+      await actor.updateSeries(seriesId, tvSeries);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['series'] });
@@ -402,10 +442,11 @@ export function useUpdateSeries() {
 export function useDeleteSeries() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (seriesId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteSeries(seriesId);
+      await actor.deleteSeries(seriesId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['series'] });
@@ -416,10 +457,11 @@ export function useDeleteSeries() {
 export function useAddLiveChannel() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (channel: LiveChannel) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addLiveChannel(channel);
+      await actor.addLiveChannel(channel);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['liveChannels'] });
@@ -430,10 +472,11 @@ export function useAddLiveChannel() {
 export function useUpdateLiveChannel() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ channelId, channel }: { channelId: string; channel: LiveChannel }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateLiveChannel(channelId, channel);
+      await actor.updateLiveChannel(channelId, channel);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['liveChannels'] });
@@ -444,10 +487,11 @@ export function useUpdateLiveChannel() {
 export function useDeleteLiveChannel() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (channelId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteLiveChannel(channelId);
+      await actor.deleteLiveChannel(channelId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['liveChannels'] });
@@ -458,10 +502,11 @@ export function useDeleteLiveChannel() {
 export function useAddBrand() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (brand: Brand) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addBrand(brand);
+      await actor.addBrand(brand);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
@@ -472,13 +517,15 @@ export function useAddBrand() {
 export function useUpdateBrand() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ brandId, brand }: { brandId: string; brand: Brand }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateBrand(brandId, brand);
+      await actor.updateBrand(brandId, brand);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
+      queryClient.invalidateQueries({ queryKey: ['brand'] });
     },
   });
 }
@@ -486,10 +533,11 @@ export function useUpdateBrand() {
 export function useDeleteBrand() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (brandId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteBrand(brandId);
+      await actor.deleteBrand(brandId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
@@ -500,10 +548,11 @@ export function useDeleteBrand() {
 export function useAddAdMedia() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (ad: AdMedia) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addAdMedia(ad);
+      await actor.addAdMedia(ad);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adMedia'] });
@@ -514,10 +563,11 @@ export function useAddAdMedia() {
 export function useUpdateAdMedia() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ adId, ad }: { adId: string; ad: AdMedia }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateAdMedia(adId, ad);
+      await actor.updateAdMedia(adId, ad);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adMedia'] });
@@ -528,10 +578,11 @@ export function useUpdateAdMedia() {
 export function useDeleteAdMedia() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (adId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteAdMedia(adId);
+      await actor.deleteAdMedia(adId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adMedia'] });
@@ -542,10 +593,11 @@ export function useDeleteAdMedia() {
 export function useAddAdAssignment() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (assignment: AdAssignment) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addAdAssignment(assignment);
+      await actor.addAdAssignment(assignment);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adAssignments'] });
@@ -556,10 +608,11 @@ export function useAddAdAssignment() {
 export function useUpdateAdAssignment() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ assignmentId, assignment }: { assignmentId: string; assignment: AdAssignment }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateAdAssignment(assignmentId, assignment);
+      await actor.updateAdAssignment(assignmentId, assignment);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adAssignments'] });
@@ -570,10 +623,11 @@ export function useUpdateAdAssignment() {
 export function useDeleteAdAssignment() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (assignmentId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteAdAssignment(assignmentId);
+      await actor.deleteAdAssignment(assignmentId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adAssignments'] });
@@ -584,42 +638,14 @@ export function useDeleteAdAssignment() {
 export function useAddToWatchHistory() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (contentId: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addToWatchHistory(contentId);
+      await actor.addToWatchHistory(contentId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchHistory'] });
-    },
-  });
-}
-
-export function useRegister() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: RegisterInput) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.register(input);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
-  });
-}
-
-export function useLogin() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.login(email, password);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-      queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
     },
   });
 }
@@ -629,7 +655,7 @@ export function useIncrementViews() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.incrementViews();
+      await actor.incrementViews();
     },
   });
 }
@@ -639,13 +665,30 @@ export function useIncrementAdImpressions() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.incrementAdImpressions();
+      await actor.incrementAdImpressions();
     },
   });
 }
 
-export function useCreateCheckoutSession() {
+export function useSetStripeConfiguration() {
   const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (config: StripeConfiguration) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.setStripeConfiguration(config);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stripeConfigured'] });
+    },
+  });
+}
+
+// Accepts ShoppingItem[] directly and handles URL construction internally
+export function useCreateCheckout() {
+  const { actor } = useActor();
+
   return useMutation({
     mutationFn: async (items: ShoppingItem[]) => {
       if (!actor) throw new Error('Actor not available');
@@ -660,31 +703,62 @@ export function useCreateCheckoutSession() {
   });
 }
 
-export function useSetStripeConfiguration() {
+export function usePromoteToAdmin() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (config: { secretKey: string; allowedCountries: string[] }) => {
+    mutationFn: async (userPrincipal: any) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.setStripeConfiguration(config);
+      await actor.promoteToAdmin(userPrincipal);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['isStripeConfigured'] });
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
     },
   });
 }
 
-export function useAssignCallerUserRole() {
+export function useDemoteFromAdmin() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async ({ user, role }: { user: string; role: UserRole }) => {
+    mutationFn: async (userPrincipal: any) => {
       if (!actor) throw new Error('Actor not available');
-      const { Principal } = await import('@dfinity/principal');
-      return actor.assignCallerUserRole(Principal.fromText(user), role);
+      await actor.demoteFromAdmin(userPrincipal);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['callerUserRole'] });
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+    },
+  });
+}
+
+export function usePromoteToMasterAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userPrincipal: any) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.promoteToMasterAdmin(userPrincipal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+    },
+  });
+}
+
+export function useDemoteFromMasterAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userPrincipal: any) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.demoteFromMasterAdmin(userPrincipal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
     },
   });
 }

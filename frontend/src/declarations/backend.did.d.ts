@@ -175,6 +175,12 @@ export interface TrendingContent {
   'viewCount' : bigint,
   'category' : string,
 }
+export interface UserInfo {
+  'principal' : Principal,
+  'displayName' : string,
+  'role' : UserRole__1,
+  'email' : string,
+}
 export interface UserProfile {
   'isPremium' : boolean,
   'name' : string,
@@ -182,6 +188,10 @@ export interface UserProfile {
   'hasPrioritySupport' : boolean,
 }
 export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
+export type UserRole__1 = { 'masterAdmin' : null } |
+  { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface VideoContent {
@@ -257,15 +267,19 @@ export interface _SERVICE {
   'deleteLiveChannel' : ActorMethod<[string], undefined>,
   'deleteSeries' : ActorMethod<[string], undefined>,
   'deleteVideo' : ActorMethod<[string], undefined>,
+  'demoteFromAdmin' : ActorMethod<[Principal], undefined>,
+  'demoteFromMasterAdmin' : ActorMethod<[Principal], undefined>,
   'getAdAssignments' : ActorMethod<[], Array<AdAssignment>>,
   'getAdAssignmentsForLive' : ActorMethod<[string], Array<AdAssignment>>,
   'getAdMedia' : ActorMethod<[], Array<AdMedia>>,
   'getAllBrands' : ActorMethod<[], Array<Brand>>,
   'getAllClips' : ActorMethod<[], Array<VideoContent>>,
   'getAllSeries' : ActorMethod<[], Array<TVSeries>>,
+  'getAllUsers' : ActorMethod<[], Array<UserInfo>>,
   'getAllVideos' : ActorMethod<[], Array<VideoContent>>,
   'getAnalytics' : ActorMethod<[], Analytics>,
   'getBrandById' : ActorMethod<[string], [] | [Brand]>,
+  'getCallerFullUserRole' : ActorMethod<[], UserRole__1>,
   'getCallerLoginStatus' : ActorMethod<[], LoginStatus>,
   'getCallerRegularUserStatus' : ActorMethod<[], RegularUserStatus>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -293,8 +307,12 @@ export interface _SERVICE {
   'incrementViews' : ActorMethod<[], undefined>,
   'initializeAccessControl' : ActorMethod<[], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isCallerMasterAdmin' : ActorMethod<[], boolean>,
+  'isProfileComplete' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'login' : ActorMethod<[string, string], boolean>,
+  'promoteToAdmin' : ActorMethod<[Principal], undefined>,
+  'promoteToMasterAdmin' : ActorMethod<[Principal], undefined>,
   'register' : ActorMethod<[RegisterInput], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'search' : ActorMethod<[string], Array<SearchResult>>,

@@ -1,80 +1,137 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useState } from 'react';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'sonner';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { useActor } from '../hooks/useActor';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
+import { UserProfile } from '../backend';
 
-export default function ProfileSetupModal() {
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-  const { isAuthenticated, authMethod } = useAuth();
+interface ProfileSetupModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function ProfileSetupModal({ open, onClose }: ProfileSetupModalProps) {
+  const { identity } = useInternetIdentity();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    // Only show modal for Internet Identity users who need to complete email
-    if (isAuthenticated && isFetched && authMethod === 'internet-identity') {
-      const needsEmail = userProfile && !userProfile.email;
-      setIsOpen(!!needsEmail);
-    } else {
-      setIsOpen(false);
-    }
-  }, [isAuthenticated, userProfile, profileLoading, isFetched, authMethod]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!actor) return;
 
-    if (!email.trim()) {
-      toast.error('Please enter your email');
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName) {
+      setError('Please enter your name.');
+      return;
+    }
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
       return;
     }
 
-    // Note: Backend doesn't support profile updates yet
-    // This is a placeholder for future implementation
-    toast.info('Profile updates are not yet supported');
-    setIsOpen(false);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // First assign the #user role to self so we have permission to save profile
+      try {
+        await actor.assignCallerUserRole(identity!.getPrincipal(), 'user' as any);
+      } catch {
+        // May already have the role, continue
+      }
+
+      const profile: UserProfile = {
+        name: trimmedName,
+        email: trimmedEmail,
+        isPremium: false,
+        hasPrioritySupport: false,
+      };
+
+      await actor.saveCallerUserProfile(profile);
+      await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Only render for Internet Identity users
-  if (!isAuthenticated || authMethod !== 'internet-identity') return null;
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md bg-[#1a0000] border-2 border-[#660000]">
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !isSubmitting) onClose(); }}>
+      <DialogContent className="sm:max-w-md bg-card border-border" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <div className="flex justify-center mb-4">
-            <img
-              src="/assets/F.A.I.T.H.X-Stream(Transparent-White).png"
-              alt="FAITH X-Stream"
-              className="h-16 w-auto"
-            />
-          </div>
-          <DialogTitle className="text-2xl text-white text-center">Complete Your Profile</DialogTitle>
-          <DialogDescription className="text-white/70 text-center">
-            Please provide your email address to complete your profile setup
+          <DialogTitle className="text-foreground text-xl font-bold">Complete Your Profile</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Welcome! Please set up your profile to get started with FAITH X-Stream.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white">Email</Label>
+            <Label htmlFor="profile-name" className="text-foreground">
+              Display Name
+            </Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-[#330000] border-[#660000] text-white placeholder:text-white/50 focus:border-[#cc0000]"
-              required
+              id="profile-name"
+              type="text"
+              placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+              autoFocus
             />
           </div>
-          <Button
-            type="submit"
-            className="w-full bg-[#cc0000] hover:bg-[#990000] text-white font-bold transition-all duration-300"
-          >
-            Complete Setup
-          </Button>
+
+          <div className="space-y-2">
+            <Label htmlFor="profile-email" className="text-foreground">
+              Email Address
+            </Label>
+            <Input
+              id="profile-email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubmitting}
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+
+          {error && (
+            <p className="text-destructive text-sm">{error}</p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting || !name.trim() || !email.trim()}
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Profile'
+              )}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

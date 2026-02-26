@@ -1,44 +1,43 @@
-import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Heart, Tv, Film, Mic, Star, Play, Clapperboard, Globe } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { Heart } from 'lucide-react';
 
 export default function Footer() {
   const navigate = useNavigate();
-  const year = new Date().getFullYear();
+  const { isAuthenticated } = useAuth();
   const appId = encodeURIComponent(window.location.hostname || 'faith-xstream');
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[oklch(0.07_0.014_15)] border-t border-[oklch(0.18_0.025_15)] mt-16">
-      <div className="max-w-[1600px] mx-auto px-4 lg:px-8 py-12">
+    <footer className="bg-background border-t border-border/30 pt-12 pb-6 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="md:col-span-1">
-            <img
-              src="/assets/F.A.I.T.H.X-Stream(Transparent-White).png"
-              alt="FAITH X-Stream"
-              className="h-10 w-auto object-contain mb-4"
-            />
-            <p className="text-sm text-[oklch(0.55_0.01_90)] leading-relaxed">
-              Your destination for faith-based entertainment. Stream movies, TV shows, podcasts, and live TV.
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/assets/F.A.I.T.H.X-Stream(Transparent-White).png" alt="FAITH X-Stream" className="h-10 object-contain" />
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.
             </p>
           </div>
 
           {/* Browse */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[oklch(0.55_0.24_25)] mb-4">Browse</h4>
-            <ul className="space-y-2.5">
+            <h4 className="text-foreground font-semibold mb-4 text-sm uppercase tracking-wider">Browse</h4>
+            <ul className="space-y-2">
               {[
-                { label: 'Movies', path: '/movies', icon: Film },
-                { label: 'TV Shows', path: '/tv-shows', icon: Tv },
-                { label: 'Podcasts', path: '/podcasts', icon: Mic },
-                { label: 'Originals', path: '/originals', icon: Star },
-              ].map(({ label, path, icon: Icon }) => (
+                { label: 'Home', path: '/' },
+                { label: 'Movies', path: '/movies' },
+                { label: 'TV Shows', path: '/tv-shows' },
+                { label: 'Live TV', path: '/live' },
+                { label: 'Originals', path: '/originals' },
+              ].map(({ label, path }) => (
                 <li key={path}>
                   <button
                     onClick={() => navigate({ to: path })}
-                    className="flex items-center gap-2 text-sm text-[oklch(0.65_0.01_90)] hover:text-[oklch(0.55_0.24_25)] transition-colors"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    <Icon size={13} />
                     {label}
                   </button>
                 </li>
@@ -46,21 +45,20 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* More */}
+          {/* Discover */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[oklch(0.55_0.24_25)] mb-4">More</h4>
-            <ul className="space-y-2.5">
+            <h4 className="text-foreground font-semibold mb-4 text-sm uppercase tracking-wider">Discover</h4>
+            <ul className="space-y-2">
               {[
-                { label: 'Live TV', path: '/live', icon: Play },
-                { label: 'Clips', path: '/clips', icon: Clapperboard },
-                { label: 'Networks', path: '/networks', icon: Globe },
-              ].map(({ label, path, icon: Icon }) => (
+                { label: 'Networks', path: '/networks' },
+                { label: 'Clips', path: '/clips' },
+                { label: 'Podcasts', path: '/podcasts' },
+              ].map(({ label, path }) => (
                 <li key={path}>
                   <button
                     onClick={() => navigate({ to: path })}
-                    className="flex items-center gap-2 text-sm text-[oklch(0.65_0.01_90)] hover:text-[oklch(0.55_0.24_25)] transition-colors"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    <Icon size={13} />
                     {label}
                   </button>
                 </li>
@@ -70,37 +68,62 @@ export default function Footer() {
 
           {/* Account */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-[oklch(0.55_0.24_25)] mb-4">Account</h4>
-            <ul className="space-y-2.5">
-              {[
-                { label: 'Sign In', path: '/login' },
-                { label: 'Upgrade to Premium', path: '/upgrade' },
-                { label: 'Profile', path: '/profile' },
-              ].map(({ label, path }) => (
-                <li key={path}>
-                  <button
-                    onClick={() => navigate({ to: path })}
-                    className="text-sm text-[oklch(0.65_0.01_90)] hover:text-[oklch(0.55_0.24_25)] transition-colors"
-                  >
-                    {label}
-                  </button>
-                </li>
-              ))}
+            <h4 className="text-foreground font-semibold mb-4 text-sm uppercase tracking-wider">Account</h4>
+            <ul className="space-y-2">
+              {!isAuthenticated ? (
+                <>
+                  <li>
+                    <button
+                      onClick={() => navigate({ to: '/login' })}
+                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => navigate({ to: '/login' })}
+                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      Create Account
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <button
+                      onClick={() => navigate({ to: '/profile' })}
+                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      My Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => navigate({ to: '/upgrade' })}
+                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      Upgrade to Premium
+                    </button>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-[oklch(0.16_0.022_15)] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[oklch(0.45_0.01_90)]">
+        <div className="border-t border-border/30 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-muted-foreground text-xs">
             © {year} FAITH X-Stream. All rights reserved.
           </p>
-          <p className="text-xs text-[oklch(0.45_0.01_90)] flex items-center gap-1">
-            Built with <Heart size={11} className="text-[oklch(0.55_0.24_25)] fill-[oklch(0.55_0.24_25)]" /> using{' '}
+          <p className="text-muted-foreground text-xs flex items-center gap-1">
+            Built with <Heart className="w-3 h-3 fill-primary text-primary" /> using{' '}
             <a
               href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${appId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[oklch(0.55_0.24_25)] hover:text-[oklch(0.65_0.26_22)] transition-colors"
+              className="hover:text-foreground transition-colors underline underline-offset-2"
             >
               caffeine.ai
             </a>

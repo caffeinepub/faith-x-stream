@@ -2,18 +2,21 @@ import Map "mo:core/Map";
 import Text "mo:core/Text";
 import AccessControl "authorization/access-control";
 import Principal "mo:core/Principal";
+import Bool "mo:core/Bool";
+import Runtime "mo:core/Runtime";
 import List "mo:core/List";
 import Iter "mo:core/Iter";
-import Stripe "stripe/stripe";
-import OutCall "http-outcalls/outcall";
-import Runtime "mo:core/Runtime";
-import Storage "blob-storage/Storage";
-import MixinStorage "blob-storage/Mixin";
-import Bool "mo:core/Bool";
+import Blob "mo:core/Blob";
 import Nat "mo:core/Nat";
 import Array "mo:core/Array";
 import Time "mo:core/Time";
+import Stripe "stripe/stripe";
+import Storage "blob-storage/Storage";
+import OutCall "http-outcalls/outcall";
+import MixinStorage "blob-storage/Mixin";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   public type ContentType = {
     #documentary;
@@ -190,6 +193,13 @@ actor {
     isOriginal : Bool;
   };
 
+  public type UserRole = {
+    #masterAdmin;
+    #admin;
+    #user;
+    #guest;
+  };
+
   public type UserProfile = {
     name : Text;
     email : Text;
@@ -200,6 +210,7 @@ actor {
   public type UserCredentials = {
     email : Text;
     password : Text;
+    isProfileComplete : Bool;
   };
 
   public type RegisterInput = {
@@ -219,12 +230,20 @@ actor {
     #accessGranted : { password : Text; userProfile : UserProfile };
   };
 
+  public type UserInfo = {
+    principal : Principal;
+    email : Text;
+    displayName : Text;
+    role : UserRole;
+  };
+
   let accessControlState = AccessControl.initState();
   var stripeConfig : ?Stripe.StripeConfiguration = null;
   let users = Map.empty<Principal, UserProfile>();
   let userCredentials = Map.empty<Text, UserCredentials>();
   let principalToEmail = Map.empty<Principal, Text>();
   let emailToPrincipal = Map.empty<Text, Principal>();
+  let profileComplete = Map.empty<Principal, Bool>();
   let videos = Map.empty<Text, VideoContent>();
   let series = Map.empty<Text, TVSeries>();
   let liveChannels = Map.empty<Text, LiveChannel>();
@@ -234,10 +253,18 @@ actor {
   let adAssignments = Map.empty<Text, AdAssignment>();
   let watchHistory = Map.empty<Principal, [Text]>();
   let stripeSessionOwners = Map.empty<Text, Principal>();
+  let masterAdmins = Map.empty<Principal, Bool>();
   var totalViews = 0;
   var adImpressions = 0;
 
   include MixinStorage();
+
+  func isMasterAdminPrincipal(p : Principal) : Bool {
+    switch (masterAdmins.get(p)) {
+      case (?true) { true };
+      case (_) { false };
+    };
+  };
 
   public query func getAdAssignmentsForLive(_liveChannelId : Text) : async [AdAssignment] {
     let filteredAssignments = adAssignments.filter(
@@ -250,10 +277,29 @@ actor {
 
   public shared ({ caller }) func initializeAccessControl() : async () {
     AccessControl.initialize(accessControlState, caller);
+    if (masterAdmins.size() == 0 and not caller.isAnonymous()) {
+      masterAdmins.add(caller, true);
+    };
   };
 
   public query ({ caller }) func getCallerUserRole() : async AccessControl.UserRole {
     AccessControl.getUserRole(accessControlState, caller);
+  };
+
+  public query ({ caller }) func getCallerFullUserRole() : async UserRole {
+    if (isMasterAdminPrincipal(caller)) {
+      #masterAdmin;
+    } else if (AccessControl.isAdmin(accessControlState, caller)) {
+      #admin;
+    } else if (AccessControl.hasPermission(accessControlState, caller, #user)) {
+      #user;
+    } else {
+      #guest;
+    };
+  };
+
+  public query ({ caller }) func isCallerMasterAdmin() : async Bool {
+    isMasterAdminPrincipal(caller);
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -261,6 +307,20 @@ actor {
       Runtime.trap("Unauthorized: Only users can access profiles");
     };
     users.get(caller);
+  };
+
+  public query ({ caller }) func isProfileComplete() : async Bool {
+    if (caller.isAnonymous()) {
+      return false;
+    };
+    switch (profileComplete.get(caller)) {
+      case (?complete) { return complete };
+      case (null) {};
+    };
+    switch (users.get(caller)) {
+      case (?profile) { profile.name != "" };
+      case (null) { false };
+    };
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
@@ -275,6 +335,22 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     users.add(caller, profile);
+    profileComplete.add(caller, true);
+    switch (principalToEmail.get(caller)) {
+      case (?email) {
+        switch (userCredentials.get(email)) {
+          case (?credentials) {
+            let updatedCredentials : UserCredentials = {
+              credentials with
+              isProfileComplete = true;
+            };
+            userCredentials.add(email, updatedCredentials);
+          };
+          case (null) {};
+        };
+      };
+      case (null) {};
+    };
   };
 
   public query ({ caller }) func getCallerRegularUserStatus() : async RegularUserStatus {
@@ -303,11 +379,12 @@ actor {
         let credentials : UserCredentials = {
           password = "password";
           email = "gen@auth.deafult.com";
+          isProfileComplete = false;
         };
         userCredentials.add("gen@auth.deafult.com", credentials);
 
         let profile : UserProfile = {
-          name = "Regular Default User";
+          name = "";
           email = "gen@auth.deafult.com";
           isPremium = false;
           hasPrioritySupport = false;
@@ -339,12 +416,74 @@ actor {
     AccessControl.isAdmin(accessControlState, caller);
   };
 
+  public shared ({ caller }) func promoteToAdmin(user : Principal) : async () {
+    if (not isMasterAdminPrincipal(caller)) {
+      Runtime.trap("Unauthorized: Only Master Admins can promote users to admin");
+    };
+    AccessControl.assignRole(accessControlState, caller, user, #admin);
+  };
+
+  public shared ({ caller }) func demoteFromAdmin(user : Principal) : async () {
+    if (not isMasterAdminPrincipal(caller)) {
+      Runtime.trap("Unauthorized: Only Master Admins can demote admins");
+    };
+    if (isMasterAdminPrincipal(user)) {
+      Runtime.trap("Unauthorized: Cannot demote a Master Admin");
+    };
+    AccessControl.assignRole(accessControlState, caller, user, #user);
+  };
+
+  public shared ({ caller }) func promoteToMasterAdmin(user : Principal) : async () {
+    if (not isMasterAdminPrincipal(caller)) {
+      Runtime.trap("Unauthorized: Only Master Admins can promote users to Master Admin");
+    };
+    masterAdmins.add(user, true);
+    AccessControl.assignRole(accessControlState, caller, user, #admin);
+  };
+
+  public shared ({ caller }) func demoteFromMasterAdmin(user : Principal) : async () {
+    if (not isMasterAdminPrincipal(caller)) {
+      Runtime.trap("Unauthorized: Only Master Admins can demote Master Admins");
+    };
+    if (caller == user) {
+      Runtime.trap("Unauthorized: Cannot demote yourself from Master Admin");
+    };
+    masterAdmins.remove(user);
+  };
+
+  public query ({ caller }) func getAllUsers() : async [UserInfo] {
+    if (not isMasterAdminPrincipal(caller)) {
+      Runtime.trap("Unauthorized: Only Master Admins can view all users");
+    };
+    let result = List.fromIter<UserInfo>([].values());
+    for ((principal, profile) in users.entries()) {
+      let role : UserRole = if (isMasterAdminPrincipal(principal)) {
+        #masterAdmin;
+      } else if (AccessControl.isAdmin(accessControlState, principal)) {
+        #admin;
+      } else if (AccessControl.hasPermission(accessControlState, principal, #user)) {
+        #user;
+      } else {
+        #guest;
+      };
+      let info : UserInfo = {
+        principal = principal;
+        email = profile.email;
+        displayName = profile.name;
+        role = role;
+      };
+      result.add(info);
+    };
+    result.toArray();
+  };
+
   public shared ({ caller }) func register(input : RegisterInput) : async () {
     switch (userCredentials.get(input.email)) {
       case (null) {
         let credentials : UserCredentials = {
           email = input.email;
           password = input.password;
+          isProfileComplete = false;
         };
         userCredentials.add(input.email, credentials);
 
@@ -474,8 +613,6 @@ actor {
     series.values().toArray();
   };
 
-  // ===== GET VIDEOS ELIGIBLE FOR LIVE TV (ADMIN ONLY) =====
-
   public query ({ caller }) func getEligibleVideosForLive() : async [VideoContent] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view eligible videos for Live TV scheduling");
@@ -484,8 +621,6 @@ actor {
       func(v) { v.eligibleForLive }
     );
   };
-
-  // ===== STRIPE CONFIGURATION (ADMIN ONLY) =====
 
   public query func isStripeConfigured() : async Bool {
     stripeConfig != null;
@@ -504,8 +639,6 @@ actor {
       case (?value) { value };
     };
   };
-
-  // ===== STRIPE CHECKOUT (USER ONLY) =====
 
   public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -538,8 +671,6 @@ actor {
   public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
     OutCall.transform(input);
   };
-
-  // ===== CLIP MANAGER (ADMIN ONLY) =====
 
   func createClip(originalVideo : VideoContent, caption : Text, clipId : Text) : VideoContent {
     {
@@ -582,8 +713,6 @@ actor {
     videos.remove(video.id);
     createClipsForVideo(video);
   };
-
-  // ===== CONTENT MANAGEMENT (ADMIN ONLY) =====
 
   public shared ({ caller }) func addVideo(video : VideoContent) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
@@ -698,8 +827,6 @@ actor {
     channels.remove(channelId);
   };
 
-  // ===== AD MANAGEMENT (ADMIN ONLY) =====
-
   public shared ({ caller }) func addAdMedia(ad : AdMedia) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
@@ -773,8 +900,6 @@ actor {
     };
   };
 
-  // ===== ANALYTICS (TRACKING ALLOWS GUESTS, VIEWING ADMIN ONLY) =====
-
   public shared ({ caller }) func incrementViews() : async () {
     totalViews += 1;
   };
@@ -797,8 +922,6 @@ actor {
       categoryStats = [];
     };
   };
-
-  // ===== SEARCH (PUBLIC) =====
 
   public query func search(searchQuery : Text) : async [SearchResult] {
     var results : [SearchResult] = [];

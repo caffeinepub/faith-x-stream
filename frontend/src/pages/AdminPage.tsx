@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useIsCallerAdmin } from '../hooks/useQueries';
+import { useIsCallerAdmin, useGetCallerFullUserRole } from '../hooks/useQueries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Shield, Video, Scissors, Tv, Radio, Building2, DollarSign, BarChart3, CreditCard, Podcast, Film } from 'lucide-react';
+import { Shield, Video, Scissors, Tv, Radio, Building2, DollarSign, BarChart3, CreditCard, Podcast, Film, Crown } from 'lucide-react';
 import VideoManagement from '../components/admin/VideoManagement';
 import MoviesManagement from '../components/admin/MoviesManagement';
 import PodcastsManagement from '../components/admin/PodcastsManagement';
@@ -14,10 +14,14 @@ import BrandManagement from '../components/admin/BrandManagement';
 import ManualAdsManagement from '../components/admin/ManualAdsManagement';
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import StripeSetup from '../components/admin/StripeSetup';
+import MasterAdminManagement from '../components/admin/MasterAdminManagement';
 
 export default function AdminPage() {
   const { data: isAdmin, isLoading } = useIsCallerAdmin();
+  const { data: fullRole } = useGetCallerFullUserRole();
   const [activeTab, setActiveTab] = useState('movies');
+
+  const isMasterAdmin = fullRole === 'masterAdmin';
 
   if (isLoading) {
     return (
@@ -54,11 +58,19 @@ export default function AdminPage() {
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
             Admin Dashboard
           </h1>
-          <p className="text-muted-foreground">Manage your streaming platform</p>
+          <p className="text-muted-foreground">
+            Manage your streaming platform
+            {isMasterAdmin && (
+              <span className="ml-2 inline-flex items-center gap-1 text-yellow-400 text-sm font-medium">
+                <Crown className="h-4 w-4" />
+                Master Admin
+              </span>
+            )}
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-5 lg:grid-cols-11 gap-2 h-auto p-2 bg-gradient-to-r from-black/80 to-primary/10">
+          <TabsList className={`grid gap-2 h-auto p-2 bg-gradient-to-r from-black/80 to-primary/10 ${isMasterAdmin ? 'grid-cols-6 lg:grid-cols-12' : 'grid-cols-5 lg:grid-cols-11'}`}>
             <TabsTrigger value="movies" className="flex items-center gap-2">
               <Film className="h-4 w-4" />
               <span className="hidden sm:inline">Movies</span>
@@ -103,6 +115,12 @@ export default function AdminPage() {
               <CreditCard className="h-4 w-4" />
               <span className="hidden sm:inline">Stripe</span>
             </TabsTrigger>
+            {isMasterAdmin && (
+              <TabsTrigger value="masteradmin" className="flex items-center gap-2 text-yellow-400 data-[state=active]:text-yellow-300">
+                <Crown className="h-4 w-4" />
+                <span className="hidden sm:inline">Master Admin</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="movies">
@@ -148,6 +166,12 @@ export default function AdminPage() {
           <TabsContent value="stripe">
             <StripeSetup />
           </TabsContent>
+
+          {isMasterAdmin && (
+            <TabsContent value="masteradmin">
+              <MasterAdminManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
