@@ -1,47 +1,144 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update footer tagline and fix Profile Setup flow",
+  "title": "Restore Full Admin System",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update the footer tagline paragraph to read: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+      "summary": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
       "acceptanceCriteria": [
-        "The footer paragraph text exactly reads: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
-        "No other footer content or layout is changed."
+        "AdminPage renders a Dashboard tab as the default/first tab",
+        "Dashboard displays at least 5 key stat cards (users, content, subscriptions, ad impressions, revenue)",
+        "Quick-access buttons or links to each admin sub-section are present"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/Footer.tsx",
+          "path": "frontend/src/pages/AdminPage.tsx",
           "operation": "modify",
-          "description": "Locate the footer paragraph element and update its text content to exactly read: 'Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.' Preserve all other footer structure, links, and styling."
+          "description": "Add a Dashboard tab as the first/default tab in the tabs list. Fetch key statistics using existing query hooks (useGetAllUsers for total users count, useGetAllVideos and useGetAllSeries for total content count, useGetCallerUserProfile or useGetAllUsers to count premium subscriptions, useGetAnalytics for ad impressions and revenue). Render stat cards in a responsive grid and provide quick-access navigation buttons/links to each existing admin sub-section tab."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Fix the Profile Setup flow: ensure the modal appears correctly for authenticated Internet Identity users who have not completed their profile, that all form fields function properly, and that the modal dismisses permanently after successful profile setup.",
+      "summary": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
       "acceptanceCriteria": [
-        "The Profile Setup modal appears when an authenticated Internet Identity user has not set up their profile.",
-        "The email field accepts input and the form submits without errors.",
-        "After successful submission the modal closes and does not reappear on subsequent page loads for the same user.",
-        "If the user is not authenticated or already has a profile, the modal does not appear."
+        "User Management tab is present in AdminPage",
+        "All users are listed in a table with their current role",
+        "Admin can promote/demote, suspend, and remove users from the UI"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "path": "frontend/src/pages/AdminPage.tsx",
           "operation": "modify",
-          "description": "Fix the ProfileSetupModal component to properly handle the profile setup flow. Ensure the modal visibility logic correctly checks authentication state and profile completion status using the useGetCallerUserProfile hook with proper loading state handling (verify the hook returns isFetched and isLoading correctly). Ensure the email input field is properly bound to form state and that form submission calls saveCallerUserProfile with the correct UserProfile structure including the email field. After successful submission, ensure the query cache is invalidated so the modal no longer appears. Verify the component's usage instructions from the authorization component are followed, particularly the pattern for preventing modal flash on load by checking both actorFetching and query states."
+          "description": "Add a 'User Management' tab to the tabs list that renders the existing MasterAdminManagement component. Ensure the tab is accessible to admin and master admin roles."
         },
         {
-          "path": "frontend/src/components/Layout.tsx",
+          "path": "frontend/src/components/admin/MasterAdminManagement.tsx",
           "operation": "modify",
-          "description": "Review and fix the ProfileSetupModal integration in the Layout component. Ensure the modal is conditionally rendered using the correct logic: showProfileSetup should be true only when isAuthenticated is true, profile loading is complete (isFetched is true and isLoading is false), and userProfile is null. Verify that the authentication state from useAuth or useInternetIdentity is properly passed to the modal visibility check."
+          "description": "Ensure the component supports suspending and removing users in addition to role promotion/demotion. If suspend/remove functionality is missing, add UI controls (buttons) and wire them to appropriate backend mutations or placeholder handlers. Use existing query hooks (useGetAllUsers) and mutation hooks (usePromoteToAdmin, useDemoteFromAdmin, etc.) as needed."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "acceptanceCriteria": [
+        "AdminPage includes tabs for Movies, Podcasts, Videos, Clips, Series, Channels, and Stripe Setup",
+        "Each tab renders its corresponding existing management component",
+        "CRUD operations (add, edit, delete) are accessible from each content tab"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add tabs for 'Movies', 'Podcasts', 'Videos', 'Clips', 'Series', 'Channels', and 'Stripe Setup'. Render the corresponding existing management components (MoviesManagement, PodcastsManagement, VideoManagement, ClipsManagement, SeriesManagement, ChannelManagement, StripeSetup) in each tab's content area. Ensure all tabs are accessible and that CRUD operations remain functional in each component."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "acceptanceCriteria": [
+        "Unauthenticated users cannot access /admin and are redirected to login",
+        "Users without admin role see an access-denied message or are redirected",
+        "Admin and master admin roles have full access to AdminPage"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add authentication and authorization checks at the top of the component. Use useAuth to verify the user is authenticated; if not, redirect to /login. Use the existing useIsCallerAdmin query hook to check if the caller is an admin or master admin. If the user is authenticated but not an admin, display an access-denied message or redirect to the home page. Only render the admin tabs and content if the user passes both checks. Verify the authorization component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "acceptanceCriteria": [
+        "Ads Management tab is present in AdminPage",
+        "Admin can upload ad media files",
+        "Admin can assign ads to specific users with configurable scope, position, and skip settings"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add an 'Ads Management' tab to the tabs list that renders the existing ManualAdsManagement component. Ensure the tab is accessible to admin and master admin roles and that the component provides ad upload and user-targeted assignment features."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "acceptanceCriteria": [
+        "Analytics tab is present in AdminPage",
+        "Analytics dashboard displays total views, premium users, ad impressions, and revenue stats",
+        "Trending content list is shown with relevant metrics"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add an 'Analytics' tab to the tabs list that renders the existing AnalyticsDashboard component. Ensure the tab is accessible to admin and master admin roles and that the component fetches and displays analytics data using the useGetAnalytics query hook."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "acceptanceCriteria": [
+        "Network/Brand Management tab is present in AdminPage",
+        "Admin can create, edit, and delete brands/networks",
+        "Admin can upload a logo and assign content (films, series, clips, live channels) to a brand"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add a 'Brand Management' (or 'Network/Brand Management') tab to the tabs list that renders the existing BrandManagement component. Ensure the tab is accessible to admin and master admin roles. Verify the blob-storage component's usage instructions before implementing any file upload features (if not already present in BrandManagement)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "acceptanceCriteria": [
+        "Live Schedule Management tab is present in AdminPage",
+        "Programs can be added to a channel schedule; the schedule slot duration is derived from the video file length of the added content",
+        "Only movie/film/television content types are eligible for scheduling; clips are excluded from the scheduling UI and logic",
+        "The backend correctly stores and returns schedule entries with accurate durations sourced from content video metadata"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "modify",
+          "description": "Add a 'Live Schedule Management' (or 'Live TV Programming') tab to the tabs list that renders the existing LiveScheduleManagement component. Ensure the tab is accessible to admin and master admin roles."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
           "operation": "modify",
-          "description": "Review and fix the useGetCallerUserProfile hook implementation. Ensure it follows the authorization component's pattern for preventing profile setup modal flash: it should depend on the actor being available and not fetching (enabled: !!actor && !actorFetching), and return a custom isLoading state that combines actorFetching with query.isLoading, plus an isFetched flag that checks both actor availability and query completion. Verify the useSaveCallerUserProfile mutation correctly invalidates the 'currentUserProfile' query key on success so the modal dismisses."
+          "description": "Ensure the component filters the list of schedulable content to include only videos with contentType matching movie, film, or television. Explicitly exclude clips (isClip === true or contentType === 'clip') from the scheduling UI. When adding a program to a schedule, use the video's duration (derived from its video file metadata, if available via ExternalBlob or VideoContent fields) to set the schedule slot's start and end times. If duration metadata is unavailable, provide a fallback or prompt the admin to specify duration manually. Ensure the component uses existing query hooks (useGetEligibleVideosForLive or useGetAllVideos with filtering) and mutation hooks (useUpdateLiveChannel or equivalent) to persist schedule changes."
         }
       ]
     }

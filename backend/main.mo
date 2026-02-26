@@ -14,10 +14,46 @@ import Stripe "stripe/stripe";
 import Storage "blob-storage/Storage";
 import OutCall "http-outcalls/outcall";
 import MixinStorage "blob-storage/Mixin";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
+  public type TVProgram = {
+    id : Text;
+    title : Text;
+    description : Text;
+    durationMinutes : Nat;
+    contentType : ?ContentType;
+    isPremium : Bool;
+    isClip : Bool;
+    videoUrl : ?Storage.ExternalBlob;
+    thumbnailUrl : ?Storage.ExternalBlob;
+    roles : ?Text;
+    genre : ?Text;
+    releaseYear : ?Nat;
+    liveScheduleEligible : Bool;
+    availableAsVOD : Bool;
+    sourceVideoId : ?Text;
+    clipCaption : ?Text;
+  };
+
+  public type TVChannel = {
+    id : Text;
+    name : Text;
+    schedule : [ProgramSlot];
+    logo : ?Storage.ExternalBlob;
+  };
+
+  public type ProgramSlot = {
+    programId : Text;
+    startTime : Int;
+    endTime : Int;
+    assignedAds : ?[AdSpot];
+  };
+
+  public type AdSpot = {
+    position : Int;
+    adUrls : [Storage.ExternalBlob];
+  };
+
   public type ContentType = {
     #documentary;
     #faithBased;
@@ -253,10 +289,11 @@ actor {
   let adAssignments = Map.empty<Text, AdAssignment>();
   let watchHistory = Map.empty<Principal, [Text]>();
   let stripeSessionOwners = Map.empty<Text, Principal>();
+  let tvPrograms = Map.empty<Text, TVProgram>();
+  let tvChannels = Map.empty<Text, TVChannel>();
   let masterAdmins = Map.empty<Principal, Bool>();
   var totalViews = 0;
   var adImpressions = 0;
-
   include MixinStorage();
 
   func isMasterAdminPrincipal(p : Principal) : Bool {

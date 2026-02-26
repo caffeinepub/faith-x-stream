@@ -1,13 +1,17 @@
 # Specification
 
 ## Summary
-**Goal:** Update the footer tagline text and fix the Profile Setup modal flow for authenticated Internet Identity users.
+**Goal:** Restore the full Admin system in AdminPage.tsx with all tabs, sub-components, access restrictions, and supporting backend methods.
 
 **Planned changes:**
-- Update the footer tagline paragraph to read: "Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More."
-- Fix `ProfileSetupModal.tsx` so it appears correctly for authenticated Internet Identity users who have not completed their profile
-- Ensure all form fields (including email) in the Profile Setup modal accept input and submit without errors
-- After successful profile setup, the modal closes and does not reappear on subsequent page loads for the same user
-- Ensure the modal does not appear if the user is not authenticated or already has a profile
+- Restore the Admin Dashboard tab as the default tab, showing key stat cards (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section
+- Restore the User Management tab rendering MasterAdminManagement, allowing role promotion/demotion (guest, user, admin, master admin), suspension, and removal of users
+- Restore Content & Settings Control tabs: Movies, Podcasts, Videos, Clips, Series, Channels, and Stripe Setup, each rendering their existing management components with full CRUD access
+- Restore the Manual User-Targeted Ads Management tab rendering ManualAdsManagement, supporting ad media upload and user-targeted ad assignment with scope, position, and skip settings
+- Restore the Analytics tab rendering AnalyticsDashboard, displaying total views, premium users, ad impressions, revenue, and a trending content list
+- Restore the Network/Brand Management tab rendering BrandManagement, supporting brand/network CRUD, logo upload, and content assignment
+- Restore the Live TV Programming tab rendering LiveScheduleManagement, with auto-schedule logic that derives slot duration from video file length; only movie/film/television content types are eligible — clips are explicitly excluded
+- Enforce access restrictions: unauthenticated users are redirected to login, non-admin users see an access-denied message or are redirected, admin and master admin roles have full access
+- Expose all necessary backend methods: user role management, analytics retrieval, brand CRUD, user-targeted ad assignment, and live schedule management with content-duration-based slot assignment
 
-**User-visible outcome:** The footer displays the updated tagline, and new authenticated users are properly prompted to complete their profile setup exactly once, with the modal working reliably end-to-end.
+**User-visible outcome:** Admins and master admins can access a fully restored admin panel with a dashboard overview, user management, content management, ads management, analytics, brand/network management, and live TV programming — all protected from non-admin access.

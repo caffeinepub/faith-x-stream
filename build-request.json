@@ -1,56 +1,183 @@
 {
   "kind": "build_request",
-  "title": "Update footer tagline and fix Profile Setup flow",
+  "title": "Restore Full Admin System",
   "projectName": "FAITH X-Stream",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the footer tagline paragraph (located at XPath /html[1]/body[1]/div[1]/div[1]/footer[1]/div[1]/div[1]/div[1]/p[1]) to read: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+      "text": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "msg-18"
         ],
         "quotes": [
-          "Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
-          "Update the footer tagline to read Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More."
+          "An Admin dashboard"
         ]
       },
       "acceptanceCriteria": [
-        "The footer paragraph text exactly reads: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
-        "No other footer content or layout is changed."
+        "AdminPage renders a Dashboard tab as the default/first tab",
+        "Dashboard displays at least 5 key stat cards (users, content, subscriptions, ad impressions, revenue)",
+        "Quick-access buttons or links to each admin sub-section are present"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Fix the Set Up Profile flow in ProfileSetupModal.tsx: ensure the modal appears correctly for authenticated Internet Identity users who have not completed their profile, that all form fields such as email are functional and submit properly, and that the modal dismisses and does not re-appear after successful profile setup.",
-      "target": "both",
+      "text": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-18"
         ],
         "quotes": [
-          "Fix the Set up Profile"
+          "User Management"
         ]
       },
       "acceptanceCriteria": [
-        "The Profile Setup modal appears when an authenticated Internet Identity user has not set up their profile.",
-        "The email field accepts input and the form submits without errors.",
-        "After successful submission the modal closes and does not reappear on subsequent page loads for the same user.",
-        "If the user is not authenticated or already has a profile, the modal does not appear."
+        "User Management tab is present in AdminPage",
+        "All users are listed in a table with their current role",
+        "Admin can promote/demote, suspend, and remove users from the UI"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Content or settings control"
+        ]
+      },
+      "acceptanceCriteria": [
+        "AdminPage includes tabs for Movies, Podcasts, Videos, Clips, Series, Channels, and Stripe Setup",
+        "Each tab renders its corresponding existing management component",
+        "CRUD operations (add, edit, delete) are accessible from each content tab"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Access restrictions"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Unauthenticated users cannot access /admin and are redirected to login",
+        "Users without admin role see an access-denied message or are redirected",
+        "Admin and master admin roles have full access to AdminPage"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Manual User-Targeted Ads Management"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Ads Management tab is present in AdminPage",
+        "Admin can upload ad media files",
+        "Admin can assign ads to specific users with configurable scope, position, and skip settings"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Analytics"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Analytics tab is present in AdminPage",
+        "Analytics dashboard displays total views, premium users, ad impressions, and revenue stats",
+        "Trending content list is shown with relevant metrics"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Network/Brand Management"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Network/Brand Management tab is present in AdminPage",
+        "Admin can create, edit, and delete brands/networks",
+        "Admin can upload a logo and assign content (films, series, clips, live channels) to a brand"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ],
+        "quotes": [
+          "Live TV Programming based on the length of the video file of each program added from each content only for movie/film/television etc. excluding clips."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Live Schedule Management tab is present in AdminPage",
+        "Programs can be added to a channel schedule; the schedule slot duration is derived from the video file length of the added content",
+        "Only movie/film/television content types are eligible for scheduling; clips are excluded from the scheduling UI and logic",
+        "The backend correctly stores and returns schedule entries with accurate durations sourced from content video metadata"
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Ensure the backend main actor exposes all necessary query and update methods to support the restored admin features: user role management (promote/demote/suspend/remove), analytics retrieval, brand/network CRUD, ad targeting by user, and live schedule management with content-duration-based slot assignment.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-18"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes methods for user role promotion, demotion, suspension, and removal",
+        "Backend exposes analytics query returning views, premium users, ad impressions, and revenue",
+        "Backend exposes brand CRUD and content-to-brand assignment methods",
+        "Backend exposes ad targeting methods scoped to individual users",
+        "Backend exposes live schedule methods that store and return slot durations derived from video file length"
       ]
     }
   ],
   "constraints": [
-    "Do not change any other footer content, layout, or navigation links.",
-    "Do not modify files listed in frontend.immutablePaths."
+    "Do not modify any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "Existing admin sub-components (AnalyticsDashboard, BrandManagement, ChannelManagement, ClipsManagement, LiveScheduleManagement, ManualAdsManagement, MasterAdminManagement, MoviesManagement, PodcastsManagement, SeriesManagement, StripeSetup, VideoManagement) must be reused, not replaced",
+    "Clips must be explicitly excluded from the Live TV auto-schedule logic",
+    "Preserve the existing ProfileSetupModal fix introduced in Version 55"
   ],
   "nonGoals": [
-    "Adding real video playback or content source integration.",
-    "Any changes to the admin panel or other pages.",
-    "Redesigning the footer layout or navigation structure."
+    "Redesigning or restyling any existing admin sub-components",
+    "Adding new content types beyond what already exists in the backend",
+    "Building a new authentication system — Internet Identity remains the auth mechanism",
+    "Real-time/WebSocket-based live updates for the admin dashboard"
   ],
   "imageRequirements": {
     "required": [],

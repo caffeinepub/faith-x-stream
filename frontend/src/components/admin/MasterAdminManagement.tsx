@@ -1,48 +1,60 @@
-import { useState } from 'react';
-import { Shield, ShieldCheck, ShieldOff, User, Loader2, RefreshCw, Crown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Alert, AlertDescription } from '../ui/alert';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useActor } from '../../hooks/useActor';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  useGetAllUsers,
-  usePromoteToAdmin,
-  usePromoteToMasterAdmin,
-  useDemoteFromAdmin,
-  useDemoteFromMasterAdmin,
-} from '../../hooks/useQueries';
-import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import type { UserInfo } from '../../backend';
-import type { Principal } from '@icp-sdk/core/principal';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Crown, Shield, User, UserX, ChevronUp, ChevronDown, Loader2, Users } from 'lucide-react';
+import { UserInfo } from '../../backend';
+import { Principal } from '@dfinity/principal';
 
-function getRoleBadge(role: UserInfo['role']) {
+function getRoleBadge(role: string) {
   switch (role) {
     case 'masterAdmin':
       return (
-        <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 gap-1">
-          <Crown className="h-3 w-3" />
+        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 gap-1">
+          <Crown className="w-3 h-3" />
           Master Admin
         </Badge>
       );
     case 'admin':
       return (
-        <Badge className="bg-primary/20 text-primary border border-primary/40 gap-1">
-          <ShieldCheck className="h-3 w-3" />
+        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 gap-1">
+          <Shield className="w-3 h-3" />
           Admin
         </Badge>
       );
     case 'user':
       return (
-        <Badge variant="secondary" className="gap-1">
-          <User className="h-3 w-3" />
+        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1">
+          <User className="w-3 h-3" />
           User
         </Badge>
       );
     default:
       return (
         <Badge variant="outline" className="gap-1">
-          <User className="h-3 w-3" />
+          <User className="w-3 h-3" />
           Guest
         </Badge>
       );
@@ -50,242 +62,269 @@ function getRoleBadge(role: UserInfo['role']) {
 }
 
 export default function MasterAdminManagement() {
-  const { identity } = useInternetIdentity();
-  const { data: users, isLoading, error, refetch, isFetching } = useGetAllUsers();
-  const promoteToAdmin = usePromoteToAdmin();
-  const promoteToMasterAdmin = usePromoteToMasterAdmin();
-  const demoteFromAdmin = useDemoteFromAdmin();
-  const demoteFromMasterAdmin = useDemoteFromMasterAdmin();
+  const { actor, isFetching: actorFetching } = useActor();
+  const queryClient = useQueryClient();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const { data: users = [], isLoading } = useQuery<UserInfo[]>({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllUsers();
+    },
+    enabled: !!actor && !actorFetching,
+  });
 
-  const currentPrincipal = identity?.getPrincipal().toString();
+  const showFeedback = (type: 'success' | 'error', message: string) => {
+    setFeedback({ type, message });
+    setTimeout(() => setFeedback(null), 3000);
+  };
 
-  const handleAction = async (
-    action: () => Promise<void>,
-    successMsg: string
-  ) => {
-    setActionError(null);
-    setActionSuccess(null);
+  const promoteToAdmin = useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.promoteToAdmin(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      showFeedback('success', 'User promoted to Admin successfully.');
+    },
+    onError: (err: any) => {
+      showFeedback('error', err?.message || 'Failed to promote user.');
+    },
+  });
+
+  const demoteFromAdmin = useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.demoteFromAdmin(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      showFeedback('success', 'Admin demoted to User successfully.');
+    },
+    onError: (err: any) => {
+      showFeedback('error', err?.message || 'Failed to demote admin.');
+    },
+  });
+
+  const promoteToMasterAdmin = useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.promoteToMasterAdmin(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      showFeedback('success', 'User promoted to Master Admin successfully.');
+    },
+    onError: (err: any) => {
+      showFeedback('error', err?.message || 'Failed to promote to Master Admin.');
+    },
+  });
+
+  const demoteFromMasterAdmin = useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.demoteFromMasterAdmin(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
+      showFeedback('success', 'Master Admin demoted successfully.');
+    },
+    onError: (err: any) => {
+      showFeedback('error', err?.message || 'Failed to demote Master Admin.');
+    },
+  });
+
+  const handleAction = async (action: string, principal: Principal) => {
+    const key = `${action}-${principal.toString()}`;
+    setActionLoading(key);
     try {
-      await action();
-      setActionSuccess(successMsg);
-      setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Action failed';
-      setActionError(msg);
-      setTimeout(() => setActionError(null), 5000);
+      if (action === 'promoteToAdmin') await promoteToAdmin.mutateAsync(principal);
+      else if (action === 'demoteFromAdmin') await demoteFromAdmin.mutateAsync(principal);
+      else if (action === 'promoteToMasterAdmin') await promoteToMasterAdmin.mutateAsync(principal);
+      else if (action === 'demoteFromMasterAdmin') await demoteFromMasterAdmin.mutateAsync(principal);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground">Loading users...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          Failed to load users. You may not have Master Admin privileges.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const isActionLoading = (action: string, principal: Principal) =>
+    actionLoading === `${action}-${principal.toString()}`;
 
   return (
     <div className="space-y-6">
-      <Card className="border-yellow-500/30 bg-gradient-to-br from-black/60 to-yellow-950/20">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-500/20">
-                <Crown className="h-6 w-6 text-yellow-400" />
-              </div>
-              <div>
-                <CardTitle className="text-yellow-400">Master Admin — User Management</CardTitle>
-                <CardDescription className="text-muted-foreground mt-1">
-                  Manage user roles across the platform. Promote users to Admin or Master Admin, and demote as needed.
-                </CardDescription>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
-            >
-              {isFetching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="ml-2 hidden sm:inline">Refresh</span>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {actionSuccess && (
-            <Alert className="border-green-500/40 bg-green-500/10">
-              <AlertDescription className="text-green-400">{actionSuccess}</AlertDescription>
-            </Alert>
-          )}
-          {actionError && (
-            <Alert variant="destructive">
-              <AlertDescription>{actionError}</AlertDescription>
-            </Alert>
-          )}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+          <Crown className="w-5 h-5 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">User Management</h2>
+          <p className="text-sm text-muted-foreground">Manage user roles and access permissions</p>
+        </div>
+      </div>
 
-          {!users || users.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <User className="h-12 w-12 mx-auto mb-3 opacity-30" />
+      {feedback && (
+        <div
+          className={`p-3 rounded-lg text-sm font-medium ${
+            feedback.type === 'success'
+              ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+              : 'bg-destructive/10 text-destructive border border-destructive/20'
+          }`}
+        >
+          {feedback.message}
+        </div>
+      )}
+
+      <Card className="bg-card/60 border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            Registered Users ({isLoading ? '...' : users.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-6 space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : users.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p>No registered users found.</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-yellow-500/20 overflow-hidden">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-yellow-500/20 bg-yellow-950/20">
-                    <TableHead className="text-yellow-400/80">Display Name</TableHead>
-                    <TableHead className="text-yellow-400/80">Email</TableHead>
-                    <TableHead className="text-yellow-400/80">Principal</TableHead>
-                    <TableHead className="text-yellow-400/80">Role</TableHead>
-                    <TableHead className="text-yellow-400/80 text-right">Actions</TableHead>
+                  <TableRow className="border-border/50">
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-muted-foreground">Principal</TableHead>
+                    <TableHead className="text-muted-foreground">Role</TableHead>
+                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => {
-                    const principalStr = user.principal.toString();
-                    const isCurrentUser = principalStr === currentPrincipal;
-                    const isMasterAdmin = user.role === 'masterAdmin';
-                    const isAdmin = user.role === 'admin';
-                    const isUser = user.role === 'user';
+                    const roleStr = typeof user.role === 'object' ? Object.keys(user.role)[0] : String(user.role);
+                    const principalObj = user.principal as unknown as Principal;
+                    const principalStr = principalObj.toString();
 
                     return (
-                      <TableRow
-                        key={principalStr}
-                        className="border-yellow-500/10 hover:bg-yellow-950/10"
-                      >
-                        <TableCell className="font-medium">
+                      <TableRow key={principalStr} className="border-border/50 hover:bg-muted/20">
+                        <TableCell className="font-medium text-foreground">
                           {user.displayName || '—'}
-                          {isCurrentUser && (
-                            <span className="ml-2 text-xs text-yellow-400/60">(you)</span>
-                          )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {user.email || '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs font-mono max-w-[120px] truncate">
-                          {principalStr}
+                        <TableCell className="text-muted-foreground text-xs font-mono">
+                          {principalStr.slice(0, 12)}...
                         </TableCell>
-                        <TableCell>{getRoleBadge(user.role)}</TableCell>
+                        <TableCell>{getRoleBadge(roleStr)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
-                            {/* Promote to Admin (only for regular users) */}
-                            {isUser && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-primary/40 text-primary hover:bg-primary/10 text-xs"
-                                disabled={
-                                  promoteToAdmin.isPending
-                                }
-                                onClick={() =>
-                                  handleAction(
-                                    () => promoteToAdmin.mutateAsync(user.principal as Principal),
-                                    `${user.displayName || principalStr} promoted to Admin.`
-                                  )
-                                }
-                              >
-                                {promoteToAdmin.isPending ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <ShieldCheck className="h-3 w-3" />
-                                )}
-                                <span className="ml-1">Make Admin</span>
-                              </Button>
+                            {roleStr === 'user' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                  disabled={isActionLoading('promoteToAdmin', principalObj)}
+                                  onClick={() => handleAction('promoteToAdmin', principalObj)}
+                                >
+                                  {isActionLoading('promoteToAdmin', principalObj) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <ChevronUp className="w-3 h-3 mr-1" />
+                                      Make Admin
+                                    </>
+                                  )}
+                                </Button>
+                              </>
                             )}
-
-                            {/* Promote to Master Admin (for users and admins) */}
-                            {(isUser || isAdmin) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 text-xs"
-                                disabled={promoteToMasterAdmin.isPending}
-                                onClick={() =>
-                                  handleAction(
-                                    () => promoteToMasterAdmin.mutateAsync(user.principal as Principal),
-                                    `${user.displayName || principalStr} promoted to Master Admin.`
-                                  )
-                                }
-                              >
-                                {promoteToMasterAdmin.isPending ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Crown className="h-3 w-3" />
-                                )}
-                                <span className="ml-1">Make Master Admin</span>
-                              </Button>
+                            {roleStr === 'admin' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                                  disabled={isActionLoading('promoteToMasterAdmin', principalObj)}
+                                  onClick={() => handleAction('promoteToMasterAdmin', principalObj)}
+                                >
+                                  {isActionLoading('promoteToMasterAdmin', principalObj) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Crown className="w-3 h-3 mr-1" />
+                                      Make Master
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                                  disabled={isActionLoading('demoteFromAdmin', principalObj)}
+                                  onClick={() => handleAction('demoteFromAdmin', principalObj)}
+                                >
+                                  {isActionLoading('demoteFromAdmin', principalObj) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="w-3 h-3 mr-1" />
+                                      Demote
+                                    </>
+                                  )}
+                                </Button>
+                              </>
                             )}
-
-                            {/* Demote Admin to User */}
-                            {isAdmin && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-destructive/40 text-destructive hover:bg-destructive/10 text-xs"
-                                disabled={demoteFromAdmin.isPending}
-                                onClick={() =>
-                                  handleAction(
-                                    () => demoteFromAdmin.mutateAsync(user.principal as Principal),
-                                    `${user.displayName || principalStr} demoted to User.`
-                                  )
-                                }
-                              >
-                                {demoteFromAdmin.isPending ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <ShieldOff className="h-3 w-3" />
-                                )}
-                                <span className="ml-1">Demote to User</span>
-                              </Button>
+                            {roleStr === 'masterAdmin' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                    disabled={isActionLoading('demoteFromMasterAdmin', principalObj)}
+                                  >
+                                    {isActionLoading('demoteFromMasterAdmin', principalObj) ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-3 h-3 mr-1" />
+                                        Demote Master
+                                      </>
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Demote Master Admin?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will remove Master Admin privileges from{' '}
+                                      <strong>{user.displayName || principalStr}</strong>. They will retain Admin access.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive hover:bg-destructive/90"
+                                      onClick={() => handleAction('demoteFromMasterAdmin', principalObj)}
+                                    >
+                                      Demote
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
-
-                            {/* Demote Master Admin (cannot demote yourself) */}
-                            {isMasterAdmin && !isCurrentUser && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-destructive/40 text-destructive hover:bg-destructive/10 text-xs"
-                                disabled={demoteFromMasterAdmin.isPending}
-                                onClick={() =>
-                                  handleAction(
-                                    () => demoteFromMasterAdmin.mutateAsync(user.principal as Principal),
-                                    `${user.displayName || principalStr} demoted from Master Admin.`
-                                  )
-                                }
-                              >
-                                {demoteFromMasterAdmin.isPending ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <ShieldOff className="h-3 w-3" />
-                                )}
-                                <span className="ml-1">Demote Master Admin</span>
-                              </Button>
-                            )}
-
-                            {/* No actions for current master admin user (yourself) */}
-                            {isMasterAdmin && isCurrentUser && (
-                              <span className="text-xs text-muted-foreground italic">
-                                (your account)
-                              </span>
+                            {(roleStr === 'guest') && (
+                              <span className="text-xs text-muted-foreground italic">No actions</span>
                             )}
                           </div>
                         </TableCell>
@@ -296,10 +335,25 @@ export default function MasterAdminManagement() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
 
-          <p className="text-xs text-muted-foreground">
-            Total registered users: <span className="text-yellow-400 font-medium">{users?.length ?? 0}</span>
-          </p>
+      <Card className="bg-card/60 border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <Crown className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Role Hierarchy</p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p><span className="text-yellow-400 font-medium">Master Admin</span> — Full platform control, can manage all admins and users</p>
+                <p><span className="text-blue-400 font-medium">Admin</span> — Can manage content, ads, channels, brands, and analytics</p>
+                <p><span className="text-green-400 font-medium">User</span> — Standard platform access, can watch content and manage profile</p>
+                <p><span className="text-muted-foreground font-medium">Guest</span> — Limited access, no profile or premium features</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

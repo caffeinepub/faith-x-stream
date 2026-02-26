@@ -1,24 +1,77 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Family-friendly community streaming platform with footer tagline update and profile setup fix.",
-  "architectural_notes": [],
-  "known_issues": [],
+  "summary": "A media/streaming platform with a comprehensive admin system being rebuilt after accidental removal. Features include Admin Dashboard, User Management, Content & Settings Control, Access Restrictions, Manual User-Targeted Ads Management, Analytics, Network/Brand Management, and Live TV Programming (auto-scheduled by video file length for movies/films/TV only, excluding clips). Also includes a Set up Profile flow and footer tagline.",
+  "architectural_notes": [
+    "Live TV Programming auto-schedules based on video file length; applies to movie/film/television content only — clips are excluded",
+    "Role-based access control required: admin vs regular user roles"
+  ],
+  "known_issues": [
+    "Admin feature was accidentally removed during the profile setup fix in Version 55 and is being rebuilt"
+  ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-footer-tagline-paragraph-located-at-xpath-html-1-body-1-div-1-div-1-footer-1-div-1-div-1-div-1-p-1-to-read-community-streaming-for-the-whole-family-watch-movies-tv-shows-live-tv-and-much-more",
-      "title": "Update the footer tagline paragraph (located at XPath /html[1]/body[1]/div[1]/div[1]/footer[1]/div[1]/div[1]/div[1]/p[1]) to read: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+      "id": "feature-restore-the-admin-dashboard-tab-in-adminpage-tsx-with-an-overview-panel-showing-key-platform-stats-total-users-total-content-active-subscriptions-ad-impressions-revenue-and-quick-access-shortcuts-to-each-admin-sub-section",
+      "title": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-the-set-up-profile-flow-in-profilesetupmodal-tsx-ensure-the-modal-appears-correctly-for-authenticated-internet-identity-users-who-have-not-completed-their-profile-that-all-form-fields-such-as-email-are-functional-and-submit-properly-and-that-the-modal-dismisses-and-does-not-re-appear-after-successful-profile-setup",
-      "title": "Fix the Set Up Profile flow in ProfileSetupModal.tsx: ensure the modal appears correctly for authenticated Internet Identity users who have not completed their profile, that all form fields such as email are functional and submit properly, and that the modal dismisses and does not re-appear after successful profile setup.",
+      "id": "feature-restore-the-user-management-tab-in-adminpage-tsx-rendering-the-masteradminmanagement-component-which-lists-all-users-and-allows-promoting-or-demoting-roles-guest-user-admin-master-admin-as-well-as-suspending-or-removing-users",
+      "title": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-content-settings-control-tabs-in-adminpage-tsx-including-all-sub-tabs-for-movies-moviesmanagement-podcasts-podcastsmanagement-videos-videomanagement-clips-clipsmanagement-series-seriesmanagement-channels-channelmanagement-and-stripe-setup-stripesetup",
+      "title": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-access-restriction-enforcement-in-adminpage-tsx-only-authenticated-users-with-admin-or-master-admin-roles-may-access-the-admin-page-non-admin-users-should-be-redirected-or-shown-an-access-denied-message",
+      "title": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-manual-user-targeted-ads-management-tab-in-adminpage-tsx-rendering-the-manualadsmanagement-component-which-allows-uploading-ad-media-and-assigning-ads-with-scope-position-skip-settings-and-targeting-specific-users",
+      "title": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-analytics-tab-in-adminpage-tsx-rendering-the-analyticsdashboard-component-which-displays-total-views-premium-users-ad-impressions-revenue-and-a-trending-content-list-fetched-from-the-backend",
+      "title": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-network-brand-management-tab-in-adminpage-tsx-rendering-the-brandmanagement-component-which-allows-creating-editing-and-deleting-brands-networks-uploading-logos-and-assigning-films-series-clips-or-live-channels-to-a-brand",
+      "title": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-live-tv-programming-tab-in-adminpage-tsx-rendering-the-liveschedulemanagement-component-auto-schedule-programming-for-channels-based-on-the-video-file-duration-of-each-program-only-for-content-with-contenttype-in-the-movie-film-television-categories-clips-must-be-excluded-from-the-auto-schedule-logic",
+      "title": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "reqIds": [
+        "REQ-8"
       ],
       "version": 1
     }
@@ -26,19 +79,63 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update footer tagline to 'Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.'",
+      "summary": "Admin Dashboard with key stats and quick access",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Fix the Set up Profile flow",
+      "summary": "User Management - view, edit, suspend, or remove users",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Content & Settings Control - manage app content and configuration",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Access Restrictions - role-based access control (admin vs regular users)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Manual User-Targeted Ads Management - assign/manage ads targeted at specific users",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Analytics - usage stats, viewership, engagement metrics",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Network/Brand Management - manage networks or brands associated with content",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Live TV Programming - auto-schedule by video file length for movies/films/TV only, excluding clips",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Ensure the backend main actor exposes all necessary query and update methods to support the restored admin features: user role management (promote/demote/suspend/remove), analytics retrieval, brand/network CRUD, ad targeting by user, and live schedule management with content-duration-based slot assignment.",
+      "reqIds": [
+        "REQ-9"
+      ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "Community Streaming App",
+  "projectName": "FAITH X-Stream",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-footer-tagline-paragraph-located-at-xpath-html-1-body-1-div-1-div-1-footer-1-div-1-div-1-div-1-p-1-to-read-community-streaming-for-the-whole-family-watch-movies-tv-shows-live-tv-and-much-more",
-      "featureTitle": "Update the footer tagline paragraph (located at XPath /html[1]/body[1]/div[1]/div[1]/footer[1]/div[1]/div[1]/div[1]/p[1]) to read: Community streaming for the whole family, Watch Movies, TV Shows, Live TV, and Much More.",
+      "featureId": "feature-restore-the-admin-dashboard-tab-in-adminpage-tsx-with-an-overview-panel-showing-key-platform-stats-total-users-total-content-active-subscriptions-ad-impressions-revenue-and-quick-access-shortcuts-to-each-admin-sub-section",
+      "featureTitle": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
       "files": [
-        "frontend/src/components/Footer.tsx"
+        "frontend/src/pages/AdminPage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -24,12 +24,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-set-up-profile-flow-in-profilesetupmodal-tsx-ensure-the-modal-appears-correctly-for-authenticated-internet-identity-users-who-have-not-completed-their-profile-that-all-form-fields-such-as-email-are-functional-and-submit-properly-and-that-the-modal-dismisses-and-does-not-re-appear-after-successful-profile-setup",
-      "featureTitle": "Fix the Set Up Profile flow in ProfileSetupModal.tsx: ensure the modal appears correctly for authenticated Internet Identity users who have not completed their profile, that all form fields such as email are functional and submit properly, and that the modal dismisses and does not re-appear after successful profile setup.",
+      "featureId": "feature-restore-the-user-management-tab-in-adminpage-tsx-rendering-the-masteradminmanagement-component-which-lists-all-users-and-allows-promoting-or-demoting-roles-guest-user-admin-master-admin-as-well-as-suspending-or-removing-users",
+      "featureTitle": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
       "files": [
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/components/ProfileSetupModal.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/admin/MasterAdminManagement.tsx",
+        "frontend/src/pages/AdminPage.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -44,6 +43,139 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-the-content-settings-control-tabs-in-adminpage-tsx-including-all-sub-tabs-for-movies-moviesmanagement-podcasts-podcastsmanagement-videos-videomanagement-clips-clipsmanagement-series-seriesmanagement-channels-channelmanagement-and-stripe-setup-stripesetup",
+      "featureTitle": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "files": [
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-access-restriction-enforcement-in-adminpage-tsx-only-authenticated-users-with-admin-or-master-admin-roles-may-access-the-admin-page-non-admin-users-should-be-redirected-or-shown-an-access-denied-message",
+      "featureTitle": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "files": [
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-the-manual-user-targeted-ads-management-tab-in-adminpage-tsx-rendering-the-manualadsmanagement-component-which-allows-uploading-ad-media-and-assigning-ads-with-scope-position-skip-settings-and-targeting-specific-users",
+      "featureTitle": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "files": [
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-the-analytics-tab-in-adminpage-tsx-rendering-the-analyticsdashboard-component-which-displays-total-views-premium-users-ad-impressions-revenue-and-a-trending-content-list-fetched-from-the-backend",
+      "featureTitle": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "files": [
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-the-network-brand-management-tab-in-adminpage-tsx-rendering-the-brandmanagement-component-which-allows-creating-editing-and-deleting-brands-networks-uploading-logos-and-assigning-films-series-clips-or-live-channels-to-a-brand",
+      "featureTitle": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "files": [
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-the-live-tv-programming-tab-in-adminpage-tsx-rendering-the-liveschedulemanagement-component-auto-schedule-programming-for-channels-based-on-the-video-file-duration-of-each-program-only-for-content-with-contenttype-in-the-movie-film-television-categories-clips-must-be-excluded-from-the-auto-schedule-logic",
+      "featureTitle": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "files": [
+        "frontend/src/components/admin/LiveScheduleManagement.tsx",
+        "frontend/src/pages/AdminPage.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "blob-storage@4.0.0",
+        "stripe@3.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
       ],
       "confidence": "high"
     }
