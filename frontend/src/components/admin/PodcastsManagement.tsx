@@ -1,508 +1,319 @@
-import { useState } from 'react';
-import { useGetAllVideos, useAddVideo, useUpdateVideo, useDeleteVideo } from '../../hooks/useQueries';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Checkbox } from '../ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Trash2, Upload, Star, Edit, Radio, Tv } from 'lucide-react';
-import { toast } from 'sonner';
-import { ExternalBlob, ContentType } from '../../backend';
-import type { VideoContent } from '../../backend';
+import React, { useState } from 'react';
+import { useAddVideo, useUpdateVideo, useDeleteVideo, useGetAllVideos } from '../../hooks/useQueries';
+import { ExternalBlob, ContentType, VideoContent } from '../../backend';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Plus, Pencil, Trash2, Mic } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+
+interface PodcastFormData {
+  title: string;
+  description: string;
+  genre: string;
+  releaseYear: string;
+  roles: string;
+  isPremium: boolean;
+  isOriginal: boolean;
+  availableAsVOD: boolean;
+  videoFile: File | null;
+  thumbnailFile: File | null;
+}
+
+const defaultForm: PodcastFormData = {
+  title: '',
+  description: '',
+  genre: '',
+  releaseYear: '',
+  roles: '',
+  isPremium: false,
+  isOriginal: false,
+  availableAsVOD: true,
+  videoFile: null,
+  thumbnailFile: null,
+};
 
 export default function PodcastsManagement() {
-  const { data: videos, isLoading } = useGetAllVideos();
+  const { data: videos = [], isLoading } = useGetAllVideos();
   const addVideo = useAddVideo();
   const updateVideo = useUpdateVideo();
   const deleteVideo = useDeleteVideo();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPremium, setIsPremium] = useState(false);
-  const [isOriginal, setIsOriginal] = useState(false);
-  const [eligibleForLive, setEligibleForLive] = useState(true);
-  const [availableAsVOD, setAvailableAsVOD] = useState(true);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<PodcastFormData>(defaultForm);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
-  // Edit state
-  const [editingVideo, setEditingVideo] = useState<VideoContent | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const podcasts = videos.filter(v => !v.isClip && v.contentType === ContentType.podcast);
 
-  const podcastVideos = videos?.filter(v => 
-    !v.isClip && v.contentType === ContentType.podcast
-  ) || [];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!videoFile || !thumbnailFile) {
-      toast.error('Please select both video and thumbnail files');
-      return;
-    }
-
-    try {
-      const videoBytes = new Uint8Array(await videoFile.arrayBuffer());
-      const thumbnailBytes = new Uint8Array(await thumbnailFile.arrayBuffer());
-
-      const videoBlob = ExternalBlob.fromBytes(videoBytes).withUploadProgress((percentage) => {
-        setUploadProgress(percentage);
+  const handleOpen = (podcast?: VideoContent) => {
+    if (podcast) {
+      setEditingId(podcast.id);
+      setForm({
+        title: podcast.title,
+        description: podcast.description,
+        genre: podcast.genre || '',
+        releaseYear: podcast.releaseYear ? String(podcast.releaseYear) : '',
+        roles: podcast.roles || '',
+        isPremium: podcast.isPremium,
+        isOriginal: podcast.isOriginal,
+        availableAsVOD: podcast.availableAsVOD,
+        videoFile: null,
+        thumbnailFile: null,
       });
-      const thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes);
-
-      const video: VideoContent = {
-        id: `podcast-${Date.now()}`,
-        title,
-        description,
-        contentType: ContentType.podcast,
-        isPremium,
-        isOriginal,
-        isClip: false,
-        videoUrl: videoBlob,
-        thumbnailUrl: thumbnailBlob,
-        eligibleForLive,
-        availableAsVOD,
-      };
-
-      await addVideo.mutateAsync(video);
-      toast.success('Podcast uploaded successfully!');
-      
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setIsPremium(false);
-      setIsOriginal(false);
-      setEligibleForLive(true);
-      setAvailableAsVOD(true);
-      setVideoFile(null);
-      setThumbnailFile(null);
-      setUploadProgress(0);
-    } catch (error) {
-      toast.error('Failed to upload podcast');
-      console.error(error);
+    } else {
+      setEditingId(null);
+      setForm(defaultForm);
     }
+    setOpen(true);
   };
 
-  const openEditDialog = (video: VideoContent) => {
-    setTitle(video.title);
-    setDescription(video.description);
-    setIsPremium(video.isPremium);
-    setIsOriginal(video.isOriginal);
-    setEligibleForLive(video.eligibleForLive);
-    setAvailableAsVOD(video.availableAsVOD);
-    setVideoFile(null);
-    setThumbnailFile(null);
-    setEditingVideo(video);
-    setEditDialogOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    setEditingId(null);
+    setForm(defaultForm);
+    setUploadProgress({});
   };
 
-  const handleUpdateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingVideo) return;
+  const handleSubmit = async () => {
+    if (!form.title.trim()) return;
 
     try {
-      let videoBlob = editingVideo.videoUrl;
-      let thumbnailBlob = editingVideo.thumbnailUrl;
+      let videoUrl: ExternalBlob;
+      let thumbnailUrl: ExternalBlob;
 
-      if (videoFile) {
-        const videoBytes = new Uint8Array(await videoFile.arrayBuffer());
-        videoBlob = ExternalBlob.fromBytes(videoBytes).withUploadProgress((percentage) => {
-          setUploadProgress(percentage);
-        });
+      if (editingId) {
+        const existing = podcasts.find(p => p.id === editingId);
+        if (!existing) return;
+
+        if (form.videoFile) {
+          const bytes = new Uint8Array(await form.videoFile.arrayBuffer());
+          videoUrl = ExternalBlob.fromBytes(bytes).withUploadProgress(p =>
+            setUploadProgress(prev => ({ ...prev, video: p }))
+          );
+        } else {
+          videoUrl = existing.videoUrl;
+        }
+
+        if (form.thumbnailFile) {
+          const bytes = new Uint8Array(await form.thumbnailFile.arrayBuffer());
+          thumbnailUrl = ExternalBlob.fromBytes(bytes).withUploadProgress(p =>
+            setUploadProgress(prev => ({ ...prev, thumbnail: p }))
+          );
+        } else {
+          thumbnailUrl = existing.thumbnailUrl;
+        }
+
+        const updated: VideoContent = {
+          ...existing,
+          title: form.title,
+          description: form.description,
+          genre: form.genre || undefined,
+          releaseYear: form.releaseYear ? BigInt(form.releaseYear) : undefined,
+          roles: form.roles || undefined,
+          isPremium: form.isPremium,
+          isOriginal: form.isOriginal,
+          availableAsVOD: form.availableAsVOD,
+          eligibleForLive: false,
+          videoUrl,
+          thumbnailUrl,
+        };
+
+        await updateVideo.mutateAsync({ videoId: editingId, video: updated });
+      } else {
+        if (!form.videoFile || !form.thumbnailFile) return;
+
+        const videoBytes = new Uint8Array(await form.videoFile.arrayBuffer());
+        videoUrl = ExternalBlob.fromBytes(videoBytes).withUploadProgress(p =>
+          setUploadProgress(prev => ({ ...prev, video: p }))
+        );
+
+        const thumbBytes = new Uint8Array(await form.thumbnailFile.arrayBuffer());
+        thumbnailUrl = ExternalBlob.fromBytes(thumbBytes).withUploadProgress(p =>
+          setUploadProgress(prev => ({ ...prev, thumbnail: p }))
+        );
+
+        const newPodcast: VideoContent = {
+          id: `podcast-${Date.now()}`,
+          title: form.title,
+          description: form.description,
+          genre: form.genre || undefined,
+          releaseYear: form.releaseYear ? BigInt(form.releaseYear) : undefined,
+          roles: form.roles || undefined,
+          contentType: ContentType.podcast,
+          isPremium: form.isPremium,
+          isOriginal: form.isOriginal,
+          isClip: false,
+          eligibleForLive: false,
+          availableAsVOD: form.availableAsVOD,
+          videoUrl,
+          thumbnailUrl,
+          trailerUrl: undefined,
+          sourceVideoId: undefined,
+          clipCaption: undefined,
+          previewClipUrl: undefined,
+        };
+
+        await addVideo.mutateAsync(newPodcast);
       }
 
-      if (thumbnailFile) {
-        const thumbnailBytes = new Uint8Array(await thumbnailFile.arrayBuffer());
-        thumbnailBlob = ExternalBlob.fromBytes(thumbnailBytes);
-      }
-
-      const updatedVideo: VideoContent = {
-        ...editingVideo,
-        title,
-        description,
-        isPremium,
-        isOriginal,
-        eligibleForLive,
-        availableAsVOD,
-        videoUrl: videoBlob,
-        thumbnailUrl: thumbnailBlob,
-      };
-
-      await updateVideo.mutateAsync({ videoId: editingVideo.id, video: updatedVideo });
-      toast.success('Podcast updated successfully!');
-      
-      setEditDialogOpen(false);
-      setEditingVideo(null);
-      setTitle('');
-      setDescription('');
-      setIsPremium(false);
-      setIsOriginal(false);
-      setEligibleForLive(true);
-      setAvailableAsVOD(true);
-      setVideoFile(null);
-      setThumbnailFile(null);
-      setUploadProgress(0);
-    } catch (error) {
-      toast.error('Failed to update podcast');
-      console.error(error);
+      handleClose();
+    } catch (err) {
+      // Error handled by mutation
     }
   };
 
-  const handleDelete = async (videoId: string) => {
-    if (!confirm('Are you sure you want to delete this podcast?')) return;
-    
-    try {
-      await deleteVideo.mutateAsync(videoId);
-      toast.success('Podcast deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete podcast');
-      console.error(error);
-    }
-  };
-
-  if (isLoading) {
-    return <div className="text-center py-8">Loading podcasts...</div>;
-  }
+  const isPending = addVideo.isPending || updateVideo.isPending;
 
   return (
-    <div className="space-y-6">
-      <Card className="gradient-card border-2 border-primary/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload New Podcast
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="bg-black/60 border-primary/40"
-              />
-            </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Mic className="w-5 h-5 text-primary" />
+          Podcasts Management
+        </h2>
+        <Button onClick={() => handleOpen()} className="gap-2">
+          <Plus className="w-4 h-4" /> Add Podcast
+        </Button>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                rows={3}
-                className="bg-black/60 border-primary/40"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="video">Video File *</Label>
-                <Input
-                  id="video"
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                  required
-                  className="bg-black/60 border-primary/40"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="thumbnail">Thumbnail Image *</Label>
-                <Input
-                  id="thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                  required
-                  className="bg-black/60 border-primary/40"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isPremium"
-                  checked={isPremium}
-                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
-                />
-                <Label htmlFor="isPremium" className="cursor-pointer">Premium Content</Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isOriginal"
-                  checked={isOriginal}
-                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
-                />
-                <Label htmlFor="isOriginal" className="cursor-pointer flex items-center gap-1">
-                  <Star className="h-4 w-4 text-secondary" />
-                  Mark as Original
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="eligibleForLive"
-                  checked={eligibleForLive}
-                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
-                />
-                <Label htmlFor="eligibleForLive" className="cursor-pointer flex items-center gap-1">
-                  <Radio className="h-4 w-4 text-primary" />
-                  Eligible for Live TV scheduling
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="availableAsVOD"
-                  checked={availableAsVOD}
-                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
-                />
-                <Label htmlFor="availableAsVOD" className="cursor-pointer flex items-center gap-1">
-                  <Tv className="h-4 w-4 text-primary" />
-                  Available as standalone VOD
-                </Label>
-              </div>
-            </div>
-
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="w-full bg-black/60 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={addVideo.isPending}
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all duration-300"
-            >
-              {addVideo.isPending ? 'Uploading...' : 'Upload Podcast'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="gradient-card border-2 border-primary/30">
-        <CardHeader>
-          <CardTitle>Manage Podcasts ({podcastVideos.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {podcastVideos.map((video) => (
-              <div
-                key={video.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-black/60 border border-primary/20"
-              >
-                <div className="flex items-center gap-4">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : podcasts.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          No podcasts yet. Add your first podcast!
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {podcasts.map(podcast => (
+            <div key={podcast.id} className="flex items-center justify-between p-4 rounded-lg bg-card border border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
                   <img
-                    src={video.thumbnailUrl.getDirectURL()}
-                    alt={video.title}
-                    className="w-24 h-16 object-cover rounded"
+                    src={podcast.thumbnailUrl.getDirectURL()}
+                    alt={podcast.title}
+                    className="w-full h-full object-cover"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
-                  <div>
-                    <h3 className="font-semibold flex items-center gap-2">
-                      {video.title}
-                      {video.isOriginal && <Star className="h-4 w-4 text-secondary fill-secondary" />}
-                      {video.eligibleForLive && (
-                        <span title="Eligible for Live TV">
-                          <Radio className="h-4 w-4 text-primary" />
-                        </span>
-                      )}
-                      {video.availableAsVOD && (
-                        <span title="Available as VOD">
-                          <Tv className="h-4 w-4 text-primary" />
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{video.description}</p>
-                    <div className="flex gap-2 mt-1">
-                      {video.isPremium && (
-                        <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">Premium</span>
-                      )}
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Podcast</span>
-                      {video.eligibleForLive && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">Live TV</span>
-                      )}
-                      {video.availableAsVOD && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">VOD</span>
-                      )}
-                    </div>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{podcast.title}</p>
+                  <p className="text-sm text-muted-foreground">{podcast.genre}</p>
+                  <div className="flex gap-1 mt-1">
+                    {podcast.isPremium && <Badge variant="default" className="text-xs">Premium</Badge>}
+                    {podcast.isOriginal && <Badge variant="secondary" className="text-xs">Original</Badge>}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => openEditDialog(video)}
-                    disabled={updateVideo.isPending}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(video.id)}
-                    disabled={deleteVideo.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
-            ))}
-            {podcastVideos.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No podcasts uploaded yet</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleOpen(podcast)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Podcast</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{podcast.title}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteVideo.mutate(podcast.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteVideo.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Podcast</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit Podcast' : 'Add New Podcast'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUpdateSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Title</Label>
-              <Input
-                id="edit-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Title *</Label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Podcast title" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                rows={3}
-              />
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Podcast description" rows={3} />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-video">Replace Video (Optional)</Label>
-                <Input
-                  id="edit-video"
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Genre / Category</Label>
+                <Input value={form.genre} onChange={e => setForm(f => ({ ...f, genre: e.target.value }))} placeholder="e.g. Faith, News" />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-thumbnail">Replace Thumbnail (Optional)</Label>
-                <Input
-                  id="edit-thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                />
+              <div className="space-y-1">
+                <Label>Release Year</Label>
+                <Input type="number" value={form.releaseYear} onChange={e => setForm(f => ({ ...f, releaseYear: e.target.value }))} placeholder="2024" />
               </div>
             </div>
+            <div className="space-y-1">
+              <Label>Host / Roles</Label>
+              <Input value={form.roles} onChange={e => setForm(f => ({ ...f, roles: e.target.value }))} placeholder="Host name(s)" />
+            </div>
 
-            <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Audio/Video File {!editingId && '*'}</Label>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-isPremium"
-                  checked={isPremium}
-                  onCheckedChange={(checked) => setIsPremium(checked as boolean)}
-                />
-                <Label htmlFor="edit-isPremium" className="cursor-pointer">Premium Content</Label>
+                <Input type="file" accept="video/*,audio/*" onChange={e => setForm(f => ({ ...f, videoFile: e.target.files?.[0] || null }))} />
+                {uploadProgress.video !== undefined && <Progress value={uploadProgress.video} className="w-24" />}
               </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-isOriginal"
-                  checked={isOriginal}
-                  onCheckedChange={(checked) => setIsOriginal(checked as boolean)}
-                />
-                <Label htmlFor="edit-isOriginal" className="cursor-pointer flex items-center gap-1">
-                  <Star className="h-4 w-4 text-secondary" />
-                  Mark as Original
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-eligibleForLive"
-                  checked={eligibleForLive}
-                  onCheckedChange={(checked) => setEligibleForLive(checked as boolean)}
-                />
-                <Label htmlFor="edit-eligibleForLive" className="cursor-pointer flex items-center gap-1">
-                  <Radio className="h-4 w-4 text-primary" />
-                  Eligible for Live TV scheduling
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-availableAsVOD"
-                  checked={availableAsVOD}
-                  onCheckedChange={(checked) => setAvailableAsVOD(checked as boolean)}
-                />
-                <Label htmlFor="edit-availableAsVOD" className="cursor-pointer flex items-center gap-1">
-                  <Tv className="h-4 w-4 text-primary" />
-                  Available as standalone VOD
-                </Label>
-              </div>
+              {editingId && <p className="text-xs text-muted-foreground">Leave empty to keep existing file</p>}
             </div>
 
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="w-full bg-black/60 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
+            <div className="space-y-1">
+              <Label>Thumbnail Image {!editingId && '*'}</Label>
+              <div className="flex items-center gap-2">
+                <Input type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, thumbnailFile: e.target.files?.[0] || null }))} />
+                {uploadProgress.thumbnail !== undefined && <Progress value={uploadProgress.thumbnail} className="w-24" />}
               </div>
-            )}
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditDialogOpen(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateVideo.isPending}
-                className="flex-1 bg-gradient-to-r from-primary to-secondary"
-              >
-                {updateVideo.isPending ? 'Updating...' : 'Update Podcast'}
-              </Button>
+              {editingId && <p className="text-xs text-muted-foreground">Leave empty to keep existing thumbnail</p>}
             </div>
-          </form>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                <Label>Premium Content</Label>
+                <Switch checked={form.isPremium} onCheckedChange={v => setForm(f => ({ ...f, isPremium: v }))} />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                <Label>Mark as Original</Label>
+                <Switch checked={form.isOriginal} onCheckedChange={v => setForm(f => ({ ...f, isOriginal: v }))} />
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                <Label>Available as VOD</Label>
+                <Switch checked={form.availableAsVOD} onCheckedChange={v => setForm(f => ({ ...f, availableAsVOD: v }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={isPending || !form.title.trim() || (!editingId && (!form.videoFile || !form.thumbnailFile))}>
+              {isPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</> : editingId ? 'Update Podcast' : 'Add Podcast'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,77 +1,119 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A media/streaming platform with a comprehensive admin system being rebuilt after accidental removal. Features include Admin Dashboard, User Management, Content & Settings Control, Access Restrictions, Manual User-Targeted Ads Management, Analytics, Network/Brand Management, and Live TV Programming (auto-scheduled by video file length for movies/films/TV only, excluding clips). Also includes a Set up Profile flow and footer tagline.",
+  "summary": "A full-featured media platform admin dashboard with CRUD for Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, and Stripe integration. Master Admin has full access including premium and can grant premium to other admins. Auto-clip generation (4-5 sec clips) from existing video/movie content triggered by admins.",
   "architectural_notes": [
-    "Live TV Programming auto-schedules based on video file length; applies to movie/film/television content only — clips are excluded",
-    "Role-based access control required: admin vs regular user roles"
+    "Master Admin role has full platform access including premium; can delegate premium to other admins",
+    "Live TV implemented via HLS stream URL embed (admins paste stream URLs)",
+    "Channels are content collections/playlists",
+    "Auto-clip generation produces 4-5 second clips from video/movie content, admin-triggered"
   ],
   "known_issues": [
-    "Admin feature was accidentally removed during the profile setup fix in Version 55 and is being rebuilt"
+    "All admin dashboard sections (Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe) failing to create, upload, or configure"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-restore-the-admin-dashboard-tab-in-adminpage-tsx-with-an-overview-panel-showing-key-platform-stats-total-users-total-content-active-subscriptions-ad-impressions-revenue-and-quick-access-shortcuts-to-each-admin-sub-section",
-      "title": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
+      "id": "feature-fix-the-movies-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-upload-new-movies-with-metadata-and-file-blobs-edit-existing-movies-and-delete-movies-without-errors",
+      "title": "Fix the Movies management section in the admin dashboard so that admins can successfully create/upload new movies (with metadata and file blobs), edit existing movies, and delete movies without errors.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-user-management-tab-in-adminpage-tsx-rendering-the-masteradminmanagement-component-which-lists-all-users-and-allows-promoting-or-demoting-roles-guest-user-admin-master-admin-as-well-as-suspending-or-removing-users",
-      "title": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
+      "id": "feature-fix-the-podcasts-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-upload-new-podcasts-with-metadata-video-blob-and-thumbnail-blob-edit-existing-podcasts-and-delete-podcasts-without-errors",
+      "title": "Fix the Podcasts management section in the admin dashboard so that admins can successfully create/upload new podcasts (with metadata, video blob, and thumbnail blob), edit existing podcasts, and delete podcasts without errors.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-content-settings-control-tabs-in-adminpage-tsx-including-all-sub-tabs-for-movies-moviesmanagement-podcasts-podcastsmanagement-videos-videomanagement-clips-clipsmanagement-series-seriesmanagement-channels-channelmanagement-and-stripe-setup-stripesetup",
-      "title": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "id": "feature-fix-the-videos-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-upload-new-videos-with-metadata-including-genre-roles-release-year-optional-trailer-edit-existing-videos-and-delete-videos-without-errors",
+      "title": "Fix the Videos management section in the admin dashboard so that admins can successfully create/upload new videos (with metadata including genre, roles, release year, optional trailer), edit existing videos, and delete videos without errors.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-access-restriction-enforcement-in-adminpage-tsx-only-authenticated-users-with-admin-or-master-admin-roles-may-access-the-admin-page-non-admin-users-should-be-redirected-or-shown-an-access-denied-message",
-      "title": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "id": "feature-fix-the-clips-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-clips-manually-with-caption-video-source-reference-and-optional-thumbnail-edit-clip-captions-and-delete-clips-without-errors",
+      "title": "Fix the Clips management section in the admin dashboard so that admins can successfully create clips manually (with caption, video source reference, and optional thumbnail), edit clip captions, and delete clips without errors.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-manual-user-targeted-ads-management-tab-in-adminpage-tsx-rendering-the-manualadsmanagement-component-which-allows-uploading-ad-media-and-assigning-ads-with-scope-position-skip-settings-and-targeting-specific-users",
-      "title": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "id": "feature-add-auto-clip-generation-functionality-in-the-admin-dashboard-admins-can-select-an-existing-movie-or-video-content-item-and-trigger-auto-generation-of-4-5-second-clips-from-it-the-backend-should-extract-or-record-clip-segments-of-4-5-seconds-duration-from-the-selected-content-and-save-them-as-clip-records-linked-to-the-source-content",
+      "title": "Add auto-clip generation functionality in the admin dashboard: admins can select an existing movie or video content item and trigger auto-generation of 4–5 second clips from it. The backend should extract or record clip segments of 4–5 seconds duration from the selected content and save them as clip records linked to the source content.",
       "reqIds": [
         "REQ-5"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-analytics-tab-in-adminpage-tsx-rendering-the-analyticsdashboard-component-which-displays-total-views-premium-users-ad-impressions-revenue-and-a-trending-content-list-fetched-from-the-backend",
-      "title": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "id": "feature-fix-the-series-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-new-tv-series-with-seasons-and-episodes-including-thumbnail-and-trailer-uploads-edit-series-and-delete-series-without-errors",
+      "title": "Fix the Series management section in the admin dashboard so that admins can successfully create new TV series with seasons and episodes (including thumbnail and trailer uploads), edit series, and delete series without errors.",
       "reqIds": [
         "REQ-6"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-network-brand-management-tab-in-adminpage-tsx-rendering-the-brandmanagement-component-which-allows-creating-editing-and-deleting-brands-networks-uploading-logos-and-assigning-films-series-clips-or-live-channels-to-a-brand",
-      "title": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "id": "feature-fix-the-channels-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-new-live-tv-channels-with-name-logo-and-original-content-flag-edit-existing-channels-and-delete-channels-without-errors",
+      "title": "Fix the Channels management section in the admin dashboard so that admins can successfully create new live TV channels (with name, logo, and original-content flag), edit existing channels, and delete channels without errors.",
       "reqIds": [
         "REQ-7"
       ],
       "version": 1
     },
     {
-      "id": "feature-restore-the-live-tv-programming-tab-in-adminpage-tsx-rendering-the-liveschedulemanagement-component-auto-schedule-programming-for-channels-based-on-the-video-file-duration-of-each-program-only-for-content-with-contenttype-in-the-movie-film-television-categories-clips-must-be-excluded-from-the-auto-schedule-logic",
-      "title": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "id": "feature-fix-the-live-tv-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-and-configure-live-tv-programs-by-pasting-in-hls-stream-urls-set-schedules-and-manage-live-tv-entries-without-errors",
+      "title": "Fix the Live TV management section in the admin dashboard so that admins can successfully create and configure Live TV programs by pasting in HLS stream URLs, set schedules, and manage live TV entries without errors.",
       "reqIds": [
         "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-brands-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-create-new-brands-assign-films-series-clips-live-channels-to-brands-and-delete-brands-without-errors",
+      "title": "Fix the Brands management section in the admin dashboard so that admins can successfully create new brands, assign films/series/clips/live channels to brands, and delete brands without errors.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-ads-management-section-in-the-admin-dashboard-so-that-admins-can-successfully-upload-ad-media-files-and-create-ad-assignments-global-or-targeted-with-position-skip-display-settings-without-errors",
+      "title": "Fix the Ads management section in the admin dashboard so that admins can successfully upload ad media files and create ad assignments (global or targeted, with position/skip/display settings) without errors.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-stripe-configuration-section-in-the-admin-dashboard-so-that-admins-can-successfully-enter-a-stripe-secret-key-and-allowed-countries-save-the-configuration-and-see-the-current-configuration-status-without-errors",
+      "title": "Fix the Stripe configuration section in the admin dashboard so that admins can successfully enter a Stripe secret key and allowed countries, save the configuration, and see the current configuration status without errors.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-master-admin-role-automatically-has-full-platform-access-including-premium-content-access-the-master-admin-must-be-able-to-grant-premium-access-to-other-admin-users-from-the-masteradminmanagement-panel",
+      "title": "Ensure the Master Admin role automatically has full platform access including premium content access. The Master Admin must be able to grant premium access to other admin users from the MasterAdminManagement panel.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-all-react-query-mutation-hooks-in-usequeries-ts-for-every-admin-section-movies-podcasts-videos-clips-series-channels-live-tv-brands-ads-stripe-ensure-each-mutation-correctly-calls-the-backend-actor-method-handles-errors-gracefully-with-user-facing-error-messages-and-invalidates-the-relevant-query-cache-on-success",
+      "title": "Audit and fix all React Query mutation hooks in useQueries.ts for every admin section (Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe). Ensure each mutation correctly calls the backend actor method, handles errors gracefully with user-facing error messages, and invalidates the relevant query cache on success.",
+      "reqIds": [
+        "REQ-14"
       ],
       "version": 1
     }
@@ -79,57 +121,47 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Admin Dashboard with key stats and quick access",
+      "summary": "Fix all admin dashboard CRUD (Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe) — create/upload/configure all failing",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "User Management - view, edit, suspend, or remove users",
+      "summary": "Manual clip creation in admin dashboard",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Content & Settings Control - manage app content and configuration",
+      "summary": "Auto-clip generation (4-5 second clips) from existing video/movie content, admin-triggered",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-4",
-      "summary": "Access Restrictions - role-based access control (admin vs regular users)",
+      "summary": "Master Admin has full access including premium; can grant premium access to other admins",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-5",
-      "summary": "Manual User-Targeted Ads Management - assign/manage ads targeted at specific users",
+      "summary": "Stripe integration for premium subscriptions",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-6",
-      "summary": "Analytics - usage stats, viewership, engagement metrics",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "Network/Brand Management - manage networks or brands associated with content",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Live TV Programming - auto-schedule by video file length for movies/films/TV only, excluding clips",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Ensure the backend main actor exposes all necessary query and update methods to support the restored admin features: user role management (promote/demote/suspend/remove), analytics retrieval, brand/network CRUD, ad targeting by user, and live schedule management with content-duration-based slot assignment.",
+      "id": "AR-18",
+      "summary": "Audit and fix all backend Motoko actor functions corresponding to create/update/delete operations for Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, and Ads. Ensure all mutation functions accept the correct argument types, return proper result variants, and persist state correctly. Fix any mismatches between frontend mutation call signatures and backend function signatures.",
       "reqIds": [
-        "REQ-9"
+        "REQ-13"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Ensure the AdminPage.tsx tabbed interface includes a tab for Clips management and renders the ClipsManagement component, and that all existing tabs (Movies, Podcasts, Videos, Series, Channels, Live TV, Brands, Ads, Stripe, Analytics, Master Admin Management) are present and render their respective components correctly.",
+      "reqIds": [
+        "REQ-15"
       ],
       "status": "pending"
     }

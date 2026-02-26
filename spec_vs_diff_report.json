@@ -1,43 +1,90 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T17:09:52.680Z",
-  "summary": "The diff implements most of the required admin system restoration. AdminPage.tsx is restored with a Dashboard tab, all content/management tabs, access control, and all sub-components. LiveScheduleManagement.tsx correctly excludes clips. MasterAdminManagement.tsx is restored. Backend main.mo is modified. However, the Dashboard stat cards do not exactly match the required stats (missing 'total users' and 'active subscriptions'), and the live schedule duration appears to be user-entered rather than derived from video file metadata.",
+  "generatedAt": "2026-02-26T21:44:41.869Z",
+  "summary": "The diff implements many of the required admin dashboard CRUD fixes and new features. Most frontend management components (Movies, Podcasts, Videos, Clips) are present, along with updates to useQueries.ts and backend/main.mo. However, several management components (Series, Channels, Live TV, Brands, Ads, Stripe, MasterAdmin) are not visible in the diff, and key acceptance criteria details cannot be fully verified due to truncation. Notable gaps include missing evidence for Series/Channels/Live TV/Brands/Ads/Stripe management components, unclear AdminPage.tsx tab completeness for all required tabs, and backend auto-clip generation logic of 4-5 second clip segments is not verifiable in the truncated main.mo.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Dashboard displays at least 5 key stat cards including total users and active subscriptions",
-      "reason": "The AdminDashboard component shows stat cards for Total Content, Total Views, Premium Users, Ad Impressions, and Revenue. The AC explicitly requires total users and active subscriptions as stat cards, but neither appears — total users is replaced by total views and active subscriptions is replaced by premium users.",
-      "evidence": [
-        "frontend/src/pages/AdminPage.tsx"
-      ]
+      "id": "REQ-6",
+      "requirement": "Fix the Series management section in the admin dashboard so that admins can successfully create new TV series with seasons and episodes (including thumbnail and trailer uploads), edit series, and delete series without errors.",
+      "reason": "No SeriesManagement component file appears in the diff as added or modified. There is no evidence this component was created or fixed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Fix the Channels management section in the admin dashboard so that admins can successfully create new live TV channels (with name, logo, and original-content flag), edit existing channels, and delete channels without errors.",
+      "reason": "No ChannelsManagement component file appears in the diff. There is no evidence this component was created or fixed.",
+      "evidence": []
     },
     {
       "id": "REQ-8",
-      "requirement": "The schedule slot duration is derived from the video file length of the added content; the backend correctly stores and returns schedule entries with accurate durations sourced from content video metadata",
-      "reason": "In LiveScheduleManagement.tsx the durationMinutes field is a user-editable input with a default of 60, suggesting duration is manually entered rather than automatically derived from video file metadata. This contradicts the AC requiring slot duration to be sourced from content video file length.",
-      "evidence": [
-        "frontend/src/components/admin/LiveScheduleManagement.tsx",
-        "backend/main.mo"
-      ]
+      "requirement": "Fix the Live TV management section in the admin dashboard so that admins can successfully create and configure Live TV programs by pasting in HLS stream URLs, set schedules, and manage live TV entries without errors.",
+      "reason": "No LiveTVManagement component file appears in the diff. There is no evidence this component was created or fixed.",
+      "evidence": []
     },
     {
       "id": "REQ-9",
-      "requirement": "Backend exposes live schedule methods that store and return slot durations derived from video file length",
-      "reason": "The backend main.mo is truncated and full confirmation is not possible. The ProgramSlot type uses a plain durationMinutes Nat field rather than deriving duration from video metadata, suggesting duration is stored as user-supplied data rather than sourced from video file length.",
+      "requirement": "Fix the Brands management section in the admin dashboard so that admins can successfully create new brands, assign films/series/clips/live channels to brands, and delete brands without errors.",
+      "reason": "No BrandsManagement component file appears in the diff. There is no evidence this component was created or fixed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-10",
+      "requirement": "Fix the Ads management section in the admin dashboard so that admins can successfully upload ad media files and create ad assignments without errors.",
+      "reason": "No AdsManagement component file appears in the diff. There is no evidence this component was created or fixed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-11",
+      "requirement": "Fix the Stripe configuration section in the admin dashboard so that admins can successfully enter a Stripe secret key and allowed countries, save the configuration, and see the current configuration status without errors.",
+      "reason": "No StripeManagement or StripeConfiguration component file appears in the diff. There is no evidence this component was created or fixed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-12",
+      "requirement": "Ensure the Master Admin role automatically has full platform access including premium content access. The Master Admin must be able to grant premium access to other admin users from the MasterAdminManagement panel.",
+      "reason": "No MasterAdminManagement component is shown as added or modified in the diff. The useQueries.ts has some user/role mutations but granting premium access to admin users and automatic premium access for Master Admin cannot be confirmed from the truncated files.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "requirement": "Ensure the AdminPage.tsx tabbed interface includes a tab for Clips management and renders the ClipsManagement component, and that all existing tabs are present and render their respective components correctly.",
+      "reason": "AdminPage.tsx is not shown as a modified file in the diff. It cannot be confirmed that all required tabs (Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe, Analytics, Master Admin Management) are present and wired to their components.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Backend should extract or record clip segments of 4-5 seconds duration from the selected content and save them as clip records linked to the source content.",
+      "reason": "The ClipsManagement.tsx references useGenerateAutoClips hook and UI elements exist, but the backend/main.mo is truncated and the actual auto-clip generation logic creating 4-5 second clip records cannot be verified in the backend.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/admin/ClipsManagement.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.72,
+  "hallucinated_features": [
+    {
+      "description": "A migration.mo module was added with a stub OldActor/NewActor migration runner.",
+      "reason": "The build request does not mention any migration module or data migration requirements. This appears to be an unrequested addition.",
+      "evidence": [
+        "backend/migration.mo"
+      ]
+    }
+  ],
+  "confidence": 0.52,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/admin/LiveScheduleManagement.tsx",
-    "frontend/src/components/admin/MasterAdminManagement.tsx",
-    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/components/admin/ClipsManagement.tsx",
+    "frontend/src/components/admin/MoviesManagement.tsx",
+    "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/components/admin/VideoManagement.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

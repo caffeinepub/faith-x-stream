@@ -1,144 +1,406 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Restore Full Admin System",
+  "title": "Fix Admin Dashboard CRUD + Manual/Auto Clips + Master Admin Premium Access",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
+      "summary": "Fix Movies management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "AdminPage renders a Dashboard tab as the default/first tab",
-        "Dashboard displays at least 5 key stat cards (users, content, subscriptions, ad impressions, revenue)",
-        "Quick-access buttons or links to each admin sub-section are present"
+        "Admin can fill in movie metadata fields (title, description, genre, release year, etc.) and upload video/thumbnail blobs without errors",
+        "Submitted movie appears in the movies list immediately after creation",
+        "Existing movies can be edited and saved successfully",
+        "Movies can be deleted and are removed from the list"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/MoviesManagement.tsx",
           "operation": "modify",
-          "description": "Add a Dashboard tab as the first/default tab in the tabs list. Fetch key statistics using existing query hooks (useGetAllUsers for total users count, useGetAllVideos and useGetAllSeries for total content count, useGetCallerUserProfile or useGetAllUsers to count premium subscriptions, useGetAnalytics for ad impressions and revenue). Render stat cards in a responsive grid and provide quick-access navigation buttons/links to each existing admin sub-section tab."
+          "description": "Fix the create movie form to ensure all metadata fields (title, description, genre, releaseYear) and file upload fields (videoUrl, thumbnailUrl) are correctly bound and submitted. Use ExternalBlob.fromBytes() for file uploads with progress tracking. Ensure the mutation hook correctly calls actor.addVideo() with proper VideoContent structure. Add error handling with user-facing error messages."
+        },
+        {
+          "path": "frontend/src/components/admin/MoviesManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit movie functionality to pre-populate the form with existing movie data, allow updating all fields including blobs, and call actor.updateVideo() with the correct videoId and updated VideoContent object. Ensure the mutation invalidates the 'videos' query cache on success."
+        },
+        {
+          "path": "frontend/src/components/admin/MoviesManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete movie functionality to call actor.deleteVideo() with the correct videoId and invalidate the 'videos' query cache on success. Add confirmation dialog before deletion."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix useAddVideo, useUpdateVideo, and useDeleteVideo mutation hooks to ensure they call the correct backend actor methods with proper argument types, handle errors gracefully with toast notifications, and invalidate the 'videos' query on success."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
+      "summary": "Fix Podcasts management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "User Management tab is present in AdminPage",
-        "All users are listed in a table with their current role",
-        "Admin can promote/demote, suspend, and remove users from the UI"
+        "Admin can upload podcast video and thumbnail files along with metadata without errors",
+        "New podcast appears in list after creation",
+        "Existing podcasts can be edited and saved",
+        "Podcasts can be deleted"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
           "operation": "modify",
-          "description": "Add a 'User Management' tab to the tabs list that renders the existing MasterAdminManagement component. Ensure the tab is accessible to admin and master admin roles."
+          "description": "Fix the create podcast form to ensure all metadata fields and file uploads (videoUrl, thumbnailUrl) are correctly submitted using ExternalBlob.fromBytes(). Ensure the mutation calls actor.addVideo() with contentType set to ContentType.podcast. Add error handling and success feedback."
         },
         {
-          "path": "frontend/src/components/admin/MasterAdminManagement.tsx",
+          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
           "operation": "modify",
-          "description": "Ensure the component supports suspending and removing users in addition to role promotion/demotion. If suspend/remove functionality is missing, add UI controls (buttons) and wire them to appropriate backend mutations or placeholder handlers. Use existing query hooks (useGetAllUsers) and mutation hooks (usePromoteToAdmin, useDemoteFromAdmin, etc.) as needed."
+          "description": "Fix the edit podcast functionality to pre-populate the form, allow updating fields and blobs, and call actor.updateVideo() with the correct arguments. Ensure query cache invalidation on success."
+        },
+        {
+          "path": "frontend/src/components/admin/PodcastsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete podcast functionality to call actor.deleteVideo() and invalidate the query cache. Add confirmation dialog."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+      "summary": "Fix Videos management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "AdminPage includes tabs for Movies, Podcasts, Videos, Clips, Series, Channels, and Stripe Setup",
-        "Each tab renders its corresponding existing management component",
-        "CRUD operations (add, edit, delete) are accessible from each content tab"
+        "Admin can upload video files and thumbnails with all metadata fields without errors",
+        "New video appears in list after creation",
+        "Existing videos can be edited and saved",
+        "Videos can be deleted"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/VideoManagement.tsx",
           "operation": "modify",
-          "description": "Add tabs for 'Movies', 'Podcasts', 'Videos', 'Clips', 'Series', 'Channels', and 'Stripe Setup'. Render the corresponding existing management components (MoviesManagement, PodcastsManagement, VideoManagement, ClipsManagement, SeriesManagement, ChannelManagement, StripeSetup) in each tab's content area. Ensure all tabs are accessible and that CRUD operations remain functional in each component."
+          "description": "Fix the create video form to handle all metadata fields (title, description, genre, roles, releaseYear, trailerUrl) and file uploads correctly. Ensure actor.addVideo() is called with proper VideoContent structure. Use ExternalBlob.fromBytes() for file uploads with progress tracking."
+        },
+        {
+          "path": "frontend/src/components/admin/VideoManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit video functionality to pre-populate all fields including optional trailer, allow updates, and call actor.updateVideo() correctly. Invalidate 'videos' query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/VideoManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete video functionality to call actor.deleteVideo() with correct videoId and invalidate the query cache. Add confirmation dialog."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+      "summary": "Fix Clips management CRUD with manual clip creation support",
       "acceptanceCriteria": [
-        "Unauthenticated users cannot access /admin and are redirected to login",
-        "Users without admin role see an access-denied message or are redirected",
-        "Admin and master admin roles have full access to AdminPage"
+        "Admin can manually create a new clip by providing a caption, selecting or uploading a source video segment, and saving it",
+        "New manually created clip appears in the clips list",
+        "Clip captions can be edited",
+        "Clips can be deleted"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
           "operation": "modify",
-          "description": "Add authentication and authorization checks at the top of the component. Use useAuth to verify the user is authenticated; if not, redirect to /login. Use the existing useIsCallerAdmin query hook to check if the caller is an admin or master admin. If the user is authenticated but not an admin, display an access-denied message or redirect to the home page. Only render the admin tabs and content if the user passes both checks. Verify the authorization component's usage instructions before implementing."
+          "description": "Add a manual clip creation form with fields for caption (clipCaption), source video upload (videoUrl), optional thumbnail upload (thumbnailUrl), and source video ID reference (sourceVideoId). Set isClip=true and isOriginal flag as appropriate. Call actor.addVideo() with the complete VideoContent structure for the new clip."
+        },
+        {
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit clip functionality to allow updating the clipCaption field and call actor.updateVideo() with the updated clip data. Invalidate the 'clips' query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete clip functionality to call actor.deleteVideo() for the clip and invalidate the 'clips' query cache. Add confirmation dialog."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Ensure useGetAllClips query correctly fetches clips with isClip=true. Verify that add/update/delete mutations for clips properly invalidate the 'clips' query key."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+      "summary": "Add auto-clip generation functionality in admin dashboard",
       "acceptanceCriteria": [
-        "Ads Management tab is present in AdminPage",
-        "Admin can upload ad media files",
-        "Admin can assign ads to specific users with configurable scope, position, and skip settings"
+        "In the Clips management section, there is a button or option to auto-generate clips from existing movies/videos",
+        "Admin selects a source content item and triggers auto-clip generation",
+        "Backend creates one or more clip records of 4–5 seconds from the source content",
+        "Generated clips are marked as auto-generated and appear in the clips list",
+        "Auto-generated clips are distinguishable from manually created clips in the UI"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
           "operation": "modify",
-          "description": "Add an 'Ads Management' tab to the tabs list that renders the existing ManualAdsManagement component. Ensure the tab is accessible to admin and master admin roles and that the component provides ad upload and user-targeted assignment features."
+          "description": "Add an auto-clip generation UI section with a dropdown or search to select an existing movie or video content item. Add a 'Generate Auto-Clips' button that triggers the auto-clip generation mutation for the selected source content. Display a loading indicator during generation and show success/error messages."
+        },
+        {
+          "path": "frontend/src/components/admin/ClipsManagement.tsx",
+          "operation": "modify",
+          "description": "Update the clips list display to visually distinguish auto-generated clips from manually created clips using a badge or icon. Use a flag or metadata field to identify auto-generated clips."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new mutation hook useGenerateAutoClips that accepts a source content ID and calls the backend capability to generate 4-5 second clips from the source. Invalidate the 'clips' query on success and handle errors with user-facing messages."
         }
       ]
     },
     {
       "id": "REQ-6",
-      "summary": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+      "summary": "Fix Series management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "Analytics tab is present in AdminPage",
-        "Analytics dashboard displays total views, premium users, ad impressions, and revenue stats",
-        "Trending content list is shown with relevant metrics"
+        "Admin can create a new series with all metadata, seasons, and episodes without errors",
+        "Thumbnail and trailer file uploads work for series",
+        "Existing series can be edited",
+        "Series can be deleted"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/SeriesManagement.tsx",
           "operation": "modify",
-          "description": "Add an 'Analytics' tab to the tabs list that renders the existing AnalyticsDashboard component. Ensure the tab is accessible to admin and master admin roles and that the component fetches and displays analytics data using the useGetAnalytics query hook."
+          "description": "Fix the create series form to handle all TVSeries fields including title, description, seasons array with episodes, thumbnail upload (thumbnailUrl), optional trailer upload (trailerUrl), and isOriginal flag. Use ExternalBlob.fromBytes() for file uploads. Call actor.addSeries() with complete TVSeries structure."
+        },
+        {
+          "path": "frontend/src/components/admin/SeriesManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit series functionality to pre-populate the form with existing series data including all seasons and episodes, allow updates, and call actor.updateSeries() with correct seriesId and updated TVSeries object. Invalidate 'series' query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/SeriesManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete series functionality to call actor.deleteSeries() with correct seriesId and invalidate the 'series' query cache. Add confirmation dialog."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix useAddSeries, useUpdateSeries, and useDeleteSeries mutation hooks to ensure correct backend calls, error handling with toast notifications, and query cache invalidation."
         }
       ]
     },
     {
       "id": "REQ-7",
-      "summary": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+      "summary": "Fix Channels management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "Network/Brand Management tab is present in AdminPage",
-        "Admin can create, edit, and delete brands/networks",
-        "Admin can upload a logo and assign content (films, series, clips, live channels) to a brand"
+        "Admin can create a new channel with name, logo upload, and original-content flag without errors",
+        "New channel appears in channel list after creation",
+        "Existing channels can be edited",
+        "Channels can be deleted"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
+          "path": "frontend/src/components/admin/ChannelManagement.tsx",
           "operation": "modify",
-          "description": "Add a 'Brand Management' (or 'Network/Brand Management') tab to the tabs list that renders the existing BrandManagement component. Ensure the tab is accessible to admin and master admin roles. Verify the blob-storage component's usage instructions before implementing any file upload features (if not already present in BrandManagement)."
+          "description": "Fix the create channel form to handle name, logo upload (using ExternalBlob.fromBytes()), and isOriginal flag. Call actor.addChannel() or actor.addLiveChannel() with the correct Channel or LiveChannel structure."
+        },
+        {
+          "path": "frontend/src/components/admin/ChannelManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit channel functionality to pre-populate fields, allow updates including logo replacement, and call actor.updateChannel() or actor.updateLiveChannel() with correct arguments. Invalidate channels query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/ChannelManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete channel functionality to call actor.deleteChannel() or actor.deleteLiveChannel() and invalidate the query cache. Add confirmation dialog."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix mutation hooks for channels to ensure correct backend calls, error handling, and query invalidation for both Channel and LiveChannel types."
         }
       ]
     },
     {
       "id": "REQ-8",
-      "summary": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+      "summary": "Fix Live TV management CRUD operations in admin dashboard",
       "acceptanceCriteria": [
-        "Live Schedule Management tab is present in AdminPage",
-        "Programs can be added to a channel schedule; the schedule slot duration is derived from the video file length of the added content",
-        "Only movie/film/television content types are eligible for scheduling; clips are excluded from the scheduling UI and logic",
-        "The backend correctly stores and returns schedule entries with accurate durations sourced from content video metadata"
+        "Admin can add a Live TV program with an HLS stream URL and associated metadata without errors",
+        "Live TV entries appear in the list after creation",
+        "Live TV entries can be edited and deleted",
+        "Schedules can be configured for live channels"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the Live TV program creation form to accept HLS stream URL, schedule metadata (start time, duration), and associated channel. Call actor.addLiveChannel() or a schedule-specific backend capability with the correct LiveChannel or ScheduledContent structure."
+        },
+        {
+          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit Live TV functionality to allow updating stream URL, schedule times, and metadata. Call the appropriate update backend capability and invalidate live channels query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete Live TV functionality to remove programs from schedules or delete channels, calling the appropriate backend capability and invalidating the query cache. Add confirmation dialog."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix mutation hooks for Live TV schedule management to ensure correct backend calls, error handling, and query cache invalidation for live channels and scheduled content."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Fix Brands management CRUD operations in admin dashboard",
+      "acceptanceCriteria": [
+        "Admin can create a new brand with name, logo, and description without errors",
+        "Admin can assign existing content (films, series, clips, channels) to a brand",
+        "Brands appear in the brand list after creation",
+        "Brands can be edited and deleted"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/BrandManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the create brand form to handle name, logo upload (using ExternalBlob.fromBytes()), description, and assignment of existing films, series, clips, and live channels by their IDs. Call actor.addBrand() with the complete Brand structure."
+        },
+        {
+          "path": "frontend/src/components/admin/BrandManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit brand functionality to pre-populate all fields including assigned content arrays, allow updates, and call actor.updateBrand() with brandId and updated Brand object. Invalidate 'brands' query on success."
+        },
+        {
+          "path": "frontend/src/components/admin/BrandManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete brand functionality to call actor.deleteBrand() with correct brandId and invalidate the 'brands' query cache. Add confirmation dialog."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix useAddBrand, useUpdateBrand, and useDeleteBrand mutation hooks to ensure correct backend calls, error handling with toast notifications, and query cache invalidation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Fix Ads management CRUD operations in admin dashboard",
+      "acceptanceCriteria": [
+        "Admin can upload an ad media file and configure its settings without errors",
+        "Ad assignment appears in the ads list after creation",
+        "Existing ads can be edited and deleted"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the ad media upload form to handle file upload (adFile using ExternalBlob.fromBytes()), metadata (description, duration, tags, language, regions, mediaType), and call actor.addAdMedia() with the complete AdMedia structure."
+        },
+        {
+          "path": "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the ad assignment creation form to configure scope (global or targeted), position, skip settings, show count, and target ID. Call actor.addAdAssignment() with the complete AdAssignment structure."
+        },
+        {
+          "path": "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the edit ad functionality to allow updating AdMedia and AdAssignment fields and call actor.updateAdMedia() and actor.updateAdAssignment() with correct IDs and updated objects. Invalidate ads queries on success."
+        },
+        {
+          "path": "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "operation": "modify",
+          "description": "Fix the delete ad functionality to call actor.deleteAdMedia() and actor.deleteAdAssignment() with correct IDs and invalidate the ads query cache. Add confirmation dialogs."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix mutation hooks for ad media and ad assignments to ensure correct backend calls, error handling, and query cache invalidation for both AdMedia and AdAssignment types."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Fix Stripe configuration section in admin dashboard",
+      "acceptanceCriteria": [
+        "Admin can enter and save Stripe secret key and allowed countries without errors",
+        "After saving, the Stripe configuration status is displayed correctly",
+        "Stripe checkout sessions can be initiated for premium subscriptions"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/StripeSetup.tsx",
+          "operation": "modify",
+          "description": "Fix the Stripe configuration form to accept secret key and allowed countries array, validate inputs, and call actor.setStripeConfiguration() with the StripeConfiguration object. Display the current configuration status using actor.isStripeConfigured(). Add error handling and success feedback."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix useSetStripeConfiguration mutation hook to ensure correct backend call with StripeConfiguration argument, error handling with toast notification, and invalidation of stripe configuration status query on success."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Ensure Master Admin role has full platform and premium access with ability to grant premium to other admins",
+      "acceptanceCriteria": [
+        "Master Admin can access all premium-gated content without a subscription",
+        "Master Admin sees and can use all admin dashboard sections without restriction",
+        "In the MasterAdminManagement panel, Master Admin can grant premium access to any admin user",
+        "Premium access granted by Master Admin persists and allows the recipient admin to access premium content"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/admin/MasterAdminManagement.tsx",
+          "operation": "modify",
+          "description": "Add a premium access grant feature in the MasterAdminManagement component. Display a list of all admin users with their current premium status. Add a button or toggle for each admin to grant or revoke premium access. Call a backend capability to update the admin user's isPremium flag in their UserProfile. Invalidate user queries on success."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a mutation hook useGrantPremiumAccess that accepts a user Principal and calls a backend capability to set isPremium=true in the user's profile. Invalidate relevant user profile queries on success and handle errors with toast notifications."
+        },
+        {
+          "path": "frontend/src/pages/VideoPlayerPage.tsx",
+          "operation": "modify",
+          "description": "Update the premium content gating logic to check if the user has UserRole.masterAdmin role (via actor.getCallerFullUserRole()) and bypass subscription checks for Master Admin users, allowing them full premium access."
+        },
+        {
+          "path": "frontend/src/pages/EpisodePlayerPage.tsx",
+          "operation": "modify",
+          "description": "Update the premium content gating logic to check if the user has UserRole.masterAdmin role and bypass subscription checks for Master Admin users."
+        },
+        {
+          "path": "frontend/src/hooks/useAuth.tsx",
+          "operation": "modify",
+          "description": "Update the AuthContext and refreshRole logic to fetch the full user role including masterAdmin status from actor.getCallerFullUserRole(). Ensure the role state includes masterAdmin distinction for downstream checks."
+        }
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "summary": "Audit and fix all React Query mutation hooks in useQueries.ts for every admin section",
+      "acceptanceCriteria": [
+        "Each admin section mutation hook calls the correct backend actor function with the correct arguments",
+        "On success, the relevant list query is invalidated and the UI reflects the updated data",
+        "On error, a clear error message is shown to the admin user",
+        "No unhandled promise rejections or silent failures in any admin CRUD operation"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit all mutation hooks (useAddVideo, useUpdateVideo, useDeleteVideo, useAddSeries, useUpdateSeries, useDeleteSeries, useAddBrand, useUpdateBrand, useDeleteBrand, useAddAdMedia, useUpdateAdMedia, useDeleteAdMedia, useAddAdAssignment, useUpdateAdAssignment, useDeleteAdAssignment, useAddChannel, useUpdateChannel, useDeleteChannel, useAddLiveChannel, useUpdateLiveChannel, useDeleteLiveChannel, useSetStripeConfiguration) to ensure each calls the correct backend actor method with the exact argument types expected by backend-interface. Verify that the mutation's onSuccess callback invalidates the correct query keys (e.g., 'videos', 'clips', 'series', 'brands', 'ads', 'channels', 'liveChannels'). Ensure onError callbacks display user-facing error messages using toast notifications. Add try-catch blocks where needed to prevent unhandled rejections."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Ensure AdminPage tabbed interface includes all management sections including Clips",
+      "acceptanceCriteria": [
+        "AdminPage has tabs for all sections: Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe, Analytics, Master Admin Management",
+        "Each tab renders its corresponding management component without errors",
+        "Clips tab is present and renders ClipsManagement with both manual creation and auto-clip generation options"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/AdminPage.tsx",
           "operation": "modify",
-          "description": "Add a 'Live Schedule Management' (or 'Live TV Programming') tab to the tabs list that renders the existing LiveScheduleManagement component. Ensure the tab is accessible to admin and master admin roles."
-        },
-        {
-          "path": "frontend/src/components/admin/LiveScheduleManagement.tsx",
-          "operation": "modify",
-          "description": "Ensure the component filters the list of schedulable content to include only videos with contentType matching movie, film, or television. Explicitly exclude clips (isClip === true or contentType === 'clip') from the scheduling UI. When adding a program to a schedule, use the video's duration (derived from its video file metadata, if available via ExternalBlob or VideoContent fields) to set the schedule slot's start and end times. If duration metadata is unavailable, provide a fallback or prompt the admin to specify duration manually. Ensure the component uses existing query hooks (useGetEligibleVideosForLive or useGetAllVideos with filtering) and mutation hooks (useUpdateLiveChannel or equivalent) to persist schedule changes."
+          "description": "Verify that the AdminPage tabbed interface includes a 'Clips' tab that renders the ClipsManagement component. Ensure all other tabs (Movies, Podcasts, Videos, Series, Channels, Live TV, Brands, Ads, Stripe, Analytics, Master Admin Management) are present and correctly render their respective components. Update the tab list and tab content rendering logic if any tabs are missing or incorrectly wired."
         }
       ]
     }

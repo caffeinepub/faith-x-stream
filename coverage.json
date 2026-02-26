@@ -1,125 +1,233 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T17:09:52.685Z",
+  "generatedAt": "2026-02-26T21:44:41.874Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 9,
-    "implemented": 8,
+    "total": 15,
+    "implemented": 13,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Restore the Admin Dashboard tab in AdminPage.tsx with an overview panel showing key platform stats (total users, total content, active subscriptions, ad impressions, revenue) and quick-access shortcuts to each admin sub-section.",
+        "summary": "Fix the Movies management section in the admin dashboard so that admins can successfully create/upload new movies (with metadata and file blobs), edit existing movies, and delete movies without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/components/admin/MoviesManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
-        "id": "REQ-2",
-        "summary": "Restore the User Management tab in AdminPage.tsx, rendering the MasterAdminManagement component, which lists all users and allows promoting or demoting roles (guest, user, admin, master admin), as well as suspending or removing users.",
+        "id": "REQ-10",
+        "summary": "Fix the Ads management section in the admin dashboard so that admins can successfully upload ad media files and create ad assignments (global or targeted, with position/skip/display settings) without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/MasterAdminManagement.tsx"
+          "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "frontend/src/components/admin/ManualAdsManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/MasterAdminManagement.tsx"
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Fix the Stripe configuration section in the admin dashboard so that admins can successfully enter a Stripe secret key and allowed countries, save the configuration, and see the current configuration status without errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/StripeSetup.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-12",
+        "summary": "Ensure the Master Admin role automatically has full platform access including premium content access. The Master Admin must be able to grant premium access to other admin users from the MasterAdminManagement panel.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/MasterAdminManagement.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/VideoPlayerPage.tsx",
+          "frontend/src/pages/EpisodePlayerPage.tsx",
+          "frontend/src/hooks/useAuth.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Audit and fix all backend Motoko actor functions corresponding to create/update/delete operations for Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, and Ads. Ensure all mutation functions accept the correct argument types, return proper result variants, and persist state correctly. Fix any mismatches between frontend mutation call signatures and backend function signatures.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Audit and fix all React Query mutation hooks in useQueries.ts for every admin section (Movies, Podcasts, Videos, Clips, Series, Channels, Live TV, Brands, Ads, Stripe). Ensure each mutation correctly calls the backend actor method, handles errors gracefully with user-facing error messages, and invalidates the relevant query cache on success.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-15",
+        "summary": "Ensure the AdminPage.tsx tabbed interface includes a tab for Clips management and renders the ClipsManagement component, and that all existing tabs (Movies, Podcasts, Videos, Series, Channels, Live TV, Brands, Ads, Stripe, Analytics, Master Admin Management) are present and render their respective components correctly.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/pages/AdminPage.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Fix the Podcasts management section in the admin dashboard so that admins can successfully create/upload new podcasts (with metadata, video blob, and thumbnail blob), edit existing podcasts, and delete podcasts without errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/PodcastsManagement.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/admin/PodcastsManagement.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx",
+          "frontend/src/components/admin/PodcastsManagement.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Restore the Content & Settings Control tabs in AdminPage.tsx, including all sub-tabs for Movies (MoviesManagement), Podcasts (PodcastsManagement), Videos (VideoManagement), Clips (ClipsManagement), Series (SeriesManagement), Channels (ChannelManagement), and Stripe Setup (StripeSetup).",
+        "summary": "Fix the Videos management section in the admin dashboard so that admins can successfully create/upload new videos (with metadata including genre, roles, release year, optional trailer), edit existing videos, and delete videos without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/VideoManagement.tsx",
+          "frontend/src/components/admin/VideoManagement.tsx",
+          "frontend/src/components/admin/VideoManagement.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/VideoManagement.tsx",
+          "frontend/src/components/admin/VideoManagement.tsx",
+          "frontend/src/components/admin/VideoManagement.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Restore access restriction enforcement in AdminPage.tsx: only authenticated users with admin or master admin roles may access the admin page. Non-admin users should be redirected or shown an access-denied message.",
+        "summary": "Fix the Clips management section in the admin dashboard so that admins can successfully create clips manually (with caption, video source reference, and optional thumbnail), edit clip captions, and delete clips without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-5",
-        "summary": "Restore the Manual User-Targeted Ads Management tab in AdminPage.tsx, rendering the ManualAdsManagement component, which allows uploading ad media and assigning ads with scope, position, skip settings, and targeting specific users.",
+        "summary": "Add auto-clip generation functionality in the admin dashboard: admins can select an existing movie or video content item and trigger auto-generation of 4–5 second clips from it. The backend should extract or record clip segments of 4–5 seconds duration from the selected content and save them as clip records linked to the source content.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/components/admin/ClipsManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-6",
-        "summary": "Restore the Analytics tab in AdminPage.tsx, rendering the AnalyticsDashboard component, which displays total views, premium users, ad impressions, revenue, and a trending content list fetched from the backend.",
+        "summary": "Fix the Series management section in the admin dashboard so that admins can successfully create new TV series with seasons and episodes (including thumbnail and trailer uploads), edit series, and delete series without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/SeriesManagement.tsx",
+          "frontend/src/components/admin/SeriesManagement.tsx",
+          "frontend/src/components/admin/SeriesManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-7",
-        "summary": "Restore the Network/Brand Management tab in AdminPage.tsx, rendering the BrandManagement component, which allows creating, editing, and deleting brands/networks, uploading logos, and assigning films, series, clips, or live channels to a brand.",
+        "summary": "Fix the Channels management section in the admin dashboard so that admins can successfully create new live TV channels (with name, logo, and original-content flag), edit existing channels, and delete channels without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/components/admin/ChannelManagement.tsx",
+          "frontend/src/components/admin/ChannelManagement.tsx",
+          "frontend/src/components/admin/ChannelManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-8",
-        "summary": "Restore the Live TV Programming tab in AdminPage.tsx, rendering the LiveScheduleManagement component. Auto-schedule programming for channels based on the video file duration of each program, only for content with contentType in the movie/film/television categories. Clips must be excluded from the auto-schedule logic.",
+        "summary": "Fix the Live TV management section in the admin dashboard so that admins can successfully create and configure Live TV programs by pasting in HLS stream URLs, set schedules, and manage live TV entries without errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/LiveScheduleManagement.tsx"
+          "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "frontend/src/components/admin/LiveScheduleManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/admin/LiveScheduleManagement.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
         "id": "REQ-9",
-        "summary": "Ensure the backend main actor exposes all necessary query and update methods to support the restored admin features: user role management (promote/demote/suspend/remove), analytics retrieval, brand/network CRUD, ad targeting by user, and live schedule management with content-duration-based slot assignment.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Fix the Brands management section in the admin dashboard so that admins can successfully create new brands, assign films/series/clips/live channels to brands, and delete brands without errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/admin/BrandManagement.tsx",
+          "frontend/src/components/admin/BrandManagement.tsx",
+          "frontend/src/components/admin/BrandManagement.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/admin/LiveScheduleManagement.tsx",
-    "frontend/src/components/admin/MasterAdminManagement.tsx",
-    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/components/admin/ClipsManagement.tsx",
+    "frontend/src/components/admin/MoviesManagement.tsx",
+    "frontend/src/components/admin/PodcastsManagement.tsx",
+    "frontend/src/components/admin/VideoManagement.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

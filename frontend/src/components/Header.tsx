@@ -1,44 +1,32 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Search, Menu, X, User, LogOut, Settings, ChevronDown, Star } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useIsCallerAdmin } from '../hooks/useQueries';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { Menu, X, Search, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Header() {
-  const navigate = useNavigate();
-  const { isAuthenticated, logout, isInitializing } = useAuth();
-  const { identity } = useInternetIdentity();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const { isAuthenticated, user, role, logout, loginWithII, isInitializing } = useAuth();
   const { data: userProfile } = useGetCallerUserProfile();
-  const { data: isAdmin } = useIsCallerAdmin();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate({ to: '/search', search: { q: searchQuery.trim() } });
-      setSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
+  const isAdmin = role === 'admin' || role === 'masterAdmin';
+  const displayName = userProfile?.name || user?.name || 'User';
 
   const handleLogout = async () => {
     await logout();
+    queryClient.clear();
     navigate({ to: '/' });
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
   };
 
-  const displayName = userProfile?.name || (identity ? 'User' : '');
+  const handleLogin = async () => {
+    await loginWithII();
+  };
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -46,170 +34,170 @@ export default function Header() {
     { to: '/tv-shows', label: 'TV Shows' },
     { to: '/live', label: 'Live TV' },
     { to: '/originals', label: 'Originals' },
+    { to: '/podcasts', label: 'Podcasts' },
     { to: '/networks', label: 'Networks' },
-    { to: '/clips', label: 'Clips' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/30">
-      <div className="max-w-screen-2xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link to="/" className="shrink-0">
-          <img
-            src="/assets/F.A.I.T.H.X-Stream(Transparent-White).png"
-            alt="FAITH X-Stream"
-            className="h-10 w-auto object-contain"
-          />
-        </Link>
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/40">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img
+              src="/assets/F.A.I.T.H.X-Stream(Transparent-White).png"
+              alt="FAITH X-Stream"
+              className="h-8 w-auto"
+            />
+          </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors rounded-md hover:bg-white/5"
-              activeProps={{ className: 'px-3 py-2 text-sm font-medium text-primary' }}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="px-3 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors rounded-md hover:bg-primary/10 flex items-center gap-1"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              Admin
-            </Link>
-          )}
-        </nav>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          {searchOpen ? (
-            <form onSubmit={handleSearch} className="flex items-center gap-2">
-              <input
-                autoFocus
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="bg-white/10 border border-border/50 rounded-md px-3 py-1.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary w-48"
-              />
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="text-foreground/60 hover:text-foreground"
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50"
+                activeProps={{ className: 'text-foreground bg-accent/30' }}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="p-2 text-foreground/60 hover:text-foreground transition-colors"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-          )}
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="px-3 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors rounded-md hover:bg-primary/10"
+                activeProps={{ className: 'bg-primary/10' }}
+              >
+                Admin
+              </Link>
+            )}
+          </nav>
 
-          {/* Auth area */}
-          {isInitializing ? (
-            <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
-          ) : isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors text-sm font-medium">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:block max-w-[120px] truncate">
-                    {displayName || 'Profile'}
-                  </span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card border-border/50">
-                {userProfile?.isPremium && (
-                  <div className="px-2 py-1.5 flex items-center gap-1.5 text-xs text-yellow-400">
-                    <Star className="w-3 h-3 fill-yellow-400" />
-                    Premium Member
+          {/* Right side */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <Link
+              to="/search"
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50"
+            >
+              <Search className="h-5 w-5" />
+            </Link>
+
+            {/* Auth */}
+            {isInitializing ? (
+              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+            ) : isAuthenticated ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/50 hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                    {displayName.charAt(0).toUpperCase()}
                   </div>
-                )}
-                <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate({ to: '/admin' })}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Admin Panel
-                  </DropdownMenuItem>
-                )}
-                {!userProfile?.isPremium && !isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate({ to: '/upgrade' })}>
-                    <Star className="w-4 h-4 mr-2" />
-                    Upgrade to Premium
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button
-              size="sm"
-              onClick={() => navigate({ to: '/login' })}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Sign In
-            </Button>
-          )}
+                  <span className="hidden sm:block max-w-[100px] truncate">{displayName}</span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                </button>
 
-          {/* Mobile menu toggle */}
-          <button
-            className="lg:hidden p-2 text-foreground/60 hover:text-foreground"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+                {userMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="px-3 py-2 border-b border-border">
+                        <p className="text-sm font-medium truncate">{displayName}</p>
+                        {role && (
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {role === 'masterAdmin' ? 'Master Admin' : role}
+                          </p>
+                        )}
+                      </div>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors text-primary"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4" />
+                          Admin Panel
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors w-full text-left text-destructive"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleLogin}
+                className="px-4 py-1.5 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+
+            {/* Mobile menu toggle */}
+            <button
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-border/30 bg-background/98 px-4 py-3 space-y-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="flex items-center px-3 py-2 text-sm font-medium text-foreground/70 hover:text-foreground rounded-md hover:bg-white/5"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-primary rounded-md hover:bg-primary/10"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              Admin Panel
-            </Link>
-          )}
-          {!isAuthenticated && (
-            <button
-              onClick={() => { navigate({ to: '/login' }); setMobileMenuOpen(false); }}
-              className="w-full text-left px-3 py-2 text-sm font-medium text-primary"
-            >
-              Sign In
-            </button>
-          )}
+        <div className="lg:hidden border-t border-border/40 bg-background/98 backdrop-blur-sm">
+          <nav className="px-4 py-3 flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/50"
+                activeProps={{ className: 'text-foreground bg-accent/30' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors rounded-md"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                Admin Panel
+              </Link>
+            )}
+            {!isAuthenticated && (
+              <button
+                onClick={() => { handleLogin(); setMobileMenuOpen(false); }}
+                className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors text-center"
+              >
+                Sign In
+              </button>
+            )}
+          </nav>
         </div>
       )}
     </header>
