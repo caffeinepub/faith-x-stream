@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: oklch(0.08 0.015 15);
+    --foreground: oklch(0.97 0.005 90);
+
+    --card: oklch(0.12 0.02 15);
+    --card-foreground: oklch(0.97 0.005 90);
+
+    --popover: oklch(0.10 0.018 15);
+    --popover-foreground: oklch(0.97 0.005 90);
+
+    --primary: oklch(0.55 0.22 25);
+    --primary-foreground: oklch(0.98 0.005 90);
+
+    --secondary: oklch(0.16 0.025 15);
+    --secondary-foreground: oklch(0.90 0.01 90);
+
+    --muted: oklch(0.18 0.02 15);
+    --muted-foreground: oklch(0.62 0.015 90);
+
+    --accent: oklch(0.60 0.24 22);
+    --accent-foreground: oklch(0.98 0.005 90);
+
+    --destructive: oklch(0.50 0.22 25);
+    --destructive-foreground: oklch(0.98 0.005 90);
+
+    --border: oklch(0.22 0.03 15);
+    --input: oklch(0.18 0.025 15);
+    --ring: oklch(0.58 0.23 23);
+
+    --radius: 0.5rem;
+
+    /* Custom brand tokens */
+    --brand-red: oklch(0.55 0.24 25);
+    --brand-red-vivid: oklch(0.60 0.26 22);
+    --brand-red-deep: oklch(0.38 0.20 20);
+    --brand-red-glow: oklch(0.58 0.25 23);
+    --brand-dark: oklch(0.06 0.012 15);
+    --brand-surface: oklch(0.11 0.018 15);
+    --brand-surface-2: oklch(0.15 0.022 15);
+    --brand-surface-3: oklch(0.19 0.025 15);
+  }
+
+  .dark {
+    --background: oklch(0.08 0.015 15);
+    --foreground: oklch(0.97 0.005 90);
+    --card: oklch(0.12 0.02 15);
+    --card-foreground: oklch(0.97 0.005 90);
+    --popover: oklch(0.10 0.018 15);
+    --popover-foreground: oklch(0.97 0.005 90);
+    --primary: oklch(0.55 0.22 25);
+    --primary-foreground: oklch(0.98 0.005 90);
+    --secondary: oklch(0.16 0.025 15);
+    --secondary-foreground: oklch(0.90 0.01 90);
+    --muted: oklch(0.18 0.02 15);
+    --muted-foreground: oklch(0.62 0.015 90);
+    --accent: oklch(0.60 0.24 22);
+    --accent-foreground: oklch(0.98 0.005 90);
+    --destructive: oklch(0.50 0.22 25);
+    --destructive-foreground: oklch(0.98 0.005 90);
+    --border: oklch(0.22 0.03 15);
+    --input: oklch(0.18 0.025 15);
+    --ring: oklch(0.58 0.23 23);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(0.10 0.015 15);
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.30 0.06 15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.55 0.22 25);
+}
+
+/* EPG thin scrollbar */
+.epg-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.epg-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.epg-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.05 15);
+  border-radius: 2px;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gradient utilities */
+.gradient-hero {
+  background: linear-gradient(
+    to right,
+    oklch(0.06 0.012 15) 0%,
+    oklch(0.06 0.012 15 / 0.85) 40%,
+    oklch(0.06 0.012 15 / 0.3) 70%,
+    transparent 100%
+  );
+}
+
+.gradient-hero-bottom {
+  background: linear-gradient(
+    to top,
+    oklch(0.08 0.015 15) 0%,
+    oklch(0.08 0.015 15 / 0.6) 30%,
+    transparent 60%
+  );
+}
+
+.gradient-card-overlay {
+  background: linear-gradient(
+    to top,
+    oklch(0.06 0.012 15) 0%,
+    oklch(0.06 0.012 15 / 0.7) 40%,
+    transparent 70%
+  );
+}
+
+.gradient-section {
+  background: linear-gradient(
+    to bottom,
+    oklch(0.08 0.015 15) 0%,
+    oklch(0.10 0.018 15) 50%,
+    oklch(0.08 0.015 15) 100%
+  );
+}
+
+/* Red glow effect for cards */
+.card-glow-hover {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.card-glow-hover:hover {
+  box-shadow: 0 0 0 2px oklch(0.58 0.25 23), 0 8px 32px oklch(0.55 0.24 25 / 0.35);
+  transform: translateY(-3px) scale(1.02);
+}
+
+/* Brand rail logo hover */
+.brand-logo-hover {
+  transition: filter 0.2s ease, transform 0.2s ease;
+  filter: brightness(0.85) saturate(0.9);
+}
+
+.brand-logo-hover:hover {
+  filter: brightness(1.1) saturate(1.1);
+  transform: scale(1.05);
+}
+
+/* Horizontal scroll row */
+.scroll-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-row::-webkit-scrollbar {
+  height: 3px;
+}
+
+.scroll-row > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Genre chip active state */
+.genre-chip-active {
+  background: oklch(0.55 0.24 25);
+  color: oklch(0.98 0.005 90);
+  border-color: oklch(0.55 0.24 25);
+}
+
+/* Clip feed snap */
+.clip-snap-container {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  height: 100vh;
+}
+
+.clip-snap-item {
+  scroll-snap-align: start;
+  height: 100vh;
+}
+
+/* Text shadow for hero */
+.text-shadow-lg {
+  text-shadow: 0 2px 12px oklch(0.06 0.012 15 / 0.8);
+}
+
+/* Animate fade in */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Network card shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.15 0.02 15) 25%,
+    oklch(0.20 0.03 15) 50%,
+    oklch(0.15 0.02 15) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

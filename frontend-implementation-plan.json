@@ -1,0 +1,174 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Tubi-style Homepage & Navigation Redesign with Disney+ Brand Rails",
+  "requirements": [
+    {
+      "id": "REQ-94",
+      "summary": "Redesign HomePage with Tubi-inspired layout featuring full-width hero banner, horizontal scrollable genre/category rows, and preserved Shorts/Clips vertical feed",
+      "acceptanceCriteria": [
+        "HomePage renders a full-width hero banner featuring one or more promoted content items with Play and More Info buttons",
+        "Below the hero, at least 4–5 horizontal scrollable rows exist, each labeled by genre or content type (e.g., 'Movies', 'TV Shows', 'Podcasts', 'Originals', 'Continue Watching')",
+        "VideoCard and SeriesCard components display with clean layouts and visible hover effects (overlay, scale, or highlight)",
+        "Existing Shorts/Clips vertical feed section is preserved and positioned appropriately within the new layout",
+        "Page is responsive and renders correctly on both desktop and mobile viewports"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/HomePage.tsx",
+          "operation": "modify",
+          "description": "Replace the current slideshow-based hero section with a single full-width hero banner component that prominently features one content item (video or series) with Play and More Info CTAs. Below the hero, replace the existing horizontal sections with at least 4–5 new genre/category-based horizontal scrollable rows (Movies, TV Shows, Podcasts, Originals, Continue Watching). Preserve the existing ClipsShortsFeed component and integrate it as a dedicated section within the new layout. Ensure all sections use VideoCard and SeriesCard components with enhanced hover effects. Filter content appropriately for each row (e.g., Movies row shows availableAsVOD=true and contentType movie/film). Maintain responsive layout for desktop and mobile viewports."
+        },
+        {
+          "path": "frontend/src/components/HeroSection.tsx",
+          "operation": "modify",
+          "description": "Transform from a multi-item slideshow into a single full-width hero banner display. Update to show one featured content item prominently with large thumbnail/video background, overlay gradient, title, description, and two primary CTAs: Play Now and More Info buttons. Remove slideshow navigation controls. Add support for both video and series content types. Ensure the hero scales responsively and maintains visual hierarchy on mobile. Apply the updated vibrant red color palette to CTA buttons and overlays."
+        },
+        {
+          "path": "frontend/src/components/VideoCard.tsx",
+          "operation": "modify",
+          "description": "Enhance hover effects to be more dynamic: add a subtle red glow border, scale transform, or saturated overlay on hover/focus states. Ensure the card layout remains clean with consistent thumbnail aspect ratio, title, description, and metadata badges (premium, original). Apply the updated vibrant red color palette to badges and interactive states. Maintain existing navigation behavior to watch page."
+        },
+        {
+          "path": "frontend/src/components/SeriesCard.tsx",
+          "operation": "modify",
+          "description": "Enhance hover effects to match VideoCard treatment: add subtle red glow border, scale transform, or saturated overlay on hover/focus. Keep the clean layout with thumbnail, title, description, season/episode count, and original badge. Apply the updated vibrant red color palette to badges and interactive states. Maintain existing navigation to series detail page."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new useGetWatchHistory query hook that fetches the current user's watch history using the backend's getWatchHistory method. Return an array of content IDs that can be used to populate a 'Continue Watching' row on HomePage. Ensure proper error handling and loading states. This enables the Continue Watching genre row required by REQ-94."
+        }
+      ]
+    },
+    {
+      "id": "REQ-95",
+      "summary": "Add Disney+-style brand/network rails to HomePage and NetworksPage with brand logos, horizontal carousels, and navigation to BrandDetailPage",
+      "acceptanceCriteria": [
+        "HomePage includes a 'Browse by Network' or equivalent section with one horizontal rail per brand/network that has associated content",
+        "Each brand rail displays the brand logo prominently as the section header",
+        "Content items within each rail are shown in a horizontally scrollable carousel using VideoCard/SeriesCard components",
+        "Clicking the brand logo or a 'See All' link navigates to the BrandDetailPage for that brand",
+        "NetworksPage is updated to reflect the same Disney+-style brand grid/card treatment",
+        "Rails only render for brands that have at least one piece of associated content"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/HomePage.tsx",
+          "operation": "modify",
+          "description": "Add a new 'Browse by Network' section below the genre/category rows. For each brand fetched via useGetAllBrands, render a horizontal rail only if the brand has associated content (films, series, or clips). Display the brand logo prominently as the section header with a clickable link/button that navigates to BrandDetailPage. Within each rail, show a horizontally scrollable carousel of associated content using VideoCard and SeriesCard components. Include a 'See All' link that also navigates to BrandDetailPage. Filter to only show brands with at least one content item."
+        },
+        {
+          "path": "frontend/src/pages/NetworksPage.tsx",
+          "operation": "modify",
+          "description": "Redesign the existing brand grid to use a Disney+-style card treatment. Each brand card should feature the brand logo prominently, display the brand name and description, and show a count or visual indicator of associated content (channels, films, series, clips). Update card hover effects to match the new vibrant red theme with glow or saturated borders. Ensure cards navigate to BrandDetailPage on click. Maintain responsive grid layout for desktop and mobile."
+        },
+        {
+          "path": "frontend/src/pages/BrandDetailPage.tsx",
+          "operation": "modify",
+          "description": "Update the brand detail page to match the Disney+-style aesthetic. Ensure the brand logo is displayed prominently at the top. Organize associated content (films, series, clips) into separate horizontal scrollable carousels or tabbed sections, each using VideoCard and SeriesCard components. Apply the updated vibrant red color palette to section headers and interactive elements. Ensure responsive layout and smooth carousel scrolling."
+        }
+      ]
+    },
+    {
+      "id": "REQ-96",
+      "summary": "Redesign global navigation Header with Tubi-style VOD-first focus, reordered links, prominent search bar, and improved mobile responsiveness",
+      "acceptanceCriteria": [
+        "Header navigation links are ordered VOD-first: Home, Movies, TV Shows, Podcasts, Originals, Live TV (Live Guide), Clips, Networks",
+        "Search bar is visually prominent in the header (expanded input or large icon with immediate expand-on-click behavior)",
+        "On mobile, navigation collapses into a hamburger menu that opens a drawer with all navigation links",
+        "Authenticated state (profile dropdown, admin link) continues to render correctly after login",
+        "Live Guide entry point remains accessible in the navigation on both desktop and mobile"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Reorder navigation links to VOD-first priority: Home, Movies, TV Shows, Podcasts, Originals, Live TV (or Live Guide), Clips, Networks. Make the search bar more visually prominent by increasing its size, making it always expanded on desktop, or using a large search icon that expands on click. On mobile viewports, replace the horizontal navigation list with a hamburger menu icon that opens a full-screen or slide-out drawer containing all navigation links. Ensure the user profile dropdown and admin link (for admin users) continue to render correctly in the header after authentication. Maintain the existing logo and branding. Apply the updated vibrant red color palette to interactive elements and active/hover states."
+        }
+      ]
+    },
+    {
+      "id": "REQ-97",
+      "summary": "Redesign VOD browsing pages (MoviesPage, TVShowsPage, PodcastsPage) with Tubi-style genre/category filtering and clean content grid layouts",
+      "acceptanceCriteria": [
+        "MoviesPage, TVShowsPage, and PodcastsPage each display genre/category filter chips or tabs at the top of the content area",
+        "Selecting a genre filter updates the content grid to show only matching items without a full page reload",
+        "Content grids use a responsive layout (e.g., 2 columns on mobile, 4–5 on desktop) with consistent card sizing",
+        "Cards display title, thumbnail, and relevant metadata (content type label, premium badge if applicable)",
+        "Empty state is shown gracefully when no content matches the selected filter",
+        "VOD availability filter (availableAsVOD=true) is still enforced on all three pages"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/MoviesPage.tsx",
+          "operation": "modify",
+          "description": "Add genre/category filter chips or tabs at the top of the page (All, Action, Drama, Comedy, Documentary, etc., based on available genres in the dataset). Implement client-side filtering that updates the displayed content grid when a genre chip is selected, without triggering a full page reload. Use a responsive grid layout (2 columns on mobile, 4–5 on desktop) with VideoCard components. Ensure availableAsVOD=true filtering remains enforced. Show a graceful empty state message when no movies match the selected genre. Apply the updated vibrant red color palette to filter chips and active states."
+        },
+        {
+          "path": "frontend/src/pages/TVShowsPage.tsx",
+          "operation": "modify",
+          "description": "Add genre/category filter chips or tabs at the top of the page (All, Drama, Comedy, Documentary, Educational, etc., based on available genres). Implement client-side filtering that updates the series grid when a genre is selected. Use a responsive grid layout (2 columns on mobile, 4–5 on desktop) with SeriesCard components. Show a graceful empty state when no series match the filter. Apply the updated vibrant red color palette to filter chips and active states."
+        },
+        {
+          "path": "frontend/src/pages/PodcastsPage.tsx",
+          "operation": "create",
+          "description": "Create a new PodcastsPage component that displays all podcast content (contentType === podcast) filtered by availableAsVOD=true. Add genre/category filter chips at the top (All, Educational, Faith-Based, News, etc., based on available genres). Implement client-side filtering to update the grid when a genre is selected. Use a responsive grid layout (2 columns on mobile, 4–5 on desktop) with VideoCard components. Show a graceful empty state when no podcasts match the filter. Apply the updated vibrant red color palette to filter chips. Fetch podcasts using useGetAllVideos and filter by contentType."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add a new route for /podcasts that renders the PodcastsPage component. Register this route in the TanStack Router configuration alongside the existing routes for movies, TV shows, clips, etc. Ensure the route is accessible and navigable from the updated Header navigation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-98",
+      "summary": "Update visual theme to be more vibrant with richer reds, improved contrast, and dynamic card treatments while staying within the existing dark red/black style",
+      "acceptanceCriteria": [
+        "Primary red/accent color values in index.css and tailwind.config.js are updated to be more saturated/vibrant while remaining in the red family",
+        "Text contrast against dark backgrounds meets at least AA accessibility ratio for body text",
+        "VideoCard and SeriesCard hover states display a more dynamic visual treatment (e.g., glowing red border, saturated overlay)",
+        "The updated color palette is applied consistently across Header, Footer, buttons, cards, badges, and page backgrounds",
+        "No new color families (blue, purple, green) are introduced — only reds, dark neutrals, and whites/grays"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Update the primary red/accent color definitions in the OKLCH color system to be more saturated and vibrant (e.g., deeper crimson to vivid scarlet range). Adjust lightness and chroma values to increase color intensity while staying in the red family. Ensure text colors (foreground, muted-foreground) have sufficient contrast against dark backgrounds to meet at least AA accessibility ratio. Update any additional accent or highlight colors to be richer and more dynamic. Do not introduce new color families — keep the palette within reds, dark neutrals, and whites/grays."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Update the custom color definitions to reflect the new vibrant red palette. Adjust the OKLCH values for primary, accent, and any red-based colors to be more saturated. Ensure the color scale is consistent across light and dark modes (if applicable). Verify that border, ring, and background color utilities reference the updated palette. Do not add new color families outside the red/neutral spectrum."
+        },
+        {
+          "path": "frontend/src/components/VideoCard.tsx",
+          "operation": "modify",
+          "description": "Update hover and focus states to use the new vibrant red color values. Add a glowing red border, saturated overlay, or enhanced shadow effect on hover/focus using the updated Tailwind color utilities. Ensure the dynamic treatment is visually consistent with the new palette and improves the card's interactivity feedback."
+        },
+        {
+          "path": "frontend/src/components/SeriesCard.tsx",
+          "operation": "modify",
+          "description": "Update hover and focus states to use the new vibrant red color values. Apply the same dynamic treatment as VideoCard (glowing border, saturated overlay, or shadow) to ensure consistency. Use the updated Tailwind color utilities for interactive states."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Apply the updated vibrant red color palette to interactive elements in the Header: navigation link hover/active states, search bar focus states, user dropdown, and any buttons or badges. Ensure text contrast meets accessibility standards against the dark background. Use the updated Tailwind color utilities."
+        },
+        {
+          "path": "frontend/src/components/Footer.tsx",
+          "operation": "modify",
+          "description": "Apply the updated vibrant red color palette to Footer links, hover states, and any interactive elements. Ensure text contrast is sufficient against the dark background. Use the updated Tailwind color utilities for consistency."
+        },
+        {
+          "path": "frontend/src/components/HeroSection.tsx",
+          "operation": "modify",
+          "description": "Update CTA buttons (Play Now, More Info) to use the new vibrant red color palette for backgrounds, borders, and hover/focus states. Apply the updated Tailwind color utilities. Ensure the hero overlay gradient and text colors have improved contrast and vibrancy."
+        }
+      ]
+    }
+  ]
+}
